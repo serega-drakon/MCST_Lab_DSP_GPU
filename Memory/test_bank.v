@@ -60,11 +60,26 @@ begin
 	addr_in = 255;
 	#2;
 	$write("%b, %b \n",(v_o == 1), (d_o == 145));
+	r_en = 1;
+	w_en = 0;
+	addr_in = 9;
+	#2;
+	$write("%b, %b \n",(v_o == 1), (d_o == 24));
+	r_en = 0;
+	w_en = 1;
+	addr_in = 9;
+	data_in = 98;
+	#2;
+	r_en = 1;
+	w_en = 0;
+	addr_in = 9;
+	#2;
+	$write("%b, %b \n",(v_o == 1), (d_o == 98));
 end
 
 initial
 begin
-	#100000	$stop;
+	#1000	$stop;
 end
 
 endmodule
