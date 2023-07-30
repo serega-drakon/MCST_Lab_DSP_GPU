@@ -1,25 +1,26 @@
-module Core #(
-    parameter INSN_COUNT = 16,
-    parameter INSN_SIZE = 16
-)(
+module Core (
     input wire clk,
     input wire reset,
 
     input wire init_R0_flag,
-    input wire [7 : 0] init_R0_,
+    input wire [REG_COUNT - 1 : 0] init_R0_,
     input wire [INSN_COUNT * INSN_SIZE - 1 : 0] insn_data_in,
     input wire Start,
     output reg Ready,
 
-    input wire [7 : 0] rd_data,
+    input wire [REG_SIZE - 1 : 0] rd_data,
     input wire val,
-    output wire [7 : 0] wr_data,
-    output wire [11 : 0] addr,
+    output wire [REG_SIZE - 1 : 0] wr_data,
+    output wire [ADDR_SIZE - 1 : 0] addr,
     output reg [1 : 0] enable
     );
 
+    localparam INSN_COUNT = 16;
+    localparam INSN_SIZE = 16;
+    localparam ADDR_SIZE = 12;
     localparam REG_COUNT = 16;
     localparam REG_SIZE = 8;
+
     reg [REG_SIZE - 1 : 0] r [REG_COUNT - 1 : 0];
 
     reg [INSN_SIZE - 1 : 0] insn_mem [INSN_COUNT - 1 : 0];
