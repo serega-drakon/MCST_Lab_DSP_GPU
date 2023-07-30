@@ -31,7 +31,11 @@ module Core (
     reg [INSN_PTR_SIZE - 1 : 0] DX_insn_ptr;
 
     reg [INSN_SIZE - 1 : 0] insn_data [INSN_COUNT - 1 : 0];
-    reg [INSN_SIZE - 1 : 0] FD_insn;
+
+    reg [INSN_SIZE - 1 : 0] FD_insn_reg;
+    reg [INSN_SIZE - 1 : 0] DX_insn_reg;
+    reg [INSN_SIZE - 1 : 0] XM_insn_reg;
+    reg [INSN_SIZE - 1 : 0] MW_insn_reg;
 
     always @(posedge clk)
         if(reset)
