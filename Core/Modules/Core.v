@@ -25,8 +25,8 @@ module Core (
 
     reg [INSN_SIZE - 1 : 0] insn_mem [INSN_COUNT - 1 : 0];
 
-    localparam INSN_PTR_SIZE = $clog2(INSN_COUNT);  // здесь указатель на всю инструкцию, а не конкретный байт, те
-    reg [INSN_PTR_SIZE - 1 : 0] insn_ptr;            // без нуля в младшем бите
+    localparam INSN_PTR_SIZE = 4;               // здесь указатель на всю инструкцию, а не конкретный байт, те
+    reg [INSN_PTR_SIZE - 1 : 0] insn_ptr;       // без нуля в младшем бите
     reg [INSN_PTR_SIZE - 1 : 0] FD_insn_ptr;
     reg [INSN_PTR_SIZE - 1 : 0] DX_insn_ptr;
 
