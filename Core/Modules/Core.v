@@ -1,3 +1,5 @@
+`include "Instruction Set.vh"
+
 module Core (
     input wire clk,
     input wire reset,
@@ -30,8 +32,6 @@ module Core (
     reg [INSN_PTR_SIZE - 1 : 0] FD_insn_ptr;
     reg [INSN_PTR_SIZE - 1 : 0] DX_insn_ptr;
 
-    reg [INSN_SIZE - 1 : 0] insn_data [INSN_COUNT - 1 : 0];
-
     reg [INSN_SIZE - 1 : 0] FD_insn_reg;
     reg [INSN_SIZE - 1 : 0] DX_insn_reg;
     reg [INSN_SIZE - 1 : 0] XM_insn_reg;
@@ -58,13 +58,17 @@ module Core (
     endgenerate
 
     always @(posedge clk)
-        if(~reset)
+        if(reset)
             FD_insn_ptr <= (~Ready) ? insn_ptr : FD_insn_ptr;
 
     always @(posedge clk)
         if(~reset)
             DX_insn_ptr <= (~Ready) ? FD_insn_ptr : DX_insn_ptr;
 
-
+    always @(posedge clk)
+        if(reset)
+            FD_insn_reg <= `NOP; //FIXME
+        //else
+          //  FD_insn_reg
 
 endmodule
