@@ -4,7 +4,7 @@ module Core (
 
     input wire init_R0_flag,
     input wire [REG_COUNT - 1 : 0] init_R0_,
-    input wire [INSN_COUNT * INSN_SIZE - 1 : 0] insn_data_in,
+    input wire [INSN_COUNT * INSN_SIZE - 1 : 0] insn_data,
     input wire Start,
     output reg Ready,
 
@@ -45,6 +45,14 @@ module Core (
         else
             insn_ptr <= (Start & Ready) ? 0 : insn_ptr; // FIXME
 
+    generate for(genvar i = 0; i < INSN_COUNT; i = i + 1)
+        always @(posedge clk)
+            if(~reset)
+                insn_mem[i][INSN_SIZE - 1 : 0] = (Start & Ready) ?
+                    insn_data[(i + 1) * INSN_SIZE - 1 : i * INSN_SIZE] :
+                    insn_mem[i][INSN_SIZE - 1 : 0];
+    endgenerate
+
     always @(posedge clk)
         if(~reset)
             FD_insn_ptr <= (~Ready) ? insn_ptr : FD_insn_ptr;
@@ -52,7 +60,6 @@ module Core (
     always @(posedge clk)
         if(~reset)
             DX_insn_ptr <= (~Ready) ? FD_insn_ptr : DX_insn_ptr;
-
 
 
 
