@@ -18,9 +18,9 @@ module Task_Scheduler
 
 	input	wire	[CORES_COUNT -1:0]		Ready,		//TS <- Cores
 	output  wire	[CORES_COUNT -1:0]		Start,		//TS -> Cores
-	output	reg	[INSN_COUNT * INSN_SIZE -1:0]	Insn_Data,	//TS -> Cores
+	output	reg	[INSN_COUNT * INSN_SIZE - 1:0]	Insn_Data,	//TS -> Cores
 	output  reg	[CORES_COUNT -1:0]		Init_R0_Vect,	//TS -> Cores
-	output  reg	[CORES_COUNT * REG_SIZE -1:0]	Init_R0		//TS -> Cores
+	output  reg	[CORES_COUNT * REG_SIZE - 1:0]	Init_R0		//TS -> Cores
 );
 
 
@@ -34,11 +34,11 @@ reg [5:0]		Insn_Frame_Num;
 reg [15:0]		Header;						//for Control Frame
 reg [15:0]		Core_Active_Vect;
 
-assign Start = Core_Active_Vect;
+assign Start = Core_Active_Vect;					//todo: fence
 
 
 always @(posedge clk)
-	EXEC_MASK <= (rst)? 0 : Ready;
+	EXEC_MASK <= (rst)? 0 : ~Ready;
 
 always @(posedge clk)
 begin
@@ -58,7 +58,7 @@ begin
 	if (~Insn_Frame_Num & ~rst) begin
 //		Header <= Task_Memory[Task_Pointer][0];
 		Insn_Frame_Num   <= Task_Memory[Task_Pointer][5 : 0];
-		Core_Active_Vect <= Task_Memory[Task_Pointer][2 * 16 -1 : 1 * 16];	
+		Core_Active_Vect <= Task_Memory[Task_Pointer][2 * 16 - 1 : 1 * 16];	
 	end else
 		Insn_Frame_Num	 <= Insn_Frame_Num - 1;		
 		
@@ -72,7 +72,7 @@ begin
 
 
 	if (~Insn_Frame_Num & ~rst) begin
-		Init_R0_Vect <= Task_Memory[Task_Pointer][3 * 16 -1 : 2 * 16]; 
+		Init_R0_Vect <= Task_Memory[Task_Pointer][3 * 16 - 1 : 2 * 16]; 
 	end
 end
 
@@ -81,7 +81,7 @@ generate for (ii = CORES_COUNT - 1; ii >= 0; ii = ii - 1)		//Init_R0
 	always @(posedge clk)
 		if (~Insn_Frame_Num & ~rst) begin
 			Init_R0[ii * REG_SIZE + REG_SIZE - 1 : ii * REG_SIZE] <= Task_Memory
-			[Task_Pointer][TASK_MEM_WIDTH - REG_SIZE * (CORES_COUNT - ii) + REG_SIZE -1: 
+			[Task_Pointer][TASK_MEM_WIDTH - REG_SIZE * (CORES_COUNT - ii) + REG_SIZE - 1: 
 				       TASK_MEM_WIDTH - REG_SIZE * (CORES_COUNT - ii)];
 		end
 endgenerate
@@ -91,7 +91,7 @@ always @(posedge clk)							//Task_Pointer
 	if (rst) begin
 		Task_Pointer	     <= 0;
 	end else
-		if (~EXEC_MASK)					//todo: fence
+		if (~EXEC_MASK)						//todo: fence
 			Task_Pointer <= Task_Pointer + 1;
 
 
