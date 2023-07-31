@@ -136,7 +136,7 @@ module Core #(
     function insn_is_F1;
         input [INSN_OPS_SIZE - 1 : 0] insn_ops;
         begin
-            insn_is_F1 = (insn_ops == `NOP | insn_ops == `ADD | insn_ops == `SUB | insn_ops == `MUL
+            insn_is_F1 = (insn_ops == `ADD | insn_ops == `SUB | insn_ops == `MUL
                 | insn_ops == `DIV | insn_ops == `CMPGE | insn_ops == `RSHIFT | insn_ops == `LSHIFT
                 | insn_ops == `AND | insn_ops == `OR | insn_ops == `XOR | insn_ops == `LD);
         end
