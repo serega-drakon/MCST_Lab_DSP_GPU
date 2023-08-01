@@ -1,8 +1,9 @@
 `include "Instruction Set.vh"
 `include "Constants.vh"
+`include "RegisterFile.v"
 
 module Core #(
-    parameter CORE_NUM = 0
+    parameter CORE_ID = 0
 )(
     input wire clk,
     input wire reset,
@@ -196,9 +197,17 @@ module Core #(
 
     //FIXME: memory part
 
-    //FIXME: Register File
-
     //FIXME: ALU
+
+    wire W_result;
+    wire init_R0 = Start & Ready & init_R0_flag;
+    wire D_src_0_data;
+    wire D_src_1_data; //FIXME: assign
+
+    RegisterFile RegisterFile1(.reset(reset), .clk(clk), .init_R0(init_R0), .init_R0_data(init_R0_data),
+        .W_result(W_result), .FD_insn_src_0(FD_insn_src_0), .FD_insn_src_1(FD_insn_src_1), .MW_insn_dst(MW_insn_dst),
+        .MW_insn_src_0(MW_insn_src_0), .MW_insn_is_F1(MW_insn_is_F1), .MW_insn_is_F2(MW_insn_is_F2),
+        .D_src_0_data(D_src_0_data), .D_src_1_data(D_src_1_data));
 
     always @(posedge clk)
         if(reset)
@@ -216,12 +225,13 @@ module Core #(
         else
             block <= (FD_insn_ops == `READY) ? 1 : block;
 
-    generate for(genvar i = 0; i < INSN_COUNT; i = i + 1)
+    generate for(genvar i = 0; i < INSN_COUNT; i = i + 1) begin : insn_mem_loop
         always @(posedge clk)
             if(~reset)
                 insn_mem[i][INSN_SIZE - 1 : 0] = (Start & Ready) ?
                     insn_data[(i + 1) * INSN_SIZE - 1 : i * INSN_SIZE] :
                     insn_mem[i][INSN_SIZE - 1 : 0];
+    end
     endgenerate
 
     always @(posedge clk)
