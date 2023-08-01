@@ -1,8 +1,12 @@
 `include "Constants.vh"
 
-module RegisterFile (
-    input wire reset,
+module RegisterFile #(
+    parameter REG_COUNT = `REG_COUNT,
+    parameter REG_SIZE = `REG_SIZE,
+    parameter REG_PTR_SIZE = `REG_PTR_SIZE
+)(
     input wire clk,
+    input wire reset,
 
     input wire init_R0, //если включен, то меняем R0
     input wire [REG_SIZE - 1 : 0] init_R0_data,
@@ -17,10 +21,6 @@ module RegisterFile (
     output wire [REG_SIZE - 1 : 0] D_src_0_data,
     output wire [REG_SIZE - 1 : 0] D_src_1_data
 );
-    localparam REG_COUNT = `REG_COUNT;
-    localparam REG_SIZE = `REG_SIZE;
-    localparam REG_PTR_SIZE = `REG_PTR_SIZE;
-
     reg [REG_SIZE - 1 : 0] r [REG_COUNT - 1 : 0];
 
     assign D_src_0_data = r[FD_insn_src_0];

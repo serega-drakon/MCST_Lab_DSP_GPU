@@ -1,6 +1,7 @@
 `include "Instruction Set.vh"
 `include "Constants.vh"
 `include "RegisterFile.v"
+`include "InsnMemory.v"
 
 module Core #(
     parameter CORE_ID = 0
@@ -38,10 +39,8 @@ module Core #(
     localparam ADDR_SIZE = `ADDR_SIZE;
     localparam REG_COUNT = `REG_COUNT ;
     localparam REG_SIZE = `REG_SIZE;
-    localparam INSN_PTR_SIZE = 4;   // здесь указатель на всю инструкцию, а не конкретный байт, те
+    localparam INSN_PTR_SIZE = `INSN_PTR_SIZE;   // здесь указатель на всю инструкцию, а не конкретный байт, те
                                     // без нуля в младшем бите
-    reg [INSN_SIZE - 1 : 0] insn_mem [INSN_COUNT - 1 : 0];
-
     reg [INSN_SIZE - 1 : 0] FD_insn_reg;
     reg [INSN_SIZE - 1 : 0] DX_insn_reg;
     reg [INSN_SIZE - 1 : 0] XM_insn_reg;
@@ -185,8 +184,6 @@ module Core #(
     reg [INSN_PTR_SIZE - 1 : 0] FD_insn_ptr;
     reg [INSN_PTR_SIZE - 1 : 0] DX_insn_ptr;
 
-    reg [REG_SIZE - 1 : 0] r [REG_COUNT - 1 : 0];
-
     reg block; // при включенном block: IP <= IP, fd_insn <= fd_insn, dx_insn <= nop
 
     wire stall;
@@ -199,15 +196,21 @@ module Core #(
 
     //FIXME: ALU
 
-    wire W_result;
+    wire [REG_SIZE - 1 : 0] W_result;
     wire init_R0 = Start & Ready & init_R0_flag;
-    wire D_src_0_data;
-    wire D_src_1_data; //FIXME: assign
+    wire [REG_SIZE - 1 : 0] D_src_0_data;
+    wire [REG_SIZE - 1 : 0] D_src_1_data; //FIXME: assign
 
-    RegisterFile RegisterFile1(.reset(reset), .clk(clk), .init_R0(init_R0), .init_R0_data(init_R0_data),
+    RegisterFile RegisterFile(.reset(reset), .clk(clk), .init_R0(init_R0), .init_R0_data(init_R0_data),
         .W_result(W_result), .FD_insn_src_0(FD_insn_src_0), .FD_insn_src_1(FD_insn_src_1), .MW_insn_dst(MW_insn_dst),
         .MW_insn_src_0(MW_insn_src_0), .MW_insn_is_F1(MW_insn_is_F1), .MW_insn_is_F2(MW_insn_is_F2),
         .D_src_0_data(D_src_0_data), .D_src_1_data(D_src_1_data));
+
+    wire init_insn_mem = Start & Ready;
+    wire insn_curr;
+
+    InsnMemory InsnMemory(.clk(clk), .reset(reset), .init_insn_mem(init_insn_mem), .insn_data(insn_data),
+        .insn_ptr(insn_ptr), .insn_curr(insn_curr));
 
     always @(posedge clk)
         if(reset)
@@ -224,15 +227,6 @@ module Core #(
             block <= 0;
         else
             block <= (FD_insn_ops == `READY) ? 1 : block;
-
-    generate for(genvar i = 0; i < INSN_COUNT; i = i + 1) begin : insn_mem_loop
-        always @(posedge clk)
-            if(~reset)
-                insn_mem[i][INSN_SIZE - 1 : 0] = (Start & Ready) ?
-                    insn_data[(i + 1) * INSN_SIZE - 1 : i * INSN_SIZE] :
-                    insn_mem[i][INSN_SIZE - 1 : 0];
-    end
-    endgenerate
 
     always @(posedge clk)
         if(reset)
@@ -251,14 +245,12 @@ module Core #(
             DX_insn_ptr <= FD_insn_ptr;
 
     always @(posedge clk)
-        if(reset)
-            FD_insn_reg <= `NOP;
-        else if(Start & Ready)
+        if(reset | Start & Ready)
             FD_insn_reg <= `NOP;
         else
             FD_insn_reg <= (stall) ?  FD_insn_reg :
                 (branch_cond) ? `NOP :
-                (FD_insn_ptr == INSN_COUNT - 1) ? `READY : insn_mem[insn_ptr];
+                (FD_insn_ptr == INSN_COUNT - 1) ? `READY : insn_curr;
 
     always @(posedge clk)
         if(reset)
