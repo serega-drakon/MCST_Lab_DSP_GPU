@@ -8,13 +8,13 @@ module Core #(
     input wire reset,
 
     input wire init_R0_flag,
-    input wire [REG_COUNT - 1 : 0] init_R0_,
+    input wire [REG_SIZE - 1 : 0] init_R0_data,
     input wire [INSN_COUNT * INSN_SIZE - 1 : 0] insn_data,
     input wire Start,
     output reg Ready,
 
     input wire [REG_SIZE - 1 : 0] rd_data,
-    input wire val,
+    input wire ready_sig, // != Ready
     output wire [REG_SIZE - 1 : 0] wr_data,
     output wire [ADDR_SIZE - 1 : 0] addr,
     output reg [1 : 0] enable
@@ -196,6 +196,10 @@ module Core #(
 
     //FIXME: memory part
 
+    //FIXME: Register File
+
+    //FIXME: ALU
+
     always @(posedge clk)
         if(reset)
             Ready <= 0;
@@ -227,14 +231,6 @@ module Core #(
             insn_ptr <= 0;
         else
             insn_ptr <= (~stall) ? insn_ptr + 1 : insn_ptr;
-
-    generate for(genvar i = 0; i < REG_COUNT; i = i + 1)
-        always @(posedge clk)
-            if(reset)
-                r[i] <= 0;
-            else
-                r[i] <= 0; //FIXME
-    endgenerate
 
     always @(posedge clk)
         if(~reset)
