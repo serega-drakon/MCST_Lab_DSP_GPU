@@ -1,4 +1,5 @@
 `include "Instruction Set.vh"
+`include "Constants.vh"
 
 module Core #(
     parameter CORE_NUM = 0
@@ -19,47 +20,31 @@ module Core #(
     output reg [1 : 0] enable
     );
 
-    localparam INSN_COUNT = 16;
-    localparam INSN_SIZE = 16;
+    localparam INSN_COUNT = `INSN_COUNT;
+    localparam INSN_SIZE = `INSN_SIZE;
     localparam INSN_OPS_SIZE = 4;
     localparam INSN_OPS_OFFSET = 12;
-    localparam INSN_SRC_0_SIZE = 4;
+    localparam INSN_SRC_0_SIZE = `REG_PTR_SIZE;
     localparam INSN_SRC_0_OFFSET = 8;
-    localparam INSN_SRC_1_SIZE = 4;
+    localparam INSN_SRC_1_SIZE = `REG_PTR_SIZE;
     localparam INSN_SRC_1_OFFSET = 4;
-    localparam INSN_SRC_2_SIZE = 4;
+    localparam INSN_SRC_2_SIZE = `REG_PTR_SIZE;
     localparam INSN_SRC_2_OFFSET = 0;
-    localparam INSN_DST_SIZE = 4;
+    localparam INSN_DST_SIZE = `REG_PTR_SIZE;
     localparam INSN_DST_OFFSET = 0;
-    localparam INSN_CONST_SIZE = 8;
+    localparam INSN_CONST_SIZE = `REG_SIZE;
     localparam INSN_CONST_OFFSET = 0;
-    localparam ADDR_SIZE = 12;
-    localparam REG_COUNT = 16;
-    localparam REG_SIZE = 8;
+    localparam ADDR_SIZE = `ADDR_SIZE;
+    localparam REG_COUNT = `REG_COUNT ;
+    localparam REG_SIZE = `REG_SIZE;
     localparam INSN_PTR_SIZE = 4;   // здесь указатель на всю инструкцию, а не конкретный байт, те
                                     // без нуля в младшем бите
-    reg [REG_SIZE - 1 : 0] r [REG_COUNT - 1 : 0];
-
     reg [INSN_SIZE - 1 : 0] insn_mem [INSN_COUNT - 1 : 0];
 
     reg [INSN_SIZE - 1 : 0] FD_insn_reg;
     reg [INSN_SIZE - 1 : 0] DX_insn_reg;
     reg [INSN_SIZE - 1 : 0] XM_insn_reg;
     reg [INSN_SIZE - 1 : 0] MW_insn_reg;
-
-    reg [INSN_PTR_SIZE - 1 : 0] insn_ptr;
-    reg [INSN_PTR_SIZE - 1 : 0] FD_insn_ptr;
-    reg [INSN_PTR_SIZE - 1 : 0] DX_insn_ptr;
-
-    reg block; // при включенном block: IP <= IP, fd_insn <= fd_insn, dx_insn <= nop
-
-    wire stall;
-    assign stall = block; //FIXME
-
-    wire branch_cond; //FIXME
-    assign branch_cond = 0;
-
-    //FIXME: memory part
 
     function [INSN_OPS_SIZE - 1 : 0] insn_ops;
         input [INSN_SIZE - 1 : 0] insn_reg;
@@ -101,7 +86,7 @@ module Core #(
         begin
             insn_const = insn_reg[INSN_CONST_SIZE + INSN_CONST_OFFSET : INSN_CONST_OFFSET];
         end
-    endfunction
+    endfunction // это должно синтезироваться в провод
 
     wire [INSN_OPS_SIZE - 1 : 0] FD_insn_ops = insn_ops(FD_insn_reg);  //для удобства
     wire [INSN_OPS_SIZE - 1 : 0] DX_insn_ops = insn_ops(DX_insn_reg);
@@ -133,6 +118,13 @@ module Core #(
     wire [INSN_CONST_SIZE - 1 : 0] XM_insn_const = insn_const(XM_insn_reg);
     wire [INSN_CONST_SIZE - 1 : 0] MW_insn_const = insn_const(MW_insn_reg);
 
+    function insn_is_F0; // а это - инструкции без аргументов
+        input [INSN_OPS_SIZE - 1 : 0] insn_ops;
+        begin
+            insn_is_F0 = (insn_ops == `NOP | insn_ops == `READY);
+        end
+    endfunction
+
     function insn_is_F1;
         input [INSN_OPS_SIZE - 1 : 0] insn_ops;
         begin
@@ -140,7 +132,7 @@ module Core #(
                 | insn_ops == `DIV | insn_ops == `CMPGE | insn_ops == `RSHIFT | insn_ops == `LSHIFT
                 | insn_ops == `AND | insn_ops == `OR | insn_ops == `XOR | insn_ops == `LD);
         end
-    endfunction // это должно синтезироваться в провод
+    endfunction
 
     function insn_is_F2;
         input [INSN_OPS_SIZE - 1 : 0] insn_ops;
@@ -159,9 +151,14 @@ module Core #(
     function insn_is_F4;
         input [INSN_OPS_SIZE - 1 : 0] insn_ops;
         begin
-            insn_is_F4 = (insn_ops == `BNZ | insn_ops == `READY);
+            insn_is_F4 = (insn_ops == `BNZ);
         end
     endfunction
+
+    wire FD_insn_is_F0 = insn_is_F0(FD_insn_ops);
+    wire DX_insn_is_F0 = insn_is_F0(DX_insn_ops);
+    wire XM_insn_is_F0 = insn_is_F0(XM_insn_ops);
+    wire MW_insn_is_F0 = insn_is_F0(MW_insn_ops);
 
     wire FD_insn_is_F1 = insn_is_F1(FD_insn_ops);
     wire DX_insn_is_F1 = insn_is_F1(DX_insn_ops);
@@ -182,6 +179,22 @@ module Core #(
     wire DX_insn_is_F4 = insn_is_F4(DX_insn_ops);
     wire XM_insn_is_F4 = insn_is_F4(XM_insn_ops);
     wire MW_insn_is_F4 = insn_is_F4(MW_insn_ops);
+
+    reg [INSN_PTR_SIZE - 1 : 0] insn_ptr;
+    reg [INSN_PTR_SIZE - 1 : 0] FD_insn_ptr;
+    reg [INSN_PTR_SIZE - 1 : 0] DX_insn_ptr;
+
+    reg [REG_SIZE - 1 : 0] r [REG_COUNT - 1 : 0];
+
+    reg block; // при включенном block: IP <= IP, fd_insn <= fd_insn, dx_insn <= nop
+
+    wire stall;
+    assign stall = block; //FIXME
+
+    wire branch_cond; //FIXME
+    assign branch_cond = 0;
+
+    //FIXME: memory part
 
     always @(posedge clk)
         if(reset)
