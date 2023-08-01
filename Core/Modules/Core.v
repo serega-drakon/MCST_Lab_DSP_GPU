@@ -1,5 +1,5 @@
-`include "Instruction Set.vh"
-`include "Constants.vh"
+`include "Inc/Instruction Set.vh"
+`include "Inc/Constants.vh"
 `include "RegisterFile.v"
 `include "InsnMemory.v"
 
@@ -39,8 +39,8 @@ module Core #(
     localparam ADDR_SIZE = `ADDR_SIZE;
     localparam REG_COUNT = `REG_COUNT ;
     localparam REG_SIZE = `REG_SIZE;
-    localparam INSN_PTR_SIZE = `INSN_PTR_SIZE;   // здесь указатель на всю инструкцию, а не конкретный байт, те
-                                    // без нуля в младшем бите
+    localparam INSN_PTR_SIZE = `INSN_PTR_SIZE;  // здесь указатель на всю инструкцию, а не конкретный байт, те
+                                                // без нуля в младшем бите
     reg [INSN_SIZE - 1 : 0] FD_insn_reg;
     reg [INSN_SIZE - 1 : 0] DX_insn_reg;
     reg [INSN_SIZE - 1 : 0] XM_insn_reg;
@@ -197,7 +197,7 @@ module Core #(
     //FIXME: ALU
 
     wire [REG_SIZE - 1 : 0] W_result;
-    wire init_R0 = Start & Ready & init_R0_flag;
+    wire init_R0 = Start & Ready & init_R0_flag;    //FIXME: control
     wire [REG_SIZE - 1 : 0] D_src_0_data;
     wire [REG_SIZE - 1 : 0] D_src_1_data; //FIXME: assign
 
