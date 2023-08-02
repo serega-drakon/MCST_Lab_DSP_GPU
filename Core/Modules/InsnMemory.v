@@ -11,7 +11,7 @@ module InsnMemory #(
     input wire init_insn_mem, // Start&Ready
     input wire [INSN_COUNT * INSN_SIZE - 1 : 0] insn_data,
     input wire [INSN_PTR_SIZE - 1 : 0] insn_ptr,
-    output wire insn_curr
+    output wire [INSN_SIZE - 1 : 0] insn_curr
 );
     reg [INSN_SIZE - 1 : 0] insn_mem [INSN_COUNT - 1 : 0];
 

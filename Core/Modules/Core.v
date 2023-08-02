@@ -43,7 +43,7 @@ module Core #(
     localparam REG_COUNT = `REG_COUNT ;
     localparam REG_SIZE = `REG_SIZE;
     localparam INSN_PTR_SIZE = `INSN_PTR_SIZE;  // здесь указатель на всю инструкцию, а не конкретный байт, те
-    localparam CORE_ID_PTR_SIZE = 4;            // без нуля в младшем бите
+    localparam CORE_ID_SIZE = `CORE_ID_SIZE;  // без нуля в младшем бите
 
     reg [INSN_SIZE - 1 : 0] FD_insn_reg;
     reg [INSN_SIZE - 1 : 0] DX_insn_reg;
@@ -210,28 +210,33 @@ module Core #(
     wire [REG_SIZE - 1 : 0] W_result;
     wire init_R0 = Start & Ready & init_R0_flag;
     wire [REG_SIZE - 1 : 0] D_src_0_data;
-    wire [REG_SIZE - 1 : 0] D_src_1_data; //FIXME: assign
+    wire [REG_SIZE - 1 : 0] D_src_1_data;
+    wire [CORE_ID_SIZE- 1 : 0] D_src_2_data;
 
     reg [REG_SIZE - 1 : 0] DX_src_0_data;
-    reg [REG_SIZE - 1 : 0] DX_src_1_data; //FIXME: logic
-
-    //FIXME: XM_res!! + ld/st branch
+    reg [REG_SIZE - 1 : 0] DX_src_1_data;
+    reg [CORE_ID_SIZE- 1 : 0] DX_src_2_data;
 
     wire reset_RF = reset | (Start & Ready);
 
     RegisterFile RegisterFile(.reset_RF(reset_RF), .clk(clk), .init_R0(init_R0), .init_R0_data(init_R0_data),
-        .W_result(W_result), .FD_insn_src_0(FD_insn_src_0), .FD_insn_src_1(FD_insn_src_1), .MW_insn_dst(MW_insn_dst),
-        .MW_insn_src_0(MW_insn_src_0), .MW_insn_is_F1(MW_insn_is_F1), .MW_insn_is_F2(MW_insn_is_F2),
-        .D_src_0_data(D_src_0_data), .D_src_1_data(D_src_1_data));
+        .W_result(W_result), .FD_insn_src_0(FD_insn_src_0), .FD_insn_src_1(FD_insn_src_1),
+        .FD_insn_src_2(FD_insn_src_2), .MW_insn_dst(MW_insn_dst), .MW_insn_src_0(MW_insn_src_0),
+        .MW_insn_is_F1(MW_insn_is_F1), .MW_insn_is_F2(MW_insn_is_F2), .D_src_0_data(D_src_0_data),
+        .D_src_1_data(D_src_1_data), .D_src_2_data(D_src_2_data));
 
     wire init_insn_mem = Start & Ready;
-    wire insn_curr;
+    wire [INSN_SIZE - 1 : 0] insn_curr;
 
     InsnMemory InsnMemory(.clk(clk), .reset(reset), .init_insn_mem(init_insn_mem), .insn_data(insn_data),
         .insn_ptr(insn_ptr), .insn_curr(insn_curr));
 
-    wire [REG_SIZE - 1 : 0] src_0_data_ALU = DX_src_0_data; //FIXME: bypass
-    wire [REG_SIZE - 1 : 0] src_1_data_ALU = DX_src_1_data;
+    wire [REG_SIZE - 1 : 0] X_src_0_data = DX_src_0_data; //FIXME: bypass suda
+    wire [REG_SIZE - 1 : 0] X_src_1_data = DX_src_1_data;
+    wire [CORE_ID_SIZE- 1 : 0] X_src_2_data = DX_src_2_data;
+
+    wire [REG_SIZE - 1 : 0] src_0_data_ALU = X_src_0_data;
+    wire [REG_SIZE - 1 : 0] src_1_data_ALU = X_src_1_data;
     wire [REG_SIZE - 1 : 0] X_result_ALU;
     wire X_branch_cond_ALU;
 
@@ -240,9 +245,15 @@ module Core #(
 
     wire X_branch_cond = X_branch_cond_ALU & DX_insn_is_F4; //под F4 только переходы
 
-    reg [REG_SIZE - 1 : 0] XM_src_A_data; //тут порядок перемешан
+    reg [REG_SIZE - 1 : 0] XM_src_A_data;
     reg [REG_SIZE - 1 : 0] XM_src_B_data;
-    reg [CORE_ID_PTR_SIZE - 1 : 0] XM_src_ld_st_data;
+    reg [CORE_ID_SIZE- 1 : 0] XM_src_ld_st_data;
+
+    wire [REG_SIZE - 1 : 0] X_src_A_data = (DX_insn_opc == `ST | DX_insn_opc == `LD) ? X_src_0_data
+        : X_result_ALU;
+    wire [REG_SIZE - 1 : 0] X_src_B_data = X_src_1_data;
+    wire [CORE_ID_SIZE- 1 : 0] X_src_ld_st_data = X_src_2_data;
+    //addr = {XM_src_ld_st_data, XM_src_A_data}
 
     always @(posedge clk)
         if(reset)
@@ -303,13 +314,23 @@ module Core #(
         else
             MW_insn_reg <= XM_insn_reg;
 
-    always @(posedge clk)
+    always @(posedge clk)   //FIXME: энергоэффективность
         DX_src_0_data <= D_src_0_data;
 
     always @(posedge clk)
         DX_src_1_data <= D_src_1_data;
 
     always @(posedge clk)
-        XM_src_A_data <= (DX_insn_opc == `ST | DX_insn_opc == `LD) ?  :  ;
+        DX_src_2_data <= D_src_2_data;
+
+    always @(posedge clk)
+        XM_src_A_data <= X_src_A_data;
+
+    always @(posedge clk)
+        XM_src_B_data <= X_src_B_data;
+
+    always @(posedge clk)
+        XM_src_ld_st_data <= X_src_ld_st_data;
+
 
 endmodule
