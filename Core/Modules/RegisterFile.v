@@ -6,7 +6,7 @@ module RegisterFile #(
     parameter REG_PTR_SIZE = `REG_PTR_SIZE
 )(
     input wire clk,
-    input wire reset,
+    input wire reset_RF,
 
     input wire init_R0, //если включен, то меняем R0
     input wire [REG_SIZE - 1 : 0] init_R0_data,
@@ -36,7 +36,7 @@ module RegisterFile #(
     generate for(genvar i = 0; i < REG_COUNT; i = i + 1) begin : reg_loop
         if(i == 0) begin
             always @(posedge clk)
-                if(reset)
+                if(reset_RF)
                     r[i] <= 0;
                 else if(init_R0)
                     r[i] <= init_R0_data;
@@ -45,7 +45,7 @@ module RegisterFile #(
         end
         else begin
             always @(posedge clk)
-                if(reset)
+                if(reset_RF)
                     r[i] <= 0;
                 else
                     r[i] <= (get_result_flag[i]) ? W_result : r[i];
