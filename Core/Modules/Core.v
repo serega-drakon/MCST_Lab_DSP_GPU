@@ -197,7 +197,7 @@ module Core #(
     //FIXME: ALU
 
     wire [REG_SIZE - 1 : 0] W_result;
-    wire init_R0 = Start & Ready & init_R0_flag;    //FIXME: control
+    wire init_R0 = Start & Ready & init_R0_flag;
     wire [REG_SIZE - 1 : 0] D_src_0_data;
     wire [REG_SIZE - 1 : 0] D_src_1_data; //FIXME: assign
 
