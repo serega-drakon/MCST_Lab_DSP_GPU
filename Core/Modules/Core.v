@@ -205,8 +205,6 @@ module Core #(
     wire stall;
     assign stall = block; //FIXME
 
-    //FIXME: memory part
-
     wire [REG_SIZE - 1 : 0] W_result;
     wire init_R0 = Start & Ready & init_R0_flag;
     wire [REG_SIZE - 1 : 0] D_src_0_data;
@@ -249,12 +247,12 @@ module Core #(
     reg [REG_SIZE - 1 : 0] XM_B_data;
     reg [CORE_ID_SIZE- 1 : 0] XM_ld_st_data;
 
-    wire [REG_SIZE - 1 : 0] X_O_data = (DX_insn_opc == `ST | DX_insn_opc == `LD) ? X_src_0_data
-        : X_result_ALU;
+    wire [REG_SIZE - 1 : 0] X_O_data = (DX_insn_opc == `ST | DX_insn_opc == `LD) ? X_src_0_data :
+        (~DX_insn_is_F2) ? X_result_ALU :
+        ((DX_insn_src_0 == 0) ? {{(REG_SIZE - CORE_ID_SIZE){1'b0}}, CORE_ID[CORE_ID_SIZE - 1 : 0]} : MW_insn_const);
     wire [REG_SIZE - 1 : 0] X_B_data = X_src_1_data;
     wire [CORE_ID_SIZE- 1 : 0] X_ld_st_data = X_src_2_data;
-    //addr = {XM_src_ld_st_data, XM_src_O_data}
-
+    //addr = {XM_src_ld_st_data, XM_src_O_data
 
     reg [REG_SIZE - 1 : 0] MW_O_data;
     reg [REG_SIZE - 1 : 0] MW_D_data;
@@ -262,20 +260,22 @@ module Core #(
     wire [REG_SIZE - 1 : 0] M_D_data;
 
     assign M_O_data = XM_O_data; //FIXME: bypass
+
     assign M_D_data = rd_data;
+
     assign addr[ADDR_SIZE - 1 : 0] =
         {XM_ld_st_data[CORE_ID_SIZE - 1 : 0], XM_O_data [REG_SIZE - 1 : 0]};
 
     wire M_block = (XM_insn_opc == `LD | XM_insn_opc == `ST) & ~ready_sig;
+
     assign enable = {2 {XM_insn_opc == `LD}} & {2'b01}
                     | {2 {XM_insn_opc == `ST}} & {2'b10};
+
     assign wr_data = XM_B_data;
 
     wire block_all_pipe = M_block | Ready;
 
-    assign W_result = {REG_SIZE {MW_insn_is_F1 & MW_insn_opc != `LD}} & {XM_O_data}
-                    | {REG_SIZE {MW_insn_opc == `LD}} & {XM_B_data}
-                    | {REG_SIZE {MW_insn_is_F2}} & {(MW_insn_src_0 == 0) ? CORE_ID : MW_insn_const};
+    assign W_result = (XM_insn_opc == `LD) ? XM_B_data : XM_O_data;
 
     always @(posedge clk)
         if(reset)
