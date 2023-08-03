@@ -20,7 +20,7 @@ module Core #(
     input wire ready_sig, // != Ready
     output wire [REG_SIZE - 1 : 0] wr_data,
     output wire [ADDR_SIZE - 1 : 0] addr,
-    output reg [1 : 0] enable
+    output wire [1 : 0] enable
     );
 
     localparam INSN_COUNT = `INSN_COUNT;
@@ -256,7 +256,7 @@ module Core #(
     //addr = {XM_src_ld_st_data, XM_src_O_data}
 
 
-    reg [REG_SIZE - 1 : 0] MW_O_data; //FIXME: M block
+    reg [REG_SIZE - 1 : 0] MW_O_data;
     reg [REG_SIZE - 1 : 0] MW_D_data;
     wire [REG_SIZE - 1 : 0] M_O_data;
     wire [REG_SIZE - 1 : 0] M_D_data;
@@ -271,13 +271,19 @@ module Core #(
                     | {2 {XM_insn_opc == `ST}} & {2'b10};
     assign wr_data = XM_B_data;
 
+    wire block_all_pipe = M_block | Ready;
+
+    assign W_result = {REG_SIZE {MW_insn_is_F1 & MW_insn_opc != `LD}} & {XM_O_data}
+                    | {REG_SIZE {MW_insn_opc == `LD}} & {XM_B_data}
+                    | {REG_SIZE {MW_insn_is_F2}} & {(MW_insn_src_0 == 0) ? CORE_ID : MW_insn_const};
+
     always @(posedge clk)
         if(reset)
             Ready <= 0;
         else if(Start & Ready)
             Ready <= 0;
         else
-            Ready <= (MW_insn_opc == `READY) ? 1 : Ready; // FIXME
+            Ready <= (MW_insn_opc == `READY) ? 1 : Ready;
 
     always @(posedge clk) //FIXME
         if(reset)
@@ -293,22 +299,22 @@ module Core #(
         else if(Start & Ready)
             insn_ptr <= 0;
         else
-            insn_ptr <= (stall | M_block) ? insn_ptr :
+            insn_ptr <= (stall | block_all_pipe) ? insn_ptr :
                 (X_branch_cond) ? DX_insn_target : insn_ptr + 1;
 
     always @(posedge clk)
         if(~reset)
-            FD_insn_ptr <= (stall | M_block) ? FD_insn_ptr : insn_ptr;
+            FD_insn_ptr <= (stall | block_all_pipe) ? FD_insn_ptr : insn_ptr;
 
     always @(posedge clk)
         if(~reset)
-            DX_insn_ptr <= (stall | M_block) ? DX_insn_ptr : FD_insn_ptr;
+            DX_insn_ptr <= (stall | block_all_pipe) ? DX_insn_ptr : FD_insn_ptr;
 
     always @(posedge clk)
         if(reset | Start & Ready)
             FD_insn_reg <= `NOP;
         else
-            FD_insn_reg <= (stall | M_block) ?  FD_insn_reg :
+            FD_insn_reg <= (stall | block_all_pipe) ?  FD_insn_reg :
                 (X_branch_cond) ? `NOP :
                 (FD_insn_ptr == INSN_COUNT - 1) ? `READY : insn_curr;
 
@@ -316,43 +322,43 @@ module Core #(
         if(reset)
             DX_insn_reg <= `NOP;
         else
-            DX_insn_reg <= (M_block) ? DX_insn_reg :
+            DX_insn_reg <= (block_all_pipe) ? DX_insn_reg :
                 (stall | X_branch_cond) ? `NOP : FD_insn_reg;
 
     always @(posedge clk)
         if(reset)
             XM_insn_reg <= `NOP;
         else
-            XM_insn_reg <= (~M_block) ? DX_insn_reg : XM_insn_reg;
+            XM_insn_reg <= (block_all_pipe) ? XM_insn_reg : DX_insn_reg ;
 
     always @(posedge clk)
         if(reset)
             MW_insn_reg <= `NOP;
         else
-            MW_insn_reg <= (~M_block) ? XM_insn_reg : MW_insn_reg;
+            MW_insn_reg <= (block_all_pipe) ? MW_insn_reg : XM_insn_reg;
 
     always @(posedge clk)   //FIXME: энергоэффективность
-        DX_src_0_data <= (~M_block) ? D_src_0_data : DX_src_0_data;
+        DX_src_0_data <= (block_all_pipe) ? DX_src_0_data : D_src_0_data;
 
     always @(posedge clk)
-        DX_src_1_data <= (~M_block) ? D_src_1_data : DX_src_1_data;
+        DX_src_1_data <= (block_all_pipe) ? DX_src_1_data : D_src_1_data;
 
     always @(posedge clk)
-        DX_src_2_data <= (~M_block) ? D_src_2_data : DX_src_2_data;
+        DX_src_2_data <= (block_all_pipe) ? DX_src_2_data : D_src_2_data;
 
     always @(posedge clk)
-        XM_O_data <= (~M_block) ? X_O_data : XM_O_data;
+        XM_O_data <= (block_all_pipe) ? XM_O_data : X_O_data;
 
     always @(posedge clk)
-        XM_B_data <= (~M_block) ? X_B_data : XM_B_data;
+        XM_B_data <= (block_all_pipe) ? XM_B_data : X_B_data;
 
     always @(posedge clk)
-        XM_ld_st_data <= (~M_block) ? X_ld_st_data : XM_ld_st_data;
+        XM_ld_st_data <= (block_all_pipe) ? XM_ld_st_data : X_ld_st_data;
 
     always @(posedge clk)
-        MW_O_data <= (~M_block) ? M_O_data : MW_O_data;
+        MW_O_data <= (block_all_pipe) ? MW_O_data : M_O_data;
 
     always @(posedge clk)
-        MW_D_data <= (XM_insn_opc == `LD & ~M_block) ? M_D_data : MW_D_data;
+        MW_D_data <= (XM_insn_opc == `LD & ~block_all_pipe) ? M_D_data : MW_D_data;
 
 endmodule
