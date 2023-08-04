@@ -229,9 +229,21 @@ module Core #(
     InsnMemory InsnMemory(.clk(clk), .reset(reset), .init_insn_mem(init_insn_mem), .insn_data(insn_data),
         .insn_ptr(insn_ptr), .insn_curr(insn_curr));
 
-    wire [REG_SIZE - 1 : 0] X_src_0_data = DX_src_0_data; //FIXME: bypass suda
-    wire [REG_SIZE - 1 : 0] X_src_1_data = DX_src_1_data;
-    wire [CORE_ID_SIZE- 1 : 0] X_src_2_data = DX_src_2_data;
+    wire [REG_SIZE - 1 : 0] X_src_0_data =  //случай с ld вырезан с помошью stall
+        (XM_insn_is_F1 & XM_insn_dst == DX_insn_src_0 | XM_insn_is_F2 & XM_insn_src_0 == DX_insn_src_0) ?
+        M_O_data :
+        (MW_insn_is_F1 & MW_insn_dst == DX_insn_src_0 | MW_insn_is_F2 & MW_insn_src_0 == DX_insn_src_0) ?
+        W_result : DX_src_0_data;
+    wire [REG_SIZE - 1 : 0] X_src_1_data =
+        (XM_insn_is_F1 & XM_insn_dst == DX_insn_src_1 | XM_insn_is_F2 & XM_insn_src_0 == DX_insn_src_1) ?
+        M_O_data :
+        (MW_insn_is_F1 & MW_insn_dst == DX_insn_src_1 | MW_insn_is_F2 & MW_insn_src_0 == DX_insn_src_1) ?
+        W_result : DX_src_0_data;
+    wire [CORE_ID_SIZE - 1 : 0] X_src_2_data =
+        (XM_insn_is_F1 & XM_insn_dst == DX_insn_src_2 | XM_insn_is_F2 & XM_insn_src_0 == DX_insn_src_2) ?
+        M_O_data :
+        (MW_insn_is_F1 & MW_insn_dst == DX_insn_src_2 | MW_insn_is_F2 & MW_insn_src_0 == DX_insn_src_2) ?
+        W_result : DX_src_0_data;
 
     wire [REG_SIZE - 1 : 0] src_0_data_ALU = X_src_0_data;
     wire [REG_SIZE - 1 : 0] src_1_data_ALU = X_src_1_data;
@@ -249,33 +261,38 @@ module Core #(
 
     wire [REG_SIZE - 1 : 0] X_O_data = (DX_insn_opc == `ST | DX_insn_opc == `LD) ? X_src_0_data :
         (~DX_insn_is_F2) ? X_result_ALU :
-        ((DX_insn_src_0 == 0) ? {{(REG_SIZE - CORE_ID_SIZE){1'b0}}, CORE_ID[CORE_ID_SIZE - 1 : 0]} : MW_insn_const);
+        ((DX_insn_src_0 == 0) ? {{(REG_SIZE - CORE_ID_SIZE){1'b0}}, CORE_ID[CORE_ID_SIZE - 1 : 0]}
+        : MW_insn_const);
     wire [REG_SIZE - 1 : 0] X_B_data = X_src_1_data;
     wire [CORE_ID_SIZE- 1 : 0] X_ld_st_data = X_src_2_data;
-    //addr = {XM_src_ld_st_data, XM_src_O_data
+    //addr = {XM_src_ld_st_data, XM_src_O_data}
 
     reg [REG_SIZE - 1 : 0] MW_O_data;
     reg [REG_SIZE - 1 : 0] MW_D_data;
     wire [REG_SIZE - 1 : 0] M_O_data;
     wire [REG_SIZE - 1 : 0] M_D_data;
 
+    wire [REG_SIZE - 1 : 0] M_B_data;
+    wire [CORE_ID_SIZE - 1 : 0] M_ld_st_data;
+
     assign M_O_data = XM_O_data; //FIXME: bypass
-
     assign M_D_data = rd_data;
+    assign M_ld_st_data = XM_ld_st_data;
+    assign M_B_data = XM_B_data;
 
-    assign addr[ADDR_SIZE - 1 : 0] =
-        {XM_ld_st_data[CORE_ID_SIZE - 1 : 0], XM_O_data [REG_SIZE - 1 : 0]};
+    assign addr[ADDR_SIZE - 1 : 0] = //FIXME: bypass
+        {M_ld_st_data[CORE_ID_SIZE - 1 : 0], M_O_data [REG_SIZE - 1 : 0]};
 
     wire M_block = (XM_insn_opc == `LD | XM_insn_opc == `ST) & ~ready_sig;
 
     assign enable = {2 {XM_insn_opc == `LD}} & {2'b01}
                     | {2 {XM_insn_opc == `ST}} & {2'b10};
 
-    assign wr_data = XM_B_data;
+    assign wr_data = M_B_data;
 
     wire block_all_pipe = M_block | Ready;
 
-    assign W_result = (XM_insn_opc == `LD) ? XM_B_data : XM_O_data;
+    assign W_result = (MW_insn_opc == `LD) ? MW_D_data : MW_O_data;
 
     always @(posedge clk)
         if(reset)
@@ -283,7 +300,7 @@ module Core #(
         else if(Start & Ready)
             Ready <= 0;
         else
-            Ready <= (MW_insn_opc == `READY) ? 1 : Ready;
+            Ready <= (MW_insn_opc == `READY) ? 1 : Ready; //хотя тут можно даже на X закончить
 
     always @(posedge clk) //FIXME
         if(reset)
