@@ -4,7 +4,7 @@
 
 #include "Compiler.h"
 
-CompilerStates CompileTextToText(){
+CompilerStates CompileTextToText(){ //FIXME
 
     return OK;
 }
