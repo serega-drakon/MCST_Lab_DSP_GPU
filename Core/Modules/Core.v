@@ -203,7 +203,7 @@ module Core #(
     reg block; // при включенном block: IP <= IP, fd_insn <= fd_insn, dx_insn <= nop
 
     wire stall;
-    assign stall = block; //FIXME
+    assign stall = block; //FIXME сюда еще ready чтобы в mem говно не попало
 
     wire [REG_SIZE - 1 : 0] W_result;
     wire init_R0 = Start & Ready & init_R0_flag;
