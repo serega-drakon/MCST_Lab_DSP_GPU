@@ -1,3 +1,6 @@
+`ifndef INSN_SET
+`define INSN_SET
+
 `define NOP 4'h0
 `define ADD 4'h1
 `define SUB 4'h2
@@ -14,3 +17,5 @@
 `define ST 4'hd
 `define BNZ 4'he
 `define READY 4'hf
+
+`endif // INSN_SET

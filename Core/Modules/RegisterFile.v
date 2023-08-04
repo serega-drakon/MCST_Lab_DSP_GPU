@@ -3,8 +3,7 @@
 module RegisterFile #(
     parameter REG_COUNT = `REG_COUNT,
     parameter REG_SIZE = `REG_SIZE,
-    parameter REG_PTR_SIZE = `REG_PTR_SIZE,
-    parameter CORE_ID_SIZE = `CORE_ID_SIZE
+    parameter REG_PTR_SIZE = `REG_PTR_SIZE
 )(
     input wire clk,
     input wire reset_RF,

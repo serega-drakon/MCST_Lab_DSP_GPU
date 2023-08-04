@@ -207,10 +207,9 @@ module Core #(
     reg [INSN_PTR_SIZE - 1 : 0] FD_insn_ptr; //FIXME: они точно нужны?
     reg [INSN_PTR_SIZE - 1 : 0] DX_insn_ptr;
 
-    reg block; // при включенном block: IP <= IP, fd_insn <= fd_insn, dx_insn <= nop
-
-    wire stall;
-    assign stall = block; //FIXME сюда еще ready чтобы в mem говно не попало
+    //случай с st учтен под байпасом
+    wire stall = DX_insn_opc == `LD & ((FD_insn_is_F1   DX_insn_is_F4));
+    //FIXME сюда еще ready чтобы в mem говно не попало
 
     wire [REG_SIZE - 1 : 0] W_result;
     wire init_R0 = Start & Ready & init_R0_flag; //FIXME: подправить под ТЗ
@@ -313,14 +312,6 @@ module Core #(
             Ready <= 0;
         else
             Ready <= (MW_insn_opc == `READY) ? 1 : Ready; //хотя тут можно даже на X закончить
-
-    always @(posedge clk) //FIXME
-        if(reset)
-            block <= 1;
-        else if(Start & Ready)
-            block <= 0;
-        else
-            block <= (FD_insn_opc == `READY) ? 1 : block;
 
     always @(posedge clk)
         if(reset)
