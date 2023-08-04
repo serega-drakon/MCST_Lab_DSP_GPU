@@ -22,13 +22,13 @@ module RegisterFile #(
     input wire MW_insn_is_F2,
     output wire [REG_SIZE - 1 : 0] D_src_0_data,
     output wire [REG_SIZE - 1 : 0] D_src_1_data,
-    output wire [CORE_ID_SIZE - 1 : 0] D_src_2_data
+    output wire [REG_SIZE - 1 : 0] D_src_2_data
 );
     reg [REG_SIZE - 1 : 0] r [REG_COUNT - 1 : 0];
 
     assign D_src_0_data = r[FD_insn_src_0];
     assign D_src_1_data = r[FD_insn_src_1];
-    assign D_src_2_data = r[FD_insn_src_2][CORE_ID_SIZE - 1 : 0];
+    assign D_src_2_data = r[FD_insn_src_2];
 
     wire get_result_flag [REG_COUNT - 1 : 0];
 

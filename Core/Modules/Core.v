@@ -99,50 +99,57 @@ module Core #(
         end
     endfunction // это должно синтезироваться в провод
 
-    wire [INSN_OPC_SIZE- 1 : 0] FD_insn_opc = insn_opc(FD_insn_reg);  //для удобства
-    wire [INSN_OPC_SIZE- 1 : 0] DX_insn_opc = insn_opc(DX_insn_reg);
-    wire [INSN_OPC_SIZE- 1 : 0] XM_insn_opc = insn_opc(XM_insn_reg);
-    wire [INSN_OPC_SIZE- 1 : 0] MW_insn_opc = insn_opc(MW_insn_reg);
+    wire [INSN_OPC_SIZE - 1 : 0] curr_insn_opc = insn_opc(curr_insn);
+    wire [INSN_OPC_SIZE - 1 : 0] FD_insn_opc = insn_opc(FD_insn_reg);  //для удобства
+    wire [INSN_OPC_SIZE - 1 : 0] DX_insn_opc = insn_opc(DX_insn_reg);
+    wire [INSN_OPC_SIZE - 1 : 0] XM_insn_opc = insn_opc(XM_insn_reg);
+    wire [INSN_OPC_SIZE - 1 : 0] MW_insn_opc = insn_opc(MW_insn_reg);
 
+    wire [INSN_SRC_0_SIZE - 1 : 0] curr_insn_src_0 = insn_src_0(curr_insn);
     wire [INSN_SRC_0_SIZE - 1 : 0] FD_insn_src_0 = insn_src_0(FD_insn_reg);
     wire [INSN_SRC_0_SIZE - 1 : 0] DX_insn_src_0 = insn_src_0(DX_insn_reg);
     wire [INSN_SRC_0_SIZE - 1 : 0] XM_insn_src_0 = insn_src_0(XM_insn_reg);
     wire [INSN_SRC_0_SIZE - 1 : 0] MW_insn_src_0 = insn_src_0(MW_insn_reg);
 
+    wire [INSN_SRC_1_SIZE - 1 : 0] curr_insn_src_1 = insn_src_1(curr_insn);
     wire [INSN_SRC_1_SIZE - 1 : 0] FD_insn_src_1 = insn_src_1(FD_insn_reg);
     wire [INSN_SRC_1_SIZE - 1 : 0] DX_insn_src_1 = insn_src_1(DX_insn_reg);
     wire [INSN_SRC_1_SIZE - 1 : 0] XM_insn_src_1 = insn_src_1(XM_insn_reg);
     wire [INSN_SRC_1_SIZE - 1 : 0] MW_insn_src_1 = insn_src_1(MW_insn_reg);
 
+    wire [INSN_SRC_2_SIZE - 1 : 0] curr_insn_src_2 = insn_src_2(curr_insn);
     wire [INSN_SRC_2_SIZE - 1 : 0] FD_insn_src_2 = insn_src_2(FD_insn_reg);
     wire [INSN_SRC_2_SIZE - 1 : 0] DX_insn_src_2 = insn_src_2(DX_insn_reg);
     wire [INSN_SRC_2_SIZE - 1 : 0] XM_insn_src_2 = insn_src_2(XM_insn_reg);
     wire [INSN_SRC_2_SIZE - 1 : 0] MW_insn_src_2 = insn_src_2(MW_insn_reg);
 
+    wire [INSN_DST_SIZE - 1 : 0] curr_insn_dst = insn_dst(curr_insn);
     wire [INSN_DST_SIZE - 1 : 0] FD_insn_dst = insn_dst(FD_insn_reg);
     wire [INSN_DST_SIZE - 1 : 0] DX_insn_dst = insn_dst(DX_insn_reg);
     wire [INSN_DST_SIZE - 1 : 0] XM_insn_dst = insn_dst(XM_insn_reg);
     wire [INSN_DST_SIZE - 1 : 0] MW_insn_dst = insn_dst(MW_insn_reg);
 
+    wire [INSN_CONST_SIZE - 1 : 0] curr_insn_const = insn_const(curr_insn);
     wire [INSN_CONST_SIZE - 1 : 0] FD_insn_const = insn_const(FD_insn_reg);
     wire [INSN_CONST_SIZE - 1 : 0] DX_insn_const = insn_const(DX_insn_reg);
     wire [INSN_CONST_SIZE - 1 : 0] XM_insn_const = insn_const(XM_insn_reg);
     wire [INSN_CONST_SIZE - 1 : 0] MW_insn_const = insn_const(MW_insn_reg);
 
+    wire [INSN_TARGET_SIZE - 1 : 0] curr_insn_target = insn_target(curr_insn);
     wire [INSN_TARGET_SIZE - 1 : 0] FD_insn_target = insn_target(FD_insn_reg);
     wire [INSN_TARGET_SIZE - 1 : 0] DX_insn_target = insn_target(DX_insn_reg);
     wire [INSN_TARGET_SIZE - 1 : 0] XM_insn_target = insn_target(XM_insn_reg);
     wire [INSN_TARGET_SIZE - 1 : 0] MW_insn_target = insn_target(MW_insn_reg);
 
     function insn_is_F0; // а это - инструкции без аргументов
-        input [INSN_OPC_SIZE- 1 : 0] insn_ops;
+        input [INSN_OPC_SIZE - 1 : 0] insn_ops;
         begin
             insn_is_F0 = (insn_ops == `NOP | insn_ops == `READY);
         end
     endfunction
 
     function insn_is_F1;
-        input [INSN_OPC_SIZE- 1 : 0] insn_ops;
+        input [INSN_OPC_SIZE - 1 : 0] insn_ops;
         begin
             insn_is_F1 = (insn_ops == `ADD | insn_ops == `SUB | insn_ops == `MUL
                 | insn_ops == `DIV | insn_ops == `CMPGE | insn_ops == `RSHIFT | insn_ops == `LSHIFT
@@ -151,21 +158,21 @@ module Core #(
     endfunction
 
     function insn_is_F2;
-        input [INSN_OPC_SIZE- 1 : 0] insn_ops;
+        input [INSN_OPC_SIZE - 1 : 0] insn_ops;
         begin
             insn_is_F2 = (insn_ops == `SET_CONST);
         end
     endfunction
 
     function insn_is_F3;
-        input [INSN_OPC_SIZE- 1 : 0] insn_ops;
+        input [INSN_OPC_SIZE - 1 : 0] insn_ops;
         begin
             insn_is_F3 = (insn_ops == `ST);
         end
     endfunction
 
     function insn_is_F4;
-        input [INSN_OPC_SIZE- 1 : 0] insn_ops;
+        input [INSN_OPC_SIZE - 1 : 0] insn_ops;
         begin
             insn_is_F4 = (insn_ops == `BNZ);
         end
@@ -206,14 +213,14 @@ module Core #(
     assign stall = block; //FIXME сюда еще ready чтобы в mem говно не попало
 
     wire [REG_SIZE - 1 : 0] W_result;
-    wire init_R0 = Start & Ready & init_R0_flag;
+    wire init_R0 = Start & Ready & init_R0_flag; //FIXME: подправить под ТЗ
     wire [REG_SIZE - 1 : 0] D_src_0_data;
     wire [REG_SIZE - 1 : 0] D_src_1_data;
-    wire [CORE_ID_SIZE- 1 : 0] D_src_2_data;
+    wire [REG_SIZE - 1 : 0] D_src_2_data;
 
     reg [REG_SIZE - 1 : 0] DX_src_0_data;
     reg [REG_SIZE - 1 : 0] DX_src_1_data;
-    reg [CORE_ID_SIZE- 1 : 0] DX_src_2_data;
+    reg [REG_SIZE - 1 : 0] DX_src_2_data;
 
     wire reset_RF = reset | (Start & Ready);
 
@@ -224,11 +231,12 @@ module Core #(
         .D_src_1_data(D_src_1_data), .D_src_2_data(D_src_2_data));
 
     wire init_insn_mem = Start & Ready;
-    wire [INSN_SIZE - 1 : 0] insn_curr;
+    wire [INSN_SIZE - 1 : 0] curr_insn;
 
     InsnMemory InsnMemory(.clk(clk), .reset(reset), .init_insn_mem(init_insn_mem), .insn_data(insn_data),
-        .insn_ptr(insn_ptr), .insn_curr(insn_curr));
+        .insn_ptr(insn_ptr), .insn_curr(curr_insn));
 
+    //это байпасы пошли
     wire [REG_SIZE - 1 : 0] X_src_0_data =  //случай с ld вырезан с помошью stall
         (XM_insn_is_F1 & XM_insn_dst == DX_insn_src_0 | XM_insn_is_F2 & XM_insn_src_0 == DX_insn_src_0) ?
         M_O_data :
@@ -238,12 +246,12 @@ module Core #(
         (XM_insn_is_F1 & XM_insn_dst == DX_insn_src_1 | XM_insn_is_F2 & XM_insn_src_0 == DX_insn_src_1) ?
         M_O_data :
         (MW_insn_is_F1 & MW_insn_dst == DX_insn_src_1 | MW_insn_is_F2 & MW_insn_src_0 == DX_insn_src_1) ?
-        W_result : DX_src_0_data;
-    wire [CORE_ID_SIZE - 1 : 0] X_src_2_data =
+        W_result : DX_src_1_data;
+    wire [REG_SIZE - 1 : 0] X_src_2_data =
         (XM_insn_is_F1 & XM_insn_dst == DX_insn_src_2 | XM_insn_is_F2 & XM_insn_src_0 == DX_insn_src_2) ?
         M_O_data :
         (MW_insn_is_F1 & MW_insn_dst == DX_insn_src_2 | MW_insn_is_F2 & MW_insn_src_0 == DX_insn_src_2) ?
-        W_result : DX_src_0_data;
+        W_result : DX_src_2_data;
 
     wire [REG_SIZE - 1 : 0] src_0_data_ALU = X_src_0_data;
     wire [REG_SIZE - 1 : 0] src_1_data_ALU = X_src_1_data;
@@ -257,14 +265,14 @@ module Core #(
 
     reg [REG_SIZE - 1 : 0] XM_O_data;
     reg [REG_SIZE - 1 : 0] XM_B_data;
-    reg [CORE_ID_SIZE- 1 : 0] XM_ld_st_data;
+    reg [REG_SIZE - 1 : 0] XM_C_data;
 
     wire [REG_SIZE - 1 : 0] X_O_data = (DX_insn_opc == `ST | DX_insn_opc == `LD) ? X_src_0_data :
         (~DX_insn_is_F2) ? X_result_ALU :
         ((DX_insn_src_0 == 0) ? {{(REG_SIZE - CORE_ID_SIZE){1'b0}}, CORE_ID[CORE_ID_SIZE - 1 : 0]}
         : MW_insn_const);
     wire [REG_SIZE - 1 : 0] X_B_data = X_src_1_data;
-    wire [CORE_ID_SIZE- 1 : 0] X_ld_st_data = X_src_2_data;
+    wire [REG_SIZE - 1 : 0] X_C_data = X_src_2_data;//FIXME
     //addr = {XM_src_ld_st_data, XM_src_O_data}
 
     reg [REG_SIZE - 1 : 0] MW_O_data;
@@ -273,22 +281,26 @@ module Core #(
     wire [REG_SIZE - 1 : 0] M_D_data;
 
     wire [REG_SIZE - 1 : 0] M_B_data;
-    wire [CORE_ID_SIZE - 1 : 0] M_ld_st_data;
+    wire [REG_SIZE - 1 : 0] M_C_data;
 
-    assign M_O_data = XM_O_data; //FIXME: bypass
+    // если ld в W а st в M
+    assign M_O_data = (MW_insn_opc == `LD & (XM_insn_opc == `ST | XM_insn_opc == `LD) & MW_insn_dst == XM_insn_src_0) ?
+        MW_D_data : XM_O_data;
+    assign M_B_data = (MW_insn_opc == `LD & (XM_insn_opc == `ST | XM_insn_opc == `LD) & MW_insn_dst == XM_insn_src_1) ?
+        MW_D_data : XM_B_data;
+    assign M_C_data = (MW_insn_opc == `LD & (XM_insn_opc == `ST | XM_insn_opc == `LD) & MW_insn_dst == XM_insn_src_2) ?
+        MW_D_data : XM_C_data;
     assign M_D_data = rd_data;
-    assign M_ld_st_data = XM_ld_st_data;
-    assign M_B_data = XM_B_data;
 
-    assign addr[ADDR_SIZE - 1 : 0] = //FIXME: bypass
-        {M_ld_st_data[CORE_ID_SIZE - 1 : 0], M_O_data [REG_SIZE - 1 : 0]};
+    assign addr[ADDR_SIZE - 1 : 0] =
+        {M_B_data[CORE_ID_SIZE - 1 : 0], M_O_data [REG_SIZE - 1 : 0]};
 
     wire M_block = (XM_insn_opc == `LD | XM_insn_opc == `ST) & ~ready_sig;
 
     assign enable = {2 {XM_insn_opc == `LD}} & {2'b01}
                     | {2 {XM_insn_opc == `ST}} & {2'b10};
 
-    assign wr_data = M_B_data;
+    assign wr_data = M_C_data;
 
     wire block_all_pipe = M_block | Ready;
 
@@ -333,7 +345,7 @@ module Core #(
         else
             FD_insn_reg <= (stall | block_all_pipe) ?  FD_insn_reg :
                 (X_branch_cond) ? `NOP :
-                (FD_insn_ptr == INSN_COUNT - 1) ? `READY : insn_curr;
+                (FD_insn_ptr == INSN_COUNT - 1) ? `READY : curr_insn;
 
     always @(posedge clk)
         if(reset)
@@ -370,7 +382,7 @@ module Core #(
         XM_B_data <= (block_all_pipe) ? XM_B_data : X_B_data;
 
     always @(posedge clk)
-        XM_ld_st_data <= (block_all_pipe) ? XM_ld_st_data : X_ld_st_data;
+        XM_C_data <= (block_all_pipe) ? XM_C_data : X_C_data;
 
     always @(posedge clk)
         MW_O_data <= (block_all_pipe) ? MW_O_data : M_O_data;
