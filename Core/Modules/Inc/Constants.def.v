@@ -13,8 +13,10 @@
 `define INSN_SIZE 16
 `define INSN_RANGE (`INSN_SIZE - 1) : (0)
 `define INSN_BUS_RANGE (`INSN_COUNT * `INSN_SIZE - 1) : (0)
-`define INSN_PTR_SIZE 4 // здесь указатель на всю инструкцию, а не конкретный байт, те
-`define INSN_PTR_RANGE (`INSN_PTR_SIZE - 1) : (0) // без нуля в младшем бите
+// здесь указатель на всю инструкцию, а не конкретный байт, те
+// без нуля в младшем бите
+`define INSN_PTR_SIZE 4
+`define INSN_PTR_RANGE (`INSN_PTR_SIZE - 1) : (0)
 `define INSN_OPC_SIZE 4
 `define INSN_OPC_OFFSET 12
 `define INSN_OPC_OFFSET_RANGE (`INSN_OPC_SIZE + `INSN_OPC_OFFSET - 1) : (`INSN_OPC_OFFSET)
