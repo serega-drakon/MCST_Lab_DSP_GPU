@@ -1,11 +1,33 @@
-`include "Inc/Instruction Set.vh"
-`include "Inc/Constants.vh"
+`include "Inc/Instruction Set.def.v"
+`include "Inc/Constants.def.v"
 `include "RegisterFile.v"
 `include "InsnMemory.v"
 `include "ALU.v"
 
 module Core #(
-    parameter CORE_ID = 0
+    parameter CORE_ID = 0,
+
+    parameter INSN_COUNT = `INSN_COUNT,
+    parameter INSN_SIZE = `INSN_SIZE,
+    parameter INSN_OPC_SIZE = `INSN_OPC_SIZE,
+    parameter INSN_OPC_OFFSET = 12,
+    parameter INSN_SRC_0_SIZE = `REG_PTR_SIZE,
+    parameter INSN_SRC_0_OFFSET = 8,
+    parameter INSN_SRC_1_SIZE = `REG_PTR_SIZE,
+    parameter INSN_SRC_1_OFFSET = 4,
+    parameter INSN_SRC_2_SIZE = `REG_PTR_SIZE,
+    parameter INSN_SRC_2_OFFSET = 0,
+    parameter INSN_DST_SIZE = `REG_PTR_SIZE,
+    parameter INSN_DST_OFFSET = 0,
+    parameter INSN_CONST_SIZE = `REG_SIZE,
+    parameter INSN_CONST_OFFSET = 0,
+    parameter INSN_TARGET_SIZE = `INSN_PTR_SIZE,
+    parameter INSN_TARGET_OFFSET = 4,
+    parameter ADDR_SIZE = `ADDR_SIZE,
+    parameter REG_COUNT = `REG_COUNT,
+    parameter REG_SIZE = `REG_SIZE,
+    parameter INSN_PTR_SIZE = `INSN_PTR_SIZE,  // здесь указатель на всю инструкцию, а не конкретный байт, те
+    parameter CORE_ID_SIZE = `CORE_ID_SIZE  // без нуля в младшем бите
 )(
     input wire clk,
     input wire reset,
@@ -22,28 +44,6 @@ module Core #(
     output wire [ADDR_SIZE - 1 : 0] addr,
     output wire [1 : 0] enable
     );
-
-    localparam INSN_COUNT = `INSN_COUNT;
-    localparam INSN_SIZE = `INSN_SIZE;
-    localparam INSN_OPC_SIZE = `INSN_OPC_SIZE;
-    localparam INSN_OPC_OFFSET = 12;
-    localparam INSN_SRC_0_SIZE = `REG_PTR_SIZE;
-    localparam INSN_SRC_0_OFFSET = 8;
-    localparam INSN_SRC_1_SIZE = `REG_PTR_SIZE;
-    localparam INSN_SRC_1_OFFSET = 4;
-    localparam INSN_SRC_2_SIZE = `REG_PTR_SIZE;
-    localparam INSN_SRC_2_OFFSET = 0;
-    localparam INSN_DST_SIZE = `REG_PTR_SIZE;
-    localparam INSN_DST_OFFSET = 0;
-    localparam INSN_CONST_SIZE = `REG_SIZE;
-    localparam INSN_CONST_OFFSET = 0;
-    localparam INSN_TARGET_SIZE = `INSN_PTR_SIZE;
-    localparam INSN_TARGET_OFFSET = 4;
-    localparam ADDR_SIZE = `ADDR_SIZE;
-    localparam REG_COUNT = `REG_COUNT ;
-    localparam REG_SIZE = `REG_SIZE;
-    localparam INSN_PTR_SIZE = `INSN_PTR_SIZE;  // здесь указатель на всю инструкцию, а не конкретный байт, те
-    localparam CORE_ID_SIZE = `CORE_ID_SIZE;  // без нуля в младшем бите
 
     reg [INSN_SIZE - 1 : 0] FD_insn_reg;
     reg [INSN_SIZE - 1 : 0] DX_insn_reg;
@@ -203,25 +203,26 @@ module Core #(
     wire XM_insn_is_F4 = insn_is_F4(XM_insn_opc);
     wire MW_insn_is_F4 = insn_is_F4(MW_insn_opc);
 
-    reg [INSN_PTR_SIZE - 1 : 0] insn_ptr;
-    reg [INSN_PTR_SIZE - 1 : 0] FD_insn_ptr; //FIXME: они точно нужны?
-    reg [INSN_PTR_SIZE - 1 : 0] DX_insn_ptr;
+    reg [INSN_PTR_SIZE - 1 : 0] insn_ptr_r;
+    reg [INSN_PTR_SIZE - 1 : 0] FD_insn_ptr_r; //FIXME: они точно нужны?
+    reg [INSN_PTR_SIZE - 1 : 0] DX_insn_ptr_r;
 
     //случай с st учтен под байпасом
-    wire stall = DX_insn_opc == `LD & ((FD_insn_is_F1   DX_insn_is_F4));
-    //FIXME сюда еще ready чтобы в mem говно не попало
+    wire stall = (DX_insn_opc == `READY)
+        | (DX_insn_opc == `LD) & (((FD_insn_is_F1 | FD_insn_is_F4) & DX_insn_dst == FD_insn_src_0) |
+        FD_insn_is_F1 & DX_insn_dst == FD_insn_src_1);
 
     wire [REG_SIZE - 1 : 0] W_result;
-    wire init_R0 = Start & Ready & init_R0_flag; //FIXME: подправить под ТЗ
+    wire init_R0 = Start & Ready & init_R0_flag;
     wire [REG_SIZE - 1 : 0] D_src_0_data;
     wire [REG_SIZE - 1 : 0] D_src_1_data;
     wire [REG_SIZE - 1 : 0] D_src_2_data;
 
-    reg [REG_SIZE - 1 : 0] DX_src_0_data;
-    reg [REG_SIZE - 1 : 0] DX_src_1_data;
-    reg [REG_SIZE - 1 : 0] DX_src_2_data;
+    reg [REG_SIZE - 1 : 0] DX_src_0_data_r;
+    reg [REG_SIZE - 1 : 0] DX_src_1_data_r;
+    reg [REG_SIZE - 1 : 0] DX_src_2_data_r;
 
-    wire reset_RF = reset | (Start & Ready);
+    wire reset_RF = reset;
 
     RegisterFile RegisterFile(.reset_RF(reset_RF), .clk(clk), .init_R0(init_R0), .init_R0_data(init_R0_data),
         .W_result(W_result), .FD_insn_src_0(FD_insn_src_0), .FD_insn_src_1(FD_insn_src_1),
@@ -233,24 +234,24 @@ module Core #(
     wire [INSN_SIZE - 1 : 0] curr_insn;
 
     InsnMemory InsnMemory(.clk(clk), .reset(reset), .init_insn_mem(init_insn_mem), .insn_data(insn_data),
-        .insn_ptr(insn_ptr), .insn_curr(curr_insn));
+        .insn_ptr(insn_ptr_r), .insn_curr(curr_insn));
 
     //это байпасы пошли
     wire [REG_SIZE - 1 : 0] X_src_0_data =  //случай с ld вырезан с помошью stall
         (XM_insn_is_F1 & XM_insn_dst == DX_insn_src_0 | XM_insn_is_F2 & XM_insn_src_0 == DX_insn_src_0) ?
         M_O_data :
         (MW_insn_is_F1 & MW_insn_dst == DX_insn_src_0 | MW_insn_is_F2 & MW_insn_src_0 == DX_insn_src_0) ?
-        W_result : DX_src_0_data;
+        W_result :DX_src_0_data_r;
     wire [REG_SIZE - 1 : 0] X_src_1_data =
         (XM_insn_is_F1 & XM_insn_dst == DX_insn_src_1 | XM_insn_is_F2 & XM_insn_src_0 == DX_insn_src_1) ?
         M_O_data :
         (MW_insn_is_F1 & MW_insn_dst == DX_insn_src_1 | MW_insn_is_F2 & MW_insn_src_0 == DX_insn_src_1) ?
-        W_result : DX_src_1_data;
+        W_result :DX_src_1_data_r;
     wire [REG_SIZE - 1 : 0] X_src_2_data =
         (XM_insn_is_F1 & XM_insn_dst == DX_insn_src_2 | XM_insn_is_F2 & XM_insn_src_0 == DX_insn_src_2) ?
         M_O_data :
         (MW_insn_is_F1 & MW_insn_dst == DX_insn_src_2 | MW_insn_is_F2 & MW_insn_src_0 == DX_insn_src_2) ?
-        W_result : DX_src_2_data;
+        W_result :DX_src_2_data_r;
 
     wire [REG_SIZE - 1 : 0] src_0_data_ALU = X_src_0_data;
     wire [REG_SIZE - 1 : 0] src_1_data_ALU = X_src_1_data;
@@ -262,20 +263,20 @@ module Core #(
 
     wire X_branch_cond = X_branch_cond_ALU & DX_insn_is_F4; //под F4 только переходы
 
-    reg [REG_SIZE - 1 : 0] XM_O_data;
-    reg [REG_SIZE - 1 : 0] XM_B_data;
-    reg [REG_SIZE - 1 : 0] XM_C_data;
+    reg [REG_SIZE - 1 : 0] XM_O_data_r;
+    reg [REG_SIZE - 1 : 0] XM_B_data_r;
+    reg [REG_SIZE - 1 : 0] XM_C_data_r;
 
     wire [REG_SIZE - 1 : 0] X_O_data = (DX_insn_opc == `ST | DX_insn_opc == `LD) ? X_src_0_data :
         (~DX_insn_is_F2) ? X_result_ALU :
         ((DX_insn_src_0 == 0) ? {{(REG_SIZE - CORE_ID_SIZE){1'b0}}, CORE_ID[CORE_ID_SIZE - 1 : 0]}
         : MW_insn_const);
     wire [REG_SIZE - 1 : 0] X_B_data = X_src_1_data;
-    wire [REG_SIZE - 1 : 0] X_C_data = X_src_2_data;//FIXME
+    wire [REG_SIZE - 1 : 0] X_C_data = X_src_2_data;
     //addr = {XM_src_ld_st_data, XM_src_O_data}
 
-    reg [REG_SIZE - 1 : 0] MW_O_data;
-    reg [REG_SIZE - 1 : 0] MW_D_data;
+    reg [REG_SIZE - 1 : 0] MW_O_data_r;
+    reg [REG_SIZE - 1 : 0] MW_D_data_r;
     wire [REG_SIZE - 1 : 0] M_O_data;
     wire [REG_SIZE - 1 : 0] M_D_data;
 
@@ -284,11 +285,11 @@ module Core #(
 
     // если ld в W а st в M
     assign M_O_data = (MW_insn_opc == `LD & (XM_insn_opc == `ST | XM_insn_opc == `LD) & MW_insn_dst == XM_insn_src_0) ?
-        MW_D_data : XM_O_data;
+        MW_D_data_r:XM_O_data_r;
     assign M_B_data = (MW_insn_opc == `LD & (XM_insn_opc == `ST | XM_insn_opc == `LD) & MW_insn_dst == XM_insn_src_1) ?
-        MW_D_data : XM_B_data;
-    assign M_C_data = (MW_insn_opc == `LD & (XM_insn_opc == `ST | XM_insn_opc == `LD) & MW_insn_dst == XM_insn_src_2) ?
-        MW_D_data : XM_C_data;
+        MW_D_data_r:XM_B_data_r;
+    assign M_C_data = (MW_insn_opc == `LD & (XM_insn_opc == `ST ) & MW_insn_dst == XM_insn_src_2) ?
+        MW_D_data_r:XM_C_data_r;
     assign M_D_data = rd_data;
 
     assign addr[ADDR_SIZE - 1 : 0] =
@@ -303,7 +304,7 @@ module Core #(
 
     wire block_all_pipe = M_block | Ready;
 
-    assign W_result = (MW_insn_opc == `LD) ? MW_D_data : MW_O_data;
+    assign W_result = (MW_insn_opc == `LD) ? MW_D_data_r:MW_O_data_r;
 
     always @(posedge clk)
         if(reset)
@@ -315,20 +316,20 @@ module Core #(
 
     always @(posedge clk)
         if(reset)
-            insn_ptr <= 0;
+            insn_ptr_r <= 0;
         else if(Start & Ready)
-            insn_ptr <= 0;
+            insn_ptr_r <= 0;
         else
-            insn_ptr <= (stall | block_all_pipe) ? insn_ptr :
-                (X_branch_cond) ? DX_insn_target : insn_ptr + 1;
+            insn_ptr_r <= (stall | block_all_pipe) ? insn_ptr_r:
+                (X_branch_cond) ? DX_insn_target : insn_ptr_r+ 1;
 
     always @(posedge clk)
         if(~reset)
-            FD_insn_ptr <= (stall | block_all_pipe) ? FD_insn_ptr : insn_ptr;
+            FD_insn_ptr_r <= (stall | block_all_pipe) ? FD_insn_ptr_r:insn_ptr_r;
 
     always @(posedge clk)
         if(~reset)
-            DX_insn_ptr <= (stall | block_all_pipe) ? DX_insn_ptr : FD_insn_ptr;
+            DX_insn_ptr_r <= (stall | block_all_pipe) ? DX_insn_ptr_r:FD_insn_ptr_r;
 
     always @(posedge clk)
         if(reset | Start & Ready)
@@ -336,7 +337,7 @@ module Core #(
         else
             FD_insn_reg <= (stall | block_all_pipe) ?  FD_insn_reg :
                 (X_branch_cond) ? `NOP :
-                (FD_insn_ptr == INSN_COUNT - 1) ? `READY : curr_insn;
+                (FD_insn_ptr_r == INSN_COUNT - 1) ? `READY : curr_insn;
 
     always @(posedge clk)
         if(reset)
@@ -358,27 +359,27 @@ module Core #(
             MW_insn_reg <= (block_all_pipe) ? MW_insn_reg : XM_insn_reg;
 
     always @(posedge clk)   //FIXME: энергоэффективность
-        DX_src_0_data <= (block_all_pipe) ? DX_src_0_data : D_src_0_data;
+        DX_src_0_data_r <= (block_all_pipe) ? DX_src_0_data_r: D_src_0_data;
 
     always @(posedge clk)
-        DX_src_1_data <= (block_all_pipe) ? DX_src_1_data : D_src_1_data;
+        DX_src_1_data_r <= (block_all_pipe) ? DX_src_1_data_r: D_src_1_data;
 
     always @(posedge clk)
-        DX_src_2_data <= (block_all_pipe) ? DX_src_2_data : D_src_2_data;
+        DX_src_2_data_r <= (block_all_pipe) ? DX_src_2_data_r: D_src_2_data;
 
     always @(posedge clk)
-        XM_O_data <= (block_all_pipe) ? XM_O_data : X_O_data;
+        XM_O_data_r <= (block_all_pipe) ? XM_O_data_r: X_O_data;
 
     always @(posedge clk)
-        XM_B_data <= (block_all_pipe) ? XM_B_data : X_B_data;
+        XM_B_data_r <= (block_all_pipe) ? XM_B_data_r: X_B_data;
 
     always @(posedge clk)
-        XM_C_data <= (block_all_pipe) ? XM_C_data : X_C_data;
+        XM_C_data_r <= (block_all_pipe) ? XM_C_data_r: X_C_data;
 
     always @(posedge clk)
-        MW_O_data <= (block_all_pipe) ? MW_O_data : M_O_data;
+        MW_O_data_r <= (block_all_pipe) ? MW_O_data_r: M_O_data;
 
     always @(posedge clk)
-        MW_D_data <= (XM_insn_opc == `LD & ~block_all_pipe) ? M_D_data : MW_D_data;
+        MW_D_data_r <= (XM_insn_opc == `LD & ~block_all_pipe) ? M_D_data :MW_D_data_r;
 
 endmodule

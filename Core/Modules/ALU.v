@@ -1,5 +1,5 @@
-`include "Inc/Instruction Set.vh"
-`include "Inc/Constants.vh"
+`include "Inc/Instruction Set.def.v"
+`include "Inc/Constants.def.v"
 
 module ALU #(
     parameter REG_SIZE = `REG_SIZE,

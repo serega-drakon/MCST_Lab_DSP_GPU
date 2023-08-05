@@ -1,4 +1,4 @@
-`include "Inc/Constants.vh"
+`include "Inc/Constants.def.v"
 
 module RegisterFile #(
     parameter REG_COUNT = `REG_COUNT,

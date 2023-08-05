@@ -10,4 +10,6 @@ typedef enum CompilerStates_ {
     Error
 } CompilerStates;
 
+CompilerStates compileTextToText(FILE* input, FILE* output);
+
 #endif //MCST_LAB_DSP_GPU_COMPILER_H

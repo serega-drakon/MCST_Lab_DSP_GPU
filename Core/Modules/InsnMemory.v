@@ -1,4 +1,4 @@
-`include "Inc/Constants.vh"
+`include "Inc/Constants.def.v"
 
 module InsnMemory #(
     parameter INSN_COUNT = `INSN_COUNT,

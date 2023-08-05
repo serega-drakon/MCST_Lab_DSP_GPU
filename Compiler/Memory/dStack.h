@@ -18,5 +18,4 @@ void *getLast_dStack(Stack *ptrStack);
 u_int32_t getsize_dStack(Stack *ptrStack);
 void dStackFree(Stack *ptrStack);
 
-
 #endif //PROCESSOR_EMULATOR_MEMORY_H
