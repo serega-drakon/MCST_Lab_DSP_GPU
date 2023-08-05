@@ -122,11 +122,11 @@ int getOp(FILE* input, unsigned int *ptrLineNum, int op[], unsigned int size){
 
     switch(c){
         case EOF:
-            op[i++] = '\0';
+            op[i] = '\0';
             return i;
         case '{': case '}': case '[': case ']': case ',':
             op[i++] = c;
-            op[i++] = '\0';
+            op[i] = '\0';
             return i;
         default:
             do{
@@ -135,6 +135,8 @@ int getOp(FILE* input, unsigned int *ptrLineNum, int op[], unsigned int size){
             }while(i < size && !checkStopCharGetOp(c));
             if(c == '\n')
                 ungetc(c, input);
+            op[i] = '\0';
+            return i;
     }
 }
 
