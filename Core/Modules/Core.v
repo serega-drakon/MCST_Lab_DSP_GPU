@@ -39,7 +39,7 @@ module Core #(
     output reg Ready,
 
     input wire [REG_SIZE - 1 : 0] rd_data,
-    input wire ready_sig, // != Ready
+    input wire ready_mem, // != Ready
     output wire [REG_SIZE - 1 : 0] wr_data,
     output wire [ADDR_SIZE - 1 : 0] addr,
     output wire [1 : 0] enable
@@ -53,7 +53,7 @@ module Core #(
     function [INSN_OPC_SIZE- 1 : 0] insn_opc;
         input [INSN_SIZE - 1 : 0] insn_reg;
         begin
-            insn_opc = insn_reg[INSN_OPC_SIZE+INSN_OPC_OFFSET:INSN_OPC_OFFSET];
+            insn_opc = insn_reg[INSN_OPC_SIZE + INSN_OPC_OFFSET:INSN_OPC_OFFSET];
         end
     endfunction
 
@@ -283,19 +283,20 @@ module Core #(
     wire [REG_SIZE - 1 : 0] M_B_data;
     wire [REG_SIZE - 1 : 0] M_C_data;
 
+    //bypass:
     // если ld в W а st в M
     assign M_O_data = (MW_insn_opc == `LD & (XM_insn_opc == `ST | XM_insn_opc == `LD) & MW_insn_dst == XM_insn_src_0) ?
-        MW_D_data_r:XM_O_data_r;
+        MW_D_data_r : XM_O_data_r;
     assign M_B_data = (MW_insn_opc == `LD & (XM_insn_opc == `ST | XM_insn_opc == `LD) & MW_insn_dst == XM_insn_src_1) ?
-        MW_D_data_r:XM_B_data_r;
-    assign M_C_data = (MW_insn_opc == `LD & (XM_insn_opc == `ST ) & MW_insn_dst == XM_insn_src_2) ?
-        MW_D_data_r:XM_C_data_r;
+        MW_D_data_r : XM_B_data_r;
+    assign M_C_data = (MW_insn_opc == `LD & XM_insn_opc == `ST & MW_insn_dst == XM_insn_src_2) ?
+        MW_D_data_r : XM_C_data_r;
     assign M_D_data = rd_data;
 
     assign addr[ADDR_SIZE - 1 : 0] =
         {M_B_data[CORE_ID_SIZE - 1 : 0], M_O_data [REG_SIZE - 1 : 0]};
 
-    wire M_block = (XM_insn_opc == `LD | XM_insn_opc == `ST) & ~ready_sig;
+    wire M_block = (XM_insn_opc == `LD | XM_insn_opc == `ST) & ~ready_mem;
 
     assign enable = {2 {XM_insn_opc == `LD}} & {2'b01}
                     | {2 {XM_insn_opc == `ST}} & {2'b10};
@@ -312,7 +313,7 @@ module Core #(
         else if(Start & Ready)
             Ready <= 0;
         else
-            Ready <= (MW_insn_opc == `READY) ? 1 : Ready; //хотя тут можно даже на X закончить
+            Ready <= (XM_insn_opc == `READY) ? 1 : Ready;
 
     always @(posedge clk)
         if(reset)
