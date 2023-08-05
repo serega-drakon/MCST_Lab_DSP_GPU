@@ -183,7 +183,7 @@ int printProgramFromStackToFile(Stack* input, FILE* output){
 
 CompilerStates compileTextToText(FILE* input, FILE* output){ //FIXME
     CompilerStates state;
-    Stack* ptrProgram = dStackInit(2 * sizeof(char));
+    Stack* ptrProgram = dStackInit(INSN_SIZE);
     state = compileFileToStack(input, ptrProgram);
     if(state == CompilerOK)
         printProgramFromStackToFile(ptrProgram, output);
