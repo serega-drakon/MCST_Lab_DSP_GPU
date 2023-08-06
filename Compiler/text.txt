@@ -1,12 +1,12 @@
 {
-initR0[!0] = $1;
-initR0[!2] = $f;
+initR0[!0] = $1,
+initR0[!2] = $f,
 
-CoreActive = !0,!2,!4;
+CoreActive = !0,!2,!4,
 
-Fence = acq;
+Fence = acq,
 
-IF_Num = !4;
+IF_Num = !4,
 }
 
 :name_1
