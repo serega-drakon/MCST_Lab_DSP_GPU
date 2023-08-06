@@ -144,7 +144,7 @@ int getOp(FILE* input, unsigned int *ptrLineNum, int op[], unsigned int size){
             do{
                 op[i++] = c;
                 c = getc(input);
-            }while(i < size && !checkStopCharGetOp(c));
+            }while(i < (size - 1) && !checkStopCharGetOp(c));
             if(checkRetCharGetOp(c)) //FIXME
                 ungetc(c, input);
             break;
