@@ -5,14 +5,44 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <assert.h>
-#include "Compiler.h"
-#include "../Memory/dStack.h"
+#include "../Inc/Compiler.h"
+#include "../Inc/dStack.h"
 
 #define MEM_CHECK(ptrMem, errorName) \
 do{ if(ptrMem == NULL){printf(errorName); return ERROR;} }while(0)
 
+typedef enum OpTypes_ {
+    Error = -1,
+    Nothing = 0,
+    Nop,
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Cmpge,
+    Rshift,
+    Lshift,
+    And,
+    Or,
+    Xor,
+    Ld,
+    Set_const,
+    St,
+    Bnz,
+    Ready,
+    Reg,
+    Const16 = Reg + REG_COUNT,
+    Const10,
+    Label,
+    BraceOpen,
+    BraceClose,
+    IFName,
+    Comma
+    //FIXME: = [ ]
+} OpTypes;
+
 ///Представления регистров %..
-const char *registers_[] = { //емае пошло говно по трубам
+const char *registers_str_[] = { //емае пошло говно по трубам
         "r0",
         "r1",
         "r2",
@@ -30,6 +60,18 @@ const char *registers_[] = { //емае пошло говно по трубам
         "r14",
         "r15"
 };
+
+/*typedef enum Registers_str_enum_{
+    //FIXME
+} Registers_str_enum;
+
+const char *opcodes_str_[]{
+    //FIXME
+};
+
+typedef enum OpCodes_str_enum_{
+    //FIXME
+} OpCodes_str_enum;*/
 
 ///Набор динамических массивов, которые я использую
 typedef struct Defines_{
@@ -98,26 +140,12 @@ OpTypes getType(const int op[]){
 }
 
 /// Подфункция getOp \n
-/// 1 - нужно вернуть \n
-/// 0 - пофиг
-char checkRetCharGetOp(int c){
-    switch(c){
-        case '{': case '}': case '[': case ']':
-        case ',': case '=': case '\n':
-            return 1;
-        default:
-            return 0;
-    }
-}
-
-/// Подфункция getOp \n
-/// 1 - залезли на пробел/другой операнд \n
-/// 0 - читаем дальше
+/// 1 - залезли на 1char-операнд \n
+/// 0 - не залезли
 char checkStopCharGetOp(int c){
     switch(c){
         case '{': case '}': case '[': case ']':
-        case ',': case '=': case ' ': case '\t':
-        case '\n':
+        case ',': case '=':
             return 1;
         default:
             return 0;
@@ -134,21 +162,16 @@ int getOp(FILE* input, unsigned int *ptrLineNum, int op[], unsigned int size){
     while((c = getc(input)) == ' ' || c == '\t' || c == '\n')
         if(c == '\n') (*ptrLineNum)++;
 
-    switch(c){
-        case EOF:
-            break;
-        case '{': case '}': case '[': case ']': case ',': case '=':
+    if(c != EOF) {
+        do {
             op[i++] = c;
-            break;
-        default:
-            do{
-                op[i++] = c;
-                c = getc(input);
-            }while(i < (size - 1) && !checkStopCharGetOp(c));
-            if(checkRetCharGetOp(c)) //FIXME
-                ungetc(c, input);
-            break;
+            c = getc(input);
+        } while (i < (size - 1) && c != ' ' && c != '\n' && c != '\t' && !checkStopCharGetOp(c) && c != EOF);
     }
+
+    if(checkStopCharGetOp(c) || c == '\n' || c == EOF)
+        ungetc(c, input);
+
     op[i] = '\0';
     return i;
 }

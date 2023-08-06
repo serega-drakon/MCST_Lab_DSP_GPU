@@ -1,4 +1,4 @@
-#include "dStack.h"
+#include "../Inc/dStack.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <memory.h>

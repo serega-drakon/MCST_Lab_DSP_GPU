@@ -43,36 +43,6 @@ enum OpCodes_ {
     Ready_insn = 0xF
 };
 
-typedef enum OpTypes_ {
-    Error = -1,
-    Nothing = 0,
-    Nop,
-    Add,
-    Sub,
-    Mul,
-    Div,
-    Cmpge,
-    Rshift,
-    Lshift,
-    And,
-    Or,
-    Xor,
-    Ld,
-    Set_const,
-    St,
-    Bnz,
-    Ready,
-    Reg,
-    Const16 = Reg + REG_COUNT,
-    Const10,
-    Label,
-    BraceOpen,
-    BraceClose,
-    IFName,
-    Comma
-    //FIXME: = [ ]
-} OpTypes;
-
 CompilerStates compileTextToText(FILE* input, FILE* output);
 
 #endif //MCST_LAB_DSP_GPU_COMPILER_H
