@@ -3,6 +3,7 @@
 
 `define REG_COUNT 16
 `define REG_PTR_SIZE 4
+`define REG_PTR_RANGE (`REG_PTR_SIZE - 1) : (0)
 `define REG_SIZE 8
 `define REG_RANGE (`REG_SIZE - 1) : (0)
 `define CORE_ID_SIZE 4
