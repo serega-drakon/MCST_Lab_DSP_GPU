@@ -1,7 +1,7 @@
 #ifndef PROCESSOR_EMULATOR_MEMORY_H
 #define PROCESSOR_EMULATOR_MEMORY_H
 
-#include "../../../../../../Library/Developer/CommandLineTools/SDKs/MacOSX13.3.sdk/usr/include/arm/types.h"
+#include "arm/types.h"
 
 typedef struct Stack_ Stack;
 

@@ -6,7 +6,8 @@
 #include <ctype.h>
 #include <assert.h>
 #include "../Inc/Compiler.h"
-#include "../Inc/dStack.h"
+#include "../Inc/CompilerInc/dStack.h"
+#include "../Inc/CompilerInc/strings.h"
 
 #define MEM_CHECK(ptrMem, errorName) \
 do{ if(ptrMem == NULL){printf(errorName); return ERROR;} }while(0)
@@ -41,37 +42,7 @@ typedef enum OpTypes_ {
     //FIXME: = [ ]
 } OpTypes;
 
-///Представления регистров %..
-const char *registers_str_[] = { //емае пошло говно по трубам
-        "r0",
-        "r1",
-        "r2",
-        "r3",
-        "r4",
-        "r5",
-        "r6",
-        "r7",
-        "r8",
-        "r9",
-        "r10",
-        "r11",
-        "r12",
-        "r13",
-        "r14",
-        "r15"
-};
 
-/*typedef enum Registers_str_enum_{
-    //FIXME
-} Registers_str_enum;
-
-const char *opcodes_str_[]{
-    //FIXME
-};
-
-typedef enum OpCodes_str_enum_{
-    //FIXME
-} OpCodes_str_enum;*/
 
 ///Набор динамических массивов, которые я использую
 typedef struct Defines_{

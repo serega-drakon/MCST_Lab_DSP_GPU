@@ -5,7 +5,8 @@ set(CMAKE_C_STANDARD 11)
 
 add_executable(main.c
         Src/dStack.c
-        Inc/dStack.h
+        Inc/CompilerInc/dStack.h
         Inc/Compiler.h
         Src/Compiler.c
-        main.c)
+        main.c
+        Inc/CompilerInc/strings.h)
