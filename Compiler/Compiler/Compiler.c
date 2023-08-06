@@ -98,6 +98,19 @@ OpTypes getType(const int op[]){
 }
 
 /// Подфункция getOp \n
+/// 1 - нужно вернуть \n
+/// 0 - пофиг
+char checkRetCharGetOp(int c){
+    switch(c){
+        case '{': case '}': case '[': case ']':
+        case ',': case '\n':
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+/// Подфункция getOp \n
 /// 1 - залезли на пробел/другой операнд \n
 /// 0 - читаем дальше
 char checkStopCharGetOp(int c){
@@ -122,22 +135,21 @@ int getOp(FILE* input, unsigned int *ptrLineNum, int op[], unsigned int size){
 
     switch(c){
         case EOF:
-            op[i] = '\0';
-            return i;
+            break;
         case '{': case '}': case '[': case ']': case ',':
             op[i++] = c;
-            op[i] = '\0';
-            return i;
+            break;
         default:
             do{
                 op[i++] = c;
                 c = getc(input);
             }while(i < size && !checkStopCharGetOp(c));
-            if(c == '\n')
+            if(checkRetCharGetOp(c)) //FIXME
                 ungetc(c, input);
-            op[i] = '\0';
-            return i;
+            break;
     }
+    op[i] = '\0';
+    return i;
 }
 
 typedef enum getFrameStates_{
@@ -173,9 +185,9 @@ CompilerStates compileFileToStack(FILE* input, Stack* output){
         frameState = getFrame(input, output, &defs, lineNum);
         i++;
     } while(i < FRAMES_COUNT && frameState == OK);
-
-    //FIXME: проверить labels и подставить
-
+    if(i == FRAMES_COUNT) {
+        //FIXME
+    }
     return CompilerOK;
 }
 
@@ -189,5 +201,6 @@ CompilerStates compileTextToText(FILE* input, FILE* output){ //FIXME
     state = compileFileToStack(input, ptrProgram);
     if(state == CompilerOK)
         printProgramFromStackToFile(ptrProgram, output);
+    dStackFree(ptrProgram);
     return state;
 }
