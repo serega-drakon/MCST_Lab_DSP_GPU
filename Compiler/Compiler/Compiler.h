@@ -70,6 +70,7 @@ typedef enum OpTypes_ {
     BraceClose,
     IFName,
     Comma
+    //FIXME: = [ ]
 } OpTypes;
 
 CompilerStates compileTextToText(FILE* input, FILE* output);

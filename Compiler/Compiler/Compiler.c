@@ -103,7 +103,7 @@ OpTypes getType(const int op[]){
 char checkRetCharGetOp(int c){
     switch(c){
         case '{': case '}': case '[': case ']':
-        case ',': case '\n':
+        case ',': case '=': case '\n':
             return 1;
         default:
             return 0;
@@ -116,7 +116,8 @@ char checkRetCharGetOp(int c){
 char checkStopCharGetOp(int c){
     switch(c){
         case '{': case '}': case '[': case ']':
-        case ',': case ' ': case '\t': case '\n':
+        case ',': case '=': case ' ': case '\t':
+        case '\n':
             return 1;
         default:
             return 0;
@@ -136,7 +137,7 @@ int getOp(FILE* input, unsigned int *ptrLineNum, int op[], unsigned int size){
     switch(c){
         case EOF:
             break;
-        case '{': case '}': case '[': case ']': case ',':
+        case '{': case '}': case '[': case ']': case ',': case '=':
             op[i++] = c;
             break;
         default:
