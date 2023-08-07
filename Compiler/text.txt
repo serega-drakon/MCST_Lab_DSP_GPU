@@ -2,7 +2,7 @@
 initR0[!0] = $1,
 initR0[!2] = $f,
 
-CoreActive = !0,!2,!4,
+CoreActive = !0,!2,!4, //sakdlaksl;dkl;asd
 
 Fence = acq,
 
@@ -11,7 +11,7 @@ IF_Num = !4,
 
 :name_1
 
-sub %r3 %r3 %r3
+sub %r3 %r3 %r3     //jdaksjljdkasjkd
 add %r0 %r3 %r3
 bnz %r3 .target
 

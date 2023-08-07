@@ -137,6 +137,8 @@ CompilerStates compileFileToStack(FILE* input, Stack* output){
     } while(i < FRAMES_COUNT && frameState == GetFrameOk);
     if(i == FRAMES_COUNT && frameState == GetFrameOk) {
         int op[MAX_OP];
+        //FIXME: комментарий skip_comments()
+        //FIXME: unGetOp(), struct with op and unget flag
         unsigned int size = getOp(input, &lineNum, op, MAX_OP);
         if(size > 0)
             ERROR_MSG_OP("Error: Out of range, max count of frames has reached \n",
