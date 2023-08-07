@@ -1,4 +1,4 @@
-#include "../Inc/CompilerInc/dStack.h"
+#include "dStack.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <memory.h>
@@ -47,7 +47,6 @@ struct Stack_ {
     u_int32_t num; ///< Number of elements of ptrData (malloced memory)
     u_int32_t pos; ///< Next free position of stack (pop_dStack/push_dStack/getlast)
     u_int8_t *meta; ///< "Poison" check of ptrData
-
     u_int32_t metaNum; ///< Number of elements of meta (malloced memory)
     u_int8_t error;///< is an array of bools
 };

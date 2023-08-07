@@ -5,44 +5,28 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <assert.h>
-#include "../Inc/Compiler.h"
-#include "../Inc/CompilerInc/dStack.h"
-#include "../Inc/CompilerInc/strings.h"
+#include "Compiler.h"
+#include "dStack.h"
+#include "strings.h"
+#include "encodings.h"
+#include "UsefulFuncs.h"
+
+#define OK 0
+#define ERROR (-1)
 
 #define MEM_CHECK(ptrMem, errorName) \
-do{ if(ptrMem == NULL){printf(errorName); return ERROR;} }while(0)
+do{ if(ptrMem == NULL){printf(errorName); return ERROR;} } while(0)
 
-typedef enum OpTypes_ {
-    Error = -1,
-    Nothing = 0,
-    Nop,
-    Add,
-    Sub,
-    Mul,
-    Div,
-    Cmpge,
-    Rshift,
-    Lshift,
-    And,
-    Or,
-    Xor,
-    Ld,
-    Set_const,
-    St,
-    Bnz,
-    Ready,
-    Reg,
-    Const16 = Reg + REG_COUNT,
-    Const10,
-    Label,
-    BraceOpen,
-    BraceClose,
-    IFName,
-    Comma
-    //FIXME: = [ ]
-} OpTypes;
+#define ERROR_MSG(errorMsg, errorCode, lineNum) \
+do { printf("Line %d: %s%s", lineNum, errorMsg, "\n");  \
+return errorCode; } while(0)
 
-
+#define ERROR_MSG_OP(errorMsg, errorCode, op, lineNum) \
+do { printf("Line %d: %s%s", lineNum, errorMsg, "\n -> ");  \
+for (int index = 0; op[index] != '\0'; index++) \
+    printf("%c", op[index]);                    \
+printf("\n");                                   \
+return errorCode; } while(0)
 
 ///Набор динамических массивов, которые я использую
 typedef struct Defines_{
@@ -77,41 +61,12 @@ void definesFree(struct Defines_ *def){
     dStackFree(def->ptrLabelUsedValuesPtr);
 }
 
-///Сравнивает строки    \n
-///Возвращет 1 если совпали, иначе - 0
-int compareStrIntChar(const int a[], const char b[]){
-    int j;
-    int flag = 1;
-    for(j = 0; flag && a[j] != '\0' && b[j] != '\0'; j++) {
-        if (a[j] != b[j]) flag = 0;
-    }
-    if(flag && a[j] == '\0' && b[j] == '\0')
-        return 1;
-    return 0;
-}
-
-///Возвращает константу в 10-ной СС
-u_int8_t getConst10D(const int op[]){
-    u_int8_t value = 0;
-    for(int i = 1; op[i] != '\0'; i++)
-        value = value * 10 + op[i] - '0';
-    return value;
-}
-
-///Возвращает константу в 16-ной СС
-u_int8_t getConst16D(const int op[]){
-    u_int8_t value = 0;
-    for(int i = 1; op[i] != '\0'; i++)
-        value = value * 16 + op[i] - (isdigit(op[i]) ? '0' : 'A' - 10);
-    return value;
-}
-
 OpTypes getType(const int op[]){
 
 }
 
 /// Подфункция getOp \n
-/// 1 - залезли на 1char-операнд \n
+/// 1 - залезли на 1char-symbol \n
 /// 0 - не залезли
 char checkStopCharGetOp(int c){
     switch(c){
@@ -148,8 +103,8 @@ int getOp(FILE* input, unsigned int *ptrLineNum, int op[], unsigned int size){
 }
 
 typedef enum getFrameStates_{
-    getFrameEnd = -1, ///< если конец достигнут
-    getFrameOk = 0 ///< если конец не достигнут
+    GetFrameEnd = -1, ///< если конец достигнут
+    GetFrameOk = 0 ///< если конец не достигнут
 } getFrameStates;
 
 getFrameStates getControlFrame(FILE* input, Stack *output, unsigned int *ptrLineNum){
@@ -163,9 +118,9 @@ getFrameStates getInsnFrame(FILE* input, Stack *output, Defines *defs, unsigned 
 
 
 //FIXME: считать фрейм и проверить, достигнут ли конец
-getFrameStates getFrame(FILE *input, Stack *output, Defines *defs, unsigned int ptrLineNum){
+getFrameStates getFrame(FILE *input, Stack *output, Defines *defs, unsigned int *ptrLineNum){
 
-    return OK;
+    return GetFrameOk;
 }
 
 CompilerStates compileFileToStack(FILE* input, Stack* output){
@@ -177,16 +132,20 @@ CompilerStates compileFileToStack(FILE* input, Stack* output){
     unsigned int lineNum = 0; ///< номер строки минус 1
     unsigned int i = 0;
     do {
-        frameState = getFrame(input, output, &defs, lineNum);
+        frameState = getFrame(input, output, &defs, &lineNum);
         i++;
-    } while(i < FRAMES_COUNT && frameState == OK);
-    if(i == FRAMES_COUNT) {
-        //FIXME
+    } while(i < FRAMES_COUNT && frameState == GetFrameOk);
+    if(i == FRAMES_COUNT && frameState == GetFrameOk) {
+        int op[MAX_OP];
+        unsigned int size = getOp(input, &lineNum, op, MAX_OP);
+        if(size > 0)
+            ERROR_MSG_OP("Error: Out of range, max count of frames has reached \n",
+                         CompilerErrorOverflowFrames, op, lineNum);
     }
     return CompilerOK;
 }
 
-int printProgramFromStackToFile(Stack* input, FILE* output){
+void printProgramFromStackToFile(Stack* input, FILE* output){
 
 }
 

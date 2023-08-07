@@ -6,7 +6,7 @@
 #define DSP_GPU_COMPILER_STRINGS_H
 
 ///Представления регистров %..
-const char *registers_str_[] = { //емае пошло говно по трубам
+const char *Registers_str_[] = { //емае пошло говно по трубам
         "r0",
         "r1",
         "r2",
@@ -25,16 +25,61 @@ const char *registers_str_[] = { //емае пошло говно по труб�
         "r15"
 };
 
-/*typedef enum Registers_str_enum_{
-    //FIXME
+typedef enum Registers_str_enum_{
+    Reg_R0_str = 0,
+    Reg_R1_str,
+    Reg_R2_str,
+    Reg_R3_str,
+    Reg_R4_str,
+    Reg_R5_str,
+    Reg_R6_str,
+    Reg_R7_str,
+    Reg_R8_str,
+    Reg_R9_str,
+    Reg_R10_str,
+    Reg_R11_str,
+    Reg_R12_str,
+    Reg_R13_str,
+    Reg_R14_str,
+    Reg_R15_str
 } Registers_str_enum;
 
-const char *opcodes_str_[]{
-    //FIXME
+const char *OpCodes_str_[] = {
+    "nop",
+    "add",
+    "sub",
+    "mul",
+    "div",
+    "cmpge",
+    "rshift",
+    "lshift",
+    "and",
+    "or",
+    "xor",
+    "ld",
+    "set_const",
+    "st",
+    "bnz",
+    "ready"
 };
 
 typedef enum OpCodes_str_enum_{
-    //FIXME
-} OpCodes_str_enum;*/
+    Nop_str = 0,
+    Add_str,
+    Sub_str,
+    Mul_str,
+    Div_str,
+    Cmpge_str,
+    Rshift_str,
+    Lshift_str,
+    And_str,
+    Or_str,
+    Xor_str,
+    Ld_str,
+    Set_const_str,
+    St_str,
+    Bnz_str,
+    Ready_str,
+} OpCodes_str_enum;
 
 #endif //DSP_GPU_COMPILER_STRINGS_H
