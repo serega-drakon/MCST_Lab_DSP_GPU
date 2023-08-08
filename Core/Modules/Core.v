@@ -1,5 +1,6 @@
-`include "Inc/Instruction Set.def.v"
-`include "Inc/Constants.def.v"
+`include "Inc/InsnSet.def.v"
+`include "Inc/Ranges.def.v"
+`include "Inc/InsnModes.def.v"
 `include "RegisterFile.v"
 `include "InsnMemory.v"
 `include "ALU.v"
@@ -107,6 +108,13 @@ module Core #(
         end
     endfunction
 
+    function insn_set_const_mode;
+        input [`INSN_DST_RANGE] insn_dst;
+        begin
+            insn_set_const_mode = (insn_dst > `SET_CONST_MODE_REG - 1);
+        end
+    endfunction
+
     wire insn_FD_is_F0 = insn_is_F0(insn_FD_opc);
     wire insn_DX_is_F0 = insn_is_F0(insn_DX_opc);
     wire insn_XM_is_F0 = insn_is_F0(insn_XM_opc);
@@ -132,14 +140,19 @@ module Core #(
     wire insn_XM_is_F4 = insn_is_F4(insn_XM_opc);
     wire insn_MW_is_F4 = insn_is_F4(insn_MW_opc);
 
+    wire insn_FD_set_const_mode = insn_set_const_mode(insn_FD_dst);
+    wire insn_DX_set_const_mode = insn_set_const_mode(insn_DX_dst);
+    wire insn_XM_set_const_mode = insn_set_const_mode(insn_XM_dst);
+    wire insn_MW_set_const_mode = insn_set_const_mode(insn_MW_dst);
+
     reg [`INSN_PTR_RANGE] insn_ptr_r;
     reg [`INSN_PTR_RANGE] FD_insn_ptr_r; //FIXME: они точно нужны?
-    reg [`INSN_PTR_RANGE] DX_insn_ptr_r;
+    reg [`INSN_PTR_RANGE] DX_insn_ptr_r; //пусть будут для отладки
 
     reg Ready_r;
     assign Ready = Ready_r;
 
-    //случай с st учтен под байпасом
+    //случай с st/ld учтен под байпасом
     wire stall = (insn_DX_opc == `READY)
         | (insn_DX_opc == `LD) & (((insn_FD_is_F1 | insn_FD_is_F4) & insn_DX_dst == insn_FD_src_0) |
         insn_FD_is_F1 & insn_DX_dst == insn_FD_src_1);
@@ -156,9 +169,9 @@ module Core #(
 
     wire reset_RF = reset;
 
-    RegisterFile RegisterFile(.reset_RF(reset_RF), .clk(clk), .init_R0(init_R0), .init_R0_data(init_R0_data),
-        .W_result(W_result), .FD_insn_src_0(insn_FD_src_0), .FD_insn_src_1(insn_FD_src_1),
-        .FD_insn_src_2(insn_FD_src_2), .MW_insn_dst(insn_MW_dst), .MW_insn_src_0(insn_MW_src_0),
+    RegisterFile RegisterFile(.reset_RF(reset_RF), .clk(clk), .init_R0(init_R0),
+        .init_R0_data(init_R0_data), .W_result(W_result), .FD_insn_src_0(insn_FD_src_0),
+        .FD_insn_src_1(insn_FD_src_1), .FD_insn_src_2(insn_FD_src_2), .MW_insn_dst(insn_MW_dst),
         .MW_insn_is_F1(insn_MW_is_F1), .MW_insn_is_F2(insn_MW_is_F2), .D_src_0_data(D_src_0_data),
         .D_src_1_data(D_src_1_data), .D_src_2_data(D_src_2_data));
 
@@ -170,28 +183,30 @@ module Core #(
 
     //это байпасы пошли
     wire [`REG_RANGE] X_src_0_data =  //случай с ld вырезан с помошью stall
-        (insn_XM_is_F1 & insn_XM_dst == insn_DX_src_0 | insn_XM_is_F2 & insn_XM_src_0 == insn_DX_src_0) ?
+        ((insn_XM_is_F1 | insn_XM_is_F2) & insn_XM_dst == insn_DX_src_0) ?
         M_O_data :
-        (insn_MW_is_F1 & insn_MW_dst == insn_DX_src_0 | insn_MW_is_F2 & insn_MW_src_0 == insn_DX_src_0) ?
-        W_result :DX_src_0_data_r;
+        ((insn_MW_is_F1 | insn_MW_is_F2) & insn_MW_dst == insn_DX_src_0) ?
+        W_result : DX_src_0_data_r;
     wire [`REG_RANGE] X_src_1_data =
-        (insn_XM_is_F1 & insn_XM_dst == insn_DX_src_1 | insn_XM_is_F2 & insn_XM_src_0 == insn_DX_src_1) ?
+        ((insn_XM_is_F1 | insn_XM_is_F2) & insn_XM_dst == insn_DX_src_1) ?
         M_O_data :
-        (insn_MW_is_F1 & insn_MW_dst == insn_DX_src_1 | insn_MW_is_F2 & insn_MW_src_0 == insn_DX_src_1) ?
-        W_result :DX_src_1_data_r;
+        ((insn_MW_is_F1 | insn_MW_is_F2) & insn_MW_dst == insn_DX_src_1) ?
+        W_result : DX_src_1_data_r;
     wire [`REG_RANGE] X_src_2_data =
-        (insn_XM_is_F1 & insn_XM_dst == insn_DX_src_2 | insn_XM_is_F2 & insn_XM_src_0 == insn_DX_src_2) ?
+        ((insn_XM_is_F1 | insn_XM_is_F2) & insn_XM_dst == insn_DX_src_2) ?
         M_O_data :
-        (insn_MW_is_F1 & insn_MW_dst == insn_DX_src_2 | insn_MW_is_F2 & insn_MW_src_0 == insn_DX_src_2) ?
-        W_result :DX_src_2_data_r;
+        ((insn_MW_is_F1 | insn_MW_is_F2) & insn_MW_dst == insn_DX_src_2) ?
+        W_result : DX_src_2_data_r;
 
     wire [`REG_RANGE] src_0_data_ALU = X_src_0_data;
     wire [`REG_RANGE] src_1_data_ALU = X_src_1_data;
     wire [`REG_RANGE] X_result_ALU;
     wire X_branch_cond_ALU;
 
-    ALU ALU(.src_0_data_ALU(src_0_data_ALU), .src_1_data_ALU(src_1_data_ALU), .DX_insn_opc(insn_DX_opc),
-        .X_result_ALU(X_result_ALU), .X_branch_cond_ALU(X_branch_cond_ALU));
+    ALU ALU(.src_0_data_ALU(src_0_data_ALU), .src_1_data_ALU(src_1_data_ALU),
+        .insn_F2_const_ALU(insn_DX_const), .insn_set_const_mode(insn_DX_set_const_mode),
+        .DX_insn_opc(insn_DX_opc), .X_result_ALU(X_result_ALU),
+        .X_branch_cond_ALU(X_branch_cond_ALU));
 
     wire X_branch_cond = X_branch_cond_ALU & insn_DX_is_F4; //под F4 только переходы
 
@@ -199,10 +214,7 @@ module Core #(
     reg [`REG_RANGE] XM_B_data_r;
     reg [`REG_RANGE] XM_C_data_r;
 
-    wire [`REG_RANGE] X_O_data = (insn_DX_opc == `ST | insn_DX_opc == `LD) ? X_src_0_data :
-        (~insn_DX_is_F2) ? X_result_ALU :
-        ((insn_DX_src_0 == 0) ? {{(`REG_SIZE - `CORE_ID_SIZE){1'b0}}, CORE_ID[`CORE_ID_RANGE]}
-        :insn_MW_const);
+    wire [`REG_RANGE] X_O_data = X_result_ALU;
     wire [`REG_RANGE] X_B_data = X_src_1_data;
     wire [`REG_RANGE] X_C_data = X_src_2_data;
     //addr = {XM_src_ld_st_data, XM_src_O_data}
@@ -216,7 +228,7 @@ module Core #(
     wire [`REG_RANGE] M_C_data;
 
     //bypass:
-    // если ld в W а st в M
+    // если ld в W а st/ld в M
     assign M_O_data = (insn_MW_opc == `LD & (insn_XM_opc == `ST | insn_XM_opc == `LD) & insn_MW_dst == insn_XM_src_0) ?
         MW_D_data_r : XM_O_data_r;
     assign M_B_data = (insn_MW_opc == `LD & (insn_XM_opc == `ST | insn_XM_opc == `LD) & insn_MW_dst == insn_XM_src_1) ?
@@ -291,7 +303,7 @@ module Core #(
         else
             insn_MW_r <= (block_all_pipe) ? insn_MW_r:insn_XM_r;
 
-    always @(posedge clk)   //FIXME: энергоэффективность
+    always @(posedge clk)
         DX_src_0_data_r <= (block_all_pipe) ? DX_src_0_data_r: D_src_0_data;
 
     always @(posedge clk)

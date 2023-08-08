@@ -1,4 +1,4 @@
-`include "Inc/Constants.def.v"
+`include "Inc/Ranges.def.v"
 
 module RegisterFile (
     input wire clk,
@@ -12,7 +12,6 @@ module RegisterFile (
     input wire [`REG_PTR_RANGE] FD_insn_src_1,
     input wire [`REG_PTR_RANGE] FD_insn_src_2,
     input wire [`REG_PTR_RANGE] MW_insn_dst,
-    input wire [`REG_PTR_RANGE] MW_insn_src_0,
     input wire MW_insn_is_F1,
     input wire MW_insn_is_F2,
     output wire [`REG_RANGE] D_src_0_data,
@@ -28,7 +27,7 @@ module RegisterFile (
     wire get_result_flag [`REG_COUNT - 1 : 0];
 
     generate for(genvar i = 0; i < `REG_COUNT; i = i + 1) begin : get_res_flag_loop
-        assign get_result_flag [i] = (MW_insn_is_F1 & MW_insn_dst == i) | (MW_insn_is_F2 & MW_insn_src_0 == i);
+        assign get_result_flag [i] = (MW_insn_is_F1 | MW_insn_is_F2) & MW_insn_dst == i;
     end
     endgenerate
 

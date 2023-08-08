@@ -131,6 +131,7 @@ CompilerStates compileFileToStack(FILE* input, Stack* output){
     getFrameStates frameState;
     unsigned int lineNum = 0; ///< номер строки минус 1
     unsigned int i = 0;
+    char frame[INSN_COUNT][INSN_SIZE]; //FIXME
     do {
         frameState = getFrame(input, output, &defs, &lineNum);
         i++;
@@ -138,7 +139,7 @@ CompilerStates compileFileToStack(FILE* input, Stack* output){
     if(i == FRAMES_COUNT && frameState == GetFrameOk) {
         int op[MAX_OP];
         //FIXME: комментарий skip_comments()
-        //FIXME: unGetOp(), struct with op and unget flag
+        //FIXME: unGetOp(), struct with op and unget flag (lexeme struct)
         unsigned int size = getOp(input, &lineNum, op, MAX_OP);
         if(size > 0)
             ERROR_MSG_OP("Error: Out of range, max count of frames has reached \n",

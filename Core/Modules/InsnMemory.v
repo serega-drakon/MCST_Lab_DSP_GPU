@@ -1,4 +1,4 @@
-`include "Inc/Constants.def.v"
+`include "Inc/Ranges.def.v"
 
 module InsnMemory (
     input wire clk,
