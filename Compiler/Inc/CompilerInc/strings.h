@@ -26,7 +26,8 @@ const char *Registers_str_[] = { //емае пошло говно по труб�
 };
 
 typedef enum Registers_str_enum_{
-    Reg_R0_str = 0,
+    Registers_str_enum_MIN = 0,
+    Reg_R0_str = Registers_str_enum_MIN,
     Reg_R1_str,
     Reg_R2_str,
     Reg_R3_str,
@@ -41,7 +42,8 @@ typedef enum Registers_str_enum_{
     Reg_R12_str,
     Reg_R13_str,
     Reg_R14_str,
-    Reg_R15_str
+    Reg_R15_str,
+    Registers_str_enum_MAX
 } Registers_str_enum;
 
 const char *OpCodes_str_[] = {
@@ -64,7 +66,8 @@ const char *OpCodes_str_[] = {
 };
 
 typedef enum OpCodes_str_enum_{
-    Nop_str = 0,
+    OpCodes_str_enum_MIN = 0,
+    Nop_str = OpCodes_str_enum_MIN,
     Add_str,
     Sub_str,
     Mul_str,
@@ -80,6 +83,25 @@ typedef enum OpCodes_str_enum_{
     St_str,
     Bnz_str,
     Ready_str,
+    OpCodes_str_enum_MAX
 } OpCodes_str_enum;
+
+char *CFParamNames_str_[] = {
+    "initR0",
+    "CoreActive",
+    "Fence",
+    "IFNum"
+};
+
+typedef enum CFParamNames_str_enum_{
+    CFParamNames_str_enum_MIN = 0,
+    InitR0_str = CFParamNames_str_enum_MIN,
+    CoreActive_str,
+    Fence_str,
+    IFNum_str,
+    CFParamNames_str_enum_MAX
+} CFParamNames_str_enum;
+
+
 
 #endif //DSP_GPU_COMPILER_STRINGS_H

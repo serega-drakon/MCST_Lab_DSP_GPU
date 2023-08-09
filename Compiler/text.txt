@@ -6,7 +6,7 @@ CoreActive = !0,!2,!4, //sakdlaksl;dkl;asd
 
 Fence = acq,
 
-IF_Num = !4,
+IFNum = !4,
 }
 
 :name_1

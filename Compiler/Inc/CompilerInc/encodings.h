@@ -5,7 +5,7 @@
 #ifndef DSP_GPU_COMPILER_ENCODINGS_H
 #define DSP_GPU_COMPILER_ENCODINGS_H
 
-typedef enum OpTypes_ {
+typedef enum LexemeTypes_ {
     Error = -1,
     Nothing = 0,
     Nop,
@@ -24,8 +24,23 @@ typedef enum OpTypes_ {
     St,
     Bnz,
     Ready,
-    Reg,
-    Const16 = Reg + REG_COUNT,
+    Reg_R0,
+    Reg_R1,
+    Reg_R2,
+    Reg_R3,
+    Reg_R4,
+    Reg_R5,
+    Reg_R6,
+    Reg_R7,
+    Reg_R8,
+    Reg_R9,
+    Reg_R10,
+    Reg_R11,
+    Reg_R12,
+    Reg_R13,
+    Reg_R14,
+    Reg_R15,
+    Const16,
     Const10,
     Label,
     BracketCurlyOpen,
@@ -34,8 +49,9 @@ typedef enum OpTypes_ {
     BracketSquareClose,
     IFName,
     Comma,  // в переводе запятая
-    Equal
-} OpTypes;
+    Equal,
+    Slash
+} LexemeTypes;
 
 enum OpCodes_ {
     Nop_insn = 0x0,
