@@ -1,5 +1,5 @@
-`include "Inc/Ranges.def.v"
-`include "Inc/TaskMemory.def.v"
+`include "../SharedInc/Ranges.def.v"
+`include "../SharedInc/TaskMemory.def.v"
 
 module Task_Scheduler
 #(
