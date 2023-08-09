@@ -102,6 +102,18 @@ typedef enum CFParamNames_str_enum_{
     CFParamNames_str_enum_MAX
 } CFParamNames_str_enum;
 
+char *FenceModes_str_[] = {
+    "no",
+    "acq",
+    "rel"
+};
 
+typedef enum FenceModes_str_enum_{
+    FenceModes_str_enum_MIN = 0,
+    FenceNo_str,
+    FenceAcq_str,
+    FenceRel_str,
+    FenceModes_str_enum_MAX
+} FenceModes_str_enum;
 
 #endif //DSP_GPU_COMPILER_STRINGS_H

@@ -17,6 +17,11 @@ typedef struct Defines_{
     Stack* ptrLabelUsedValuesPtr;
 } Defines;
 
+typedef enum DefinesInitStates_{
+    DefinesInitOK = 0,
+    DefinesInitError
+} DefinesInitStates;
+
 typedef enum UnGetLexStatus_{
     UnGetLexFalse = 0,
     UnGetLexTrue
@@ -38,4 +43,8 @@ typedef enum CheckEndStates_{
     CheckEndNotReached
 } CheckEndStates;
 
+typedef enum SkipCommentsState_{
+    SkipCommentsSuccess,
+    SkipCommentsError
+} SkipCommentsState;
 #endif //DSP_GPU_COMPILER_ENUMS_STRUCTS_H

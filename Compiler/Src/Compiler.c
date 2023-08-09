@@ -12,9 +12,6 @@
 #include "UsefulFuncs.h"
 #include "Enums&Structs.h"
 
-#define OK 0
-#define ERROR (-1)
-
 #define MEM_CHECK(ptrMem, errorName, errorCode) \
 do{ if(ptrMem == NULL){printf(errorName); return errorCode;} } while(0)
 
@@ -34,17 +31,17 @@ printf("\n");                                   \
 return errorCode; } while(0)
 
 ///Конструктор
-int definesInit(Defines *defs){
+DefinesInitStates definesInit(Defines *defs){
     const char error_msg[] = "defines memory allock error";
     defs->ptrLabelDefinedNames = dStackInit(sizeof(int));
-    MEM_CHECK(defs->ptrLabelDefinedNames, error_msg, ERROR);
+    MEM_CHECK(defs->ptrLabelDefinedNames, error_msg, DefinesInitError);
     defs->ptrLabelDefinedValues = dStackInit(sizeof(char));
-    MEM_CHECK(defs->ptrLabelDefinedValues, error_msg, ERROR);
+    MEM_CHECK(defs->ptrLabelDefinedValues, error_msg, DefinesInitError);
     defs->ptrLabelUsedNames = dStackInit(sizeof(int));
-    MEM_CHECK(defs->ptrLabelUsedNames, error_msg, ERROR);
+    MEM_CHECK(defs->ptrLabelUsedNames, error_msg, DefinesInitError);
     defs->ptrLabelUsedValuesPtr = dStackInit(sizeof(Stack *));
-    MEM_CHECK(defs->ptrLabelUsedValuesPtr, error_msg, ERROR);
-    return OK;
+    MEM_CHECK(defs->ptrLabelUsedValuesPtr, error_msg, DefinesInitError);
+    return DefinesInitOK;
 }
 
 ///Деструктор
@@ -76,6 +73,50 @@ void lexFree(lexeme *ptrLex){
     free(ptrLex);
 }
 
+LexemeTypes translateRegFromStrToLex(Registers_str_enum strEnum){
+    switch(strEnum){
+        case Reg_R0_str: return Reg_R0;
+        case Reg_R1_str: return Reg_R1;
+        case Reg_R2_str: return Reg_R2;
+        case Reg_R3_str: return Reg_R3;
+        case Reg_R4_str: return Reg_R4;
+        case Reg_R5_str: return Reg_R5;
+        case Reg_R6_str: return Reg_R6;
+        case Reg_R7_str: return Reg_R7;
+        case Reg_R8_str: return Reg_R8;
+        case Reg_R9_str: return Reg_R9;
+        case Reg_R10_str: return Reg_R10;
+        case Reg_R11_str: return Reg_R11;
+        case Reg_R12_str: return Reg_R12;
+        case Reg_R13_str: return Reg_R13;
+        case Reg_R14_str: return Reg_R14;
+        case Reg_R15_str: return Reg_R15;
+        default: assert(0);
+    }
+}
+
+LexemeTypes translateOpCodeFromStrToLex(Registers_str_enum strEnum){
+    switch(strEnum){
+        case Nop_str: return Nop;
+        case Add_str: return Add;
+        case Sub_str: return Sub;
+        case Mul_str: return Mul;
+        case Div_str: return Div;
+        case Cmpge_str: return Cmpge;
+        case Rshift_str: return Rshift;
+        case Lshift_str: return Lshift;
+        case And_str: return And;
+        case Or_str: return Or;
+        case Xor_str: return Xor;
+        case Ld_str: return Ld;
+        case Set_const_str: return Set_const;
+        case St_str: return St;
+        case Bnz_str: return Bnz;
+        case Ready_str: return Ready;
+        default: assert(0);
+    }
+}
+
 ///Подфункция getType
 LexemeTypes checkConst16(const int op[]){
     if(op[1] == '\0')
@@ -98,7 +139,7 @@ LexemeTypes checkConst10(const int op[]){
 LexemeTypes checkReg(const int op[]){
     for(Registers_str_enum i = Registers_str_enum_MIN; i < Registers_str_enum_MAX; i++){
         if(compareStrIntChar(&op[1], Registers_str_[i]))
-            return i; //FIXME
+            return translateRegFromStrToLex(i); //FIXME
     }
     return Error;
 }
@@ -179,6 +220,10 @@ void unGetLex(lexeme *ptrLex){
     ptrLex->unGetStatus = UnGetLexTrue;
 }
 
+SkipCommentsState skipComments(FILE* input, lexeme *ptrLex){
+
+}
+
 getFrameStates getControlFrame(FILE* input, Stack *output, lexeme *ptrLex, unsigned int *ptrLineNum){
 
 }
@@ -203,9 +248,10 @@ CompilerStates compileFileToStack(FILE* input, Stack* output){
     MEM_CHECK(input, "Error: input file is NULL", CompilerErrorNullInput);
     MEM_CHECK(output, "Error: output stack is NULL", CompilerErrorNullStack);
     Defines defs;
-    int defState = definesInit(&defs); //FIXME:free defs
-    if(defState == ERROR)
+    if(definesInit(&defs) == DefinesInitError){
+        definesFree(&defs);
         return CompilerErrorMemAlloc;
+    }
     getFrameStates frameState;
     unsigned int lineNum = 0; ///< номер строки минус 1
     unsigned int i = 0;

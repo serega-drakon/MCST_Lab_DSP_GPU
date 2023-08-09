@@ -50,7 +50,10 @@ typedef enum LexemeTypes_ {
     IFName,
     Comma,  // в переводе запятая
     Equal,
-    Slash
+    Slash,
+    FenceNo,
+    FenceAcq,
+    FenceRel,
 } LexemeTypes;
 
 enum OpCodes_ {
