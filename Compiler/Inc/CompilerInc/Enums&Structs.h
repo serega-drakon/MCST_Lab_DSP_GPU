@@ -28,10 +28,15 @@ typedef enum UnGetLexStatus_{
 } UnGetLexStatus;
 
 typedef struct lexeme_{
-    int op[MAX_OP];
+    int *op;
     LexemeTypes lexType;
     UnGetLexStatus unGetStatus;
 } lexeme;
+
+typedef enum LexInitStates_{
+    LexInitSuccess = 0,
+    LexInitError
+} LexInitStates;
 
 typedef enum getFrameStates_{
     GetFrameEnd = -1, ///< если конец достигнут

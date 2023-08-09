@@ -59,18 +59,17 @@ void definesFree(struct Defines_ *ptrDef){
     }
 }
 
-lexeme *lexInit(){
+LexInitStates lexInit(lexeme *ptrLex){ //fixme
     assert(MAX_OP > 0);
-    lexeme *ptrLex = malloc(sizeof(lexeme));
-    if(ptrLex != NULL) {
-        ptrLex->op[0] = '\0';
-        ptrLex->unGetStatus = UnGetLexFalse;
-        ptrLex->lexType = Nothing;
-    }
+    ptrLex->op = malloc(MAX_OP * sizeof(int));
+    MEM_CHECK(ptrLex->op, "Error: lex mem alloc error", LexInitError);
+    ptrLex->unGetStatus = UnGetLexFalse;
+    ptrLex->lexType = Nothing;
+    return LexInitSuccess;
 }
 
 void lexFree(lexeme *ptrLex){
-    free(ptrLex);
+    free(ptrLex->op);
 }
 
 LexemeTypes translateRegFromStrToLex(Registers_str_enum strEnum){
@@ -95,7 +94,7 @@ LexemeTypes translateRegFromStrToLex(Registers_str_enum strEnum){
     }
 }
 
-LexemeTypes translateOpCodeFromStrToLex(Registers_str_enum strEnum){
+LexemeTypes translateOpCodeFromStrToLex(OpCodes_str_enum strEnum){
     switch(strEnum){
         case Nop_str: return Nop;
         case Add_str: return Add;
@@ -113,6 +112,25 @@ LexemeTypes translateOpCodeFromStrToLex(Registers_str_enum strEnum){
         case St_str: return St;
         case Bnz_str: return Bnz;
         case Ready_str: return Ready;
+        default: assert(0);
+    }
+}
+
+LexemeTypes translateCFParamNamesFromStrToLex(CFParamNames_str_enum strEnum){
+    switch(strEnum){
+            case InitR0_str: return InitR0;
+            case CoreActive_str: return CoreActive;
+            case Fence_str: return Fence;
+            case IFNum_str: return IFNum;
+        default: assert(0);
+    }
+}
+
+LexemeTypes translateFenceModesFromStrToLex(FenceModes_str_enum strEnum){
+    switch(strEnum){
+            case FenceNo_str: return FenceNo;
+            case FenceAcq_str: return FenceAcq;
+            case FenceRel_str: return FenceRel;
         default: assert(0);
     }
 }
@@ -139,13 +157,23 @@ LexemeTypes checkConst10(const int op[]){
 LexemeTypes checkReg(const int op[]){
     for(Registers_str_enum i = Registers_str_enum_MIN; i < Registers_str_enum_MAX; i++){
         if(compareStrIntChar(&op[1], Registers_str_[i]))
-            return translateRegFromStrToLex(i); //FIXME
+            return translateRegFromStrToLex(i);
     }
     return Error;
 }
 
 LexemeTypes checkOthers(const int op[]){
-    //FIXME
+    for(OpCodes_str_enum i = OpCodes_str_enum_MIN; i < OpCodes_str_enum_MAX; i++){
+        if(compareStrIntChar(op, OpCodes_str_[i]))
+            return translateOpCodeFromStrToLex(i);
+    }for(CFParamNames_str_enum i = CFParamNames_str_enum_MIN; i < CFParamNames_str_enum_MAX; i++){
+        if(compareStrIntChar(op, CFParamNames_str_[i]))
+            return translateCFParamNamesFromStrToLex(i);
+    }for(FenceModes_str_enum i = FenceModes_str_enum_MIN; i < FenceModes_str_enum_MAX; i++){
+        if(compareStrIntChar(op, FenceModes_str_[i]))
+            return translateFenceModesFromStrToLex(i);
+    }
+    return Name;
 }
 
 LexemeTypes getType(const int op[]){
@@ -161,6 +189,7 @@ LexemeTypes getType(const int op[]){
         case ',': return Comma;
         case '=': return Equal;
         case '/': return Slash;
+        case ':': return Colon;
         case '\0': return Nothing;
         default: return checkOthers(op);
     }
@@ -169,10 +198,10 @@ LexemeTypes getType(const int op[]){
 /// Подфункция getOp \n
 /// 1 - залезли на 1char-symbol \n
 /// 0 - не залезли
-char checkStopCharGetOp(int c){
+char checkOneCharOp(int c){
     switch(c){
         case '{': case '}': case '[': case ']':
-        case ',': case '=': case '/':
+        case ',': case '=': case '/': case ':':
             return 1;
         default:
             return 0;
@@ -183,22 +212,22 @@ char checkStopCharGetOp(int c){
 /// Возвращает длину полученной строки
 int getOp(FILE* input, unsigned *ptrLineNum, int op[], unsigned int size){
     assert(input != NULL && ptrLineNum != NULL && op != NULL && size > 1);
-
     int c;
     int i = 0;
     while((c = getc(input)) == ' ' || c == '\t' || c == '\n')
         if(c == '\n') (*ptrLineNum)++;
 
-    if(c != EOF) {
-        do {
-            op[i++] = c;
-            c = getc(input);
-        } while (i < (size - 1) && c != ' ' && c != '\n' && c != '\t' && !checkStopCharGetOp(c) && c != EOF);
+    if(c != EOF){
+        op[i++] = c;
+        if(!checkOneCharOp(c)){
+            while (i < (size - 1) && (c = getc(input)) != ' ' && c != '\n' && c != '\t'
+            && !checkOneCharOp(c) && c != EOF) {
+                op[i++] = c;
+            }
+            if(checkOneCharOp(c) || c == '\n' || c == EOF)
+                ungetc(c, input);
+        }
     }
-
-    if(checkStopCharGetOp(c) || c == '\n' || c == EOF)
-        ungetc(c, input);
-
     op[i] = '\0';
     return i;
 }
@@ -220,6 +249,7 @@ void unGetLex(lexeme *ptrLex){
     ptrLex->unGetStatus = UnGetLexTrue;
 }
 
+/// лексема / уже получена
 SkipCommentsState skipComments(FILE* input, lexeme *ptrLex){
 
 }
@@ -229,6 +259,14 @@ getFrameStates getControlFrame(FILE* input, Stack *output, lexeme *ptrLex, unsig
 }
 
 getFrameStates getInsnFrame(FILE* input, Stack *output, Defines *defs, lexeme *ptrLex, unsigned int *ptrLineNum){
+    getLex(input, ptrLineNum, ptrLex);
+    switch(ptrLex->lexType){
+        case BracketCurlyOpen:
+        case Colon:
+        default:
+    }
+
+
     //FIXME: заполнить defs, использовать и сбросить
     //FIXME: подсчет команд внутри фрейма
 }
@@ -255,21 +293,20 @@ CompilerStates compileFileToStack(FILE* input, Stack* output){
     getFrameStates frameState;
     unsigned int lineNum = 0; ///< номер строки минус 1
     unsigned int i = 0;
-    lexeme *ptrLex = lexInit();
-    MEM_CHECK(ptrLex, "Error: ptrLex mem alloc error", CompilerErrorMemAlloc);
+    lexeme lex;
+    if(lexInit(&lex) == LexInitError)
+        return CompilerErrorMemAlloc;
     do {
-        frameState = getFrame(input, output, &defs, ptrLex, &lineNum);
+        frameState = getFrame(input, output, &defs, &lex, &lineNum);
         i++;
     } while(i < FRAMES_COUNT && frameState == GetFrameOk);
     definesFree(&defs);
-    if(i == FRAMES_COUNT && frameState == GetFrameOk) {
-        if(checkEnd(input, ptrLex)) {
-            lexFree(ptrLex);
-            ERROR_MSG_LEX("Error: Out of range, max count of frames has reached",
-                          CompilerErrorOverflowFrames, ptrLex, lineNum);
-        }
+    if(i == FRAMES_COUNT && frameState == GetFrameOk && checkEnd(input, &lex)) {
+        lexFree(&lex);
+        ERROR_MSG_LEX("Error: Out of range, max count of frames has reached",
+              CompilerErrorOverflowFrames, (&lex), lineNum);
     }
-    lexFree(ptrLex);
+    lexFree(&lex);
     return CompilerOK;
 }
 

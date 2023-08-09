@@ -110,7 +110,7 @@ char *FenceModes_str_[] = {
 
 typedef enum FenceModes_str_enum_{
     FenceModes_str_enum_MIN = 0,
-    FenceNo_str,
+    FenceNo_str = FenceModes_str_enum_MIN,
     FenceAcq_str,
     FenceRel_str,
     FenceModes_str_enum_MAX
