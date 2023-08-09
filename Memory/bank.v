@@ -1,44 +1,35 @@
+`include"../Core/Modules/Inc/Ranges.def.v"
 module bank
 (
-	input 			clk,
-	input 			reset,
-	input		[7:0]	addr,
-	input		[7:0]	data_in,
-	input			read_enable,
-	input			write_enable,
-	output	wire	[7:0]	data_out,
-	output	wire		valid_out
+	input 				clk,
+	input 				reset,
+	input		[`REG_RANGE]	addr,
+	input		[`REG_RANGE]	data_in,
+	input				read_enable,
+	input				write_enable,
+	output	wire	[`REG_RANGE]	data_out
 );
 
-reg	[7:0]	memory	[255:0];
-reg	[255:0]	mask_valid_data;
+reg	[`REG_RANGE]	memory	[`BANK_DATA_RANGE];
 
-reg	[7:0]	read;
-reg		valid;
+reg	[`REG_RANGE]	read_r;
 
-assign	data_out = read;
-assign	valid_out = valid;
+assign	data_out = read_r;
 
 always @(posedge clk)
 begin
-	if(reset)
-	begin
-		mask_valid_data <= 0;
-	end
+	if(~reset)
+		read_r <= (read_enable) ? memory[addr] : `REG_SIZE'h0;
 	else
-	begin
-		if(read_enable)
-		begin
-			read <= memory[addr];
-			valid <= mask_valid_data[addr];
-		end
-		else 
-			if(write_enable)
-			begin
-				memory[addr] <= data_in;
-				mask_valid_data[addr] <= 1;
-			end
-	end
+		read_r <= `REG_SIZE'h0;
+end
+
+always @(posedge clk)
+begin
+	if(~reset)
+		memory[addr] <= (write_enable) ? data_in : memory[addr];
+	else
+		memory[addr] <= `REG_SIZE'h0;
 end
 
 endmodule
