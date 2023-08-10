@@ -16,46 +16,46 @@
 
 #define MEM_CHECK(ptrMem,  errorCode, errorMsg, ...) \
 do{ if(ptrMem == NULL){                              \
-printf(errorMsg, __VA_ARGS__);                       \
-     printf("\n");                                   \
-return errorCode;} } while(0)
+        printf(errorMsg __VA_ARGS__);               \
+        printf("\n");                                \
+        return errorCode;} } while(0)
 
 #define ERROR_MSG_NL(errorCode, errorMsg, ...) \
-do { printf(errorMsg, __VA_ARGS__);            \
+do { printf(errorMsg __VA_ARGS__);            \
      printf("\n");                             \
      return errorCode; } while(0)
 
 #define ERROR_MSG(ptrLineNum, errorCode, errorMsg, ...) \
-do { printf("Line %d: ", *(ptrLineNum));                   \
-     printf(errorMsg, __VA_ARGS__);                  \
-     printf("\n");                                   \
+do { printf("Line %d: ", *(ptrLineNum));                \
+     printf(errorMsg __VA_ARGS__);                     \
+     printf("\n");                                      \
      return errorCode; } while(0)
 
 #define ERROR_MSG_LEX(ptrLineNum, ptrLex, errorCode, errorMsg, ...) \
-do { printf("Line %d: ", *(ptrLineNum));                          \
-     printf(errorMsg, __VA_ARGS__);                          \
-     printf("\n -> ");                                      \
+do { printf("Line %d: ", *(ptrLineNum));                            \
+     printf(errorMsg __VA_ARGS__);                                 \
+     printf("\n -> ");                                              \
      for (int index = 0; (ptrLex)->op[index] != '\0'; index++)\
          printf("%c", (ptrLex)->op[index]);                   \
-     printf("\n");    \
+     printf("\n");                                            \
      return errorCode; } while(0)
 
-#define WARNING(ptrLineNum, errorMsg, ...) \
-do { printf("Line %d: ", *(ptrLineNum));     \
-     printf(errorMsg __VA_ARGS__);                  \
+#define WARNING(ptrLineNum, errorMsg, ...)  \
+do { printf("Line %d: ", *(ptrLineNum));    \
+     printf(errorMsg __VA_ARGS__);          \
      printf("\n"); } while(0)
 
 ///Конструктор
 DefinesInitStates definesInit(Defines *defs){
-    const char errorMsg[] = "defines memory allock error";
+    const char errorMsg[] = "Defines memory alloc error";
     defs->ptrLabelDefinedNames = dStackInit(sizeof(int));
-    MEM_CHECK(defs->ptrLabelDefinedNames, errorMsg, DefinesInitError);
+    MEM_CHECK(defs->ptrLabelDefinedNames, DefinesInitError, errorMsg);
     defs->ptrLabelDefinedValues = dStackInit(sizeof(char));
-    MEM_CHECK(defs->ptrLabelDefinedValues, errorMsg, DefinesInitError);
+    MEM_CHECK(defs->ptrLabelDefinedValues, DefinesInitError, errorMsg);
     defs->ptrLabelUsedNames = dStackInit(sizeof(int));
-    MEM_CHECK(defs->ptrLabelUsedNames, errorMsg, DefinesInitError);
+    MEM_CHECK(defs->ptrLabelUsedNames, DefinesInitError, errorMsg);
     defs->ptrLabelUsedValuesPtr = dStackInit(sizeof(Stack *));
-    MEM_CHECK(defs->ptrLabelUsedValuesPtr, errorMsg, DefinesInitError);
+    MEM_CHECK(defs->ptrLabelUsedValuesPtr, DefinesInitError, errorMsg);
     return DefinesInitOK;
 }
 
@@ -77,7 +77,7 @@ void definesFree(struct Defines_ *ptrDef){
 LexInitStates lexInit(lexeme *ptrLex){ //fixme
     assert(MAX_OP > 0);
     ptrLex->op = malloc(MAX_OP * sizeof(int));
-    MEM_CHECK(ptrLex->op, "Error: lex mem alloc error", LexInitError);
+    MEM_CHECK(ptrLex->op, LexInitError, "Error: lex mem alloc error");
     ptrLex->unGetStatus = UnGetLexFalse;
     ptrLex->lexType = Nothing;
     return LexInitSuccess;
@@ -90,12 +90,12 @@ void lexFree(lexeme *ptrLex){
 }
 
 FrameDataInitStates frameDataInit(FrameData *ptrFrameData){
-    char errorMsg[] = "Error: frameData mem alloc error";
+    const char errorMsg[] = "Error: frameData mem alloc error";
     ptrFrameData->IF_Num_left = 0;
     ptrFrameData->CoreActiveVector = malloc(CORES_COUNT * sizeof(char));
-    MEM_CHECK(ptrFrameData->CoreActiveVector, errorMsg, FrameDataInitError);
+    MEM_CHECK(ptrFrameData->CoreActiveVector, FrameDataInitError, errorMsg);
     ptrFrameData->InitR0Vector = malloc(CORES_COUNT * sizeof(char));
-    MEM_CHECK(ptrFrameData->InitR0Vector, errorMsg, FrameDataInitError);
+    MEM_CHECK(ptrFrameData->InitR0Vector, FrameDataInitError, errorMsg);
     return FrameDataInitSuccess;
 }
 
@@ -202,6 +202,7 @@ LexemeTypes checkReg(const int op[]){
     return Error;
 }
 
+///Подфункция getType
 LexemeTypes checkOthers(const int op[]){
     for(OpCodes_str_enum i = OpCodes_str_enum_MIN; i < OpCodes_str_enum_MAX; i++){
         if(compareStrIntChar(op, OpCodes_str_[i]))
@@ -332,7 +333,7 @@ GetFrameStates getFrame(FILE *input, Stack *output, Defines *ptrDefs, FrameData 
     switch(ptrLex->lexType){
         case BracketCurlyOpen:
             if(ptrFrameData->IF_Num_left > 0)
-                WARNING(*ptrLineNum, "Warning: There are IF left - %d", ptrFrameData->IF_Num_left);
+                WARNING(ptrLineNum, "Warning: There are IF left - %d",, ptrFrameData->IF_Num_left);
             frameState = getControlFrame(input, output, ptrFrameData, ptrLex, ptrLineNum);
             //FIXME: проверка на frameData
             return frameState;
@@ -348,7 +349,7 @@ GetFrameStates getFrame(FILE *input, Stack *output, Defines *ptrDefs, FrameData 
             //FIXME: проверка на frameData
             return frameState;
         default:
-            ERROR_MSG_LEX("Чо это такое, где символ начала фрейма?", GetFrameCodeError, ptrLex, *ptrLineNum);
+            ERROR_MSG_LEX(ptrLineNum, ptrLex, GetFrameCodeError, "Чо это такое, где символ начала фрейма?");
     }
 }
 
@@ -357,15 +358,17 @@ CheckEndStates checkEnd(FILE *input, lexeme *ptrLex, unsigned *ptrLineNum){
 }
 
 CompilerStates compileFileToStack(FILE* input, Stack* output){
-    MEM_CHECK(input, "Error: input file is NULL", CompilerErrorNullInput);
-    MEM_CHECK(output, "Error: output stack is NULL", CompilerErrorNullStack);
+    MEM_CHECK(input, CompilerErrorNullInput, "Error: input file is NULL");
+    MEM_CHECK(output, CompilerErrorNullStack, "Error: output stack is NULL");
     Defines defs;
     FrameData frameData;
     lexeme lex;
     if(definesInit(&defs) == DefinesInitError
     || lexInit(&lex) == LexInitError
-    || frameDataInit(&frameData) == FrameDataInitError)
-        goto memAllocError;
+    || frameDataInit(&frameData) == FrameDataInitError){
+        allFree(&defs, &lex, &frameData);
+        ERROR_MSG_NL(CompilerErrorMemAlloc, "Error: mem alloc error");
+    }
     GetFrameStates frameState;
     unsigned int lineNum = 0; ///< номер строки минус 1
     unsigned int i = 0;
@@ -379,7 +382,7 @@ CompilerStates compileFileToStack(FILE* input, Stack* output){
     if(i == FRAMES_COUNT && frameState == GetFrameOk && checkEnd(input, &lex, &lineNum) == CheckEndNotReached) {
         allFree(&defs, &lex, &frameData);
         ERROR_MSG_LEX(&lineNum, &lex, CompilerErrorOverflowFrames,
-                      "Warning: Out of range, max count of frames has reached - %d", FRAMES_COUNT);
+                      "Warning: Out of range, max count of frames has reached - %d",, FRAMES_COUNT);
     }
 
     allFree(&defs, &lex, &frameData);
@@ -391,11 +394,6 @@ CompilerStates compileFileToStack(FILE* input, Stack* output){
     default:
         assert(0);
     }
-
-    memAllocError: //FIXME: pomenat
-    allFree(&defs, &lex, &frameData);
-    printf("Error: mem alloc error\n");
-    return CompilerErrorMemAlloc;
 }
 
 void printProgramFromStackToFile(Stack* input, FILE* output){
