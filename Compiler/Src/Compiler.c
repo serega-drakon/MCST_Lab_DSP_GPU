@@ -333,7 +333,7 @@ GetFrameStates getFrame(FILE *input, Stack *output, Defines *ptrDefs, FrameData 
     switch(ptrLex->lexType){
         case BracketCurlyOpen:
             if(ptrFrameData->IF_Num_left > 0)
-                WARNING(ptrLineNum, "Warning: There are IF left - %d",, ptrFrameData->IF_Num_left);
+                WARNING(ptrLineNum, "Warning: There are IFs left - %d",, ptrFrameData->IF_Num_left);
             frameState = getControlFrame(input, output, ptrFrameData, ptrLex, ptrLineNum);
             //FIXME: проверка на frameData
             return frameState;
@@ -375,11 +375,12 @@ CompilerStates compileFileToStack(FILE* input, Stack* output){
 
     do {
         frameState = getFrame(input, output, &defs,
-                              &frameData, &lex, &lineNum);
+                  &frameData, &lex, &lineNum);
         i++;
     } while(i < FRAMES_COUNT && frameState == GetFrameOk);
 
-    if(i == FRAMES_COUNT && frameState == GetFrameOk && checkEnd(input, &lex, &lineNum) == CheckEndNotReached) {
+    if(i == FRAMES_COUNT && frameState == GetFrameOk
+    && checkEnd(input, &lex, &lineNum) == CheckEndNotReached) {
         allFree(&defs, &lex, &frameData);
         ERROR_MSG_LEX(&lineNum, &lex, CompilerErrorOverflowFrames,
                       "Warning: Out of range, max count of frames has reached - %d",, FRAMES_COUNT);
@@ -397,7 +398,7 @@ CompilerStates compileFileToStack(FILE* input, Stack* output){
 }
 
 void printProgramFromStackToFile(Stack* input, FILE* output){
-
+    //todo
 }
 
 void printCompilerState(CompilerStates state){
@@ -416,4 +417,9 @@ CompilerStates compileTextToText(FILE* input, FILE* output){ //FIXME
         printProgramFromStackToFile(ptrProgram, output);
     dStackFree(ptrProgram);
     return state;
+}
+
+CompilerStates compileTextToBin(FILE *input, FILE *output){
+    //todo
+    return CompilerOK;
 }
