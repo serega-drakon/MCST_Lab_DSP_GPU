@@ -1,6 +1,6 @@
 //
 // Created by Сергей Слепышев on 04.08.2023.
-// здесь куски из моего старого компилятора для другого проца
+// КОМПИЛЯТОРНАЯ ШКОЛА КОМПАНИИ YADRO ПРЕДСТАВЛЯЕТ
 
 #include <stdio.h>
 #include <ctype.h>
@@ -11,8 +11,6 @@
 #include "encodings.h"
 #include "UsefulFuncs.h"
 #include "Enums&Structs.h"
-
-#define EMPTY
 
 #define MEM_CHECK(ptrMem,  errorCode, errorMsg, ...) \
 do{ if(ptrMem == NULL){                              \
@@ -323,31 +321,40 @@ GetFrameStates getInsnFrame(FILE* input, Stack *output, Defines *ptrDefs, lexeme
     //FIXME: подсчет команд внутри фрейма
 }
 
+GetFrameStates processControlFrame(FILE* input, Stack *output, FrameData *ptrFrameData, lexeme *ptrLex,
+                                   unsigned *ptrLineNum){
+    GetFrameStates frameState;
+    if(ptrFrameData->IF_Num_left > 0)
+        WARNING(ptrLineNum, "Warning: There are IFs left - %d",, ptrFrameData->IF_Num_left);
+    frameState = getControlFrame(input, output, ptrFrameData, ptrLex, ptrLineNum);
+    //FIXME: проверка на frameData
+}
 
-//FIXME: считать фрейм и проверить, достигнут ли конец
+GetFrameStates processInsnFrame(FILE* input, Stack *output, Defines *ptrDefs, lexeme *ptrLex,
+                                    unsigned *ptrLineNum){
+    GetFrameStates frameState;
+    skipComments(input, ptrLex, ptrLineNum);
+    getLex(input, ptrLineNum, ptrLex);
+    if(ptrLex->lexType == Name){
+        //FIXME
+    }
+    else
+        unGetLex(ptrLex);
+    frameState = getInsnFrame(input, output, ptrDefs, ptrLex, ptrLineNum);
+    //FIXME: проверка на frameData
+}
+
 GetFrameStates getFrame(FILE *input, Stack *output, Defines *ptrDefs, FrameData *ptrFrameData,
                         lexeme *ptrLex, unsigned *ptrLineNum){
-    GetFrameStates frameState;
     skipComments(input, ptrLex, ptrLineNum);
     getLex(input, ptrLineNum, ptrLex);
     switch(ptrLex->lexType){
         case BracketCurlyOpen:
-            if(ptrFrameData->IF_Num_left > 0)
-                WARNING(ptrLineNum, "Warning: There are IFs left - %d",, ptrFrameData->IF_Num_left);
-            frameState = getControlFrame(input, output, ptrFrameData, ptrLex, ptrLineNum);
-            //FIXME: проверка на frameData
-            return frameState;
+            return processControlFrame(input, output, ptrFrameData, ptrLex, ptrLineNum);
         case Colon:
-            skipComments(input, ptrLex, ptrLineNum);
-            getLex(input, ptrLineNum, ptrLex);
-            if(ptrLex->lexType == Name){
-                //FIXME
-            }
-            else
-                unGetLex(ptrLex);
-            frameState = getInsnFrame(input, output, ptrDefs, ptrLex, ptrLineNum);
-            //FIXME: проверка на frameData
-            return frameState;
+            return processInsnFrame(input, output, ptrDefs, ptrLex, ptrLineNum);
+        case Nothing:
+            return GetFrameEnd;
         default:
             ERROR_MSG_LEX(ptrLineNum, ptrLex, GetFrameCodeError, "Чо это такое, где символ начала фрейма?");
     }
@@ -376,8 +383,7 @@ CompilerStates compileFileToStack(FILE* input, Stack* output){
     do {
         frameState = getFrame(input, output, &defs,
                   &frameData, &lex, &lineNum);
-        i++;
-    } while(i < FRAMES_COUNT && frameState == GetFrameOk);
+    } while(++i < FRAMES_COUNT && frameState == GetFrameOk);
 
     if(i == FRAMES_COUNT && frameState == GetFrameOk
     && checkEnd(input, &lex, &lineNum) == CheckEndNotReached) {
@@ -403,12 +409,12 @@ void printProgramFromStackToFile(Stack* input, FILE* output){
 
 void printCompilerState(CompilerStates state){
     switch(state){
-        default://FIXME
+        default://todo
             return;
     }
 }
 
-CompilerStates compileTextToText(FILE* input, FILE* output){ //FIXME
+CompilerStates compileTextToText(FILE* input, FILE* output){
     CompilerStates state;
     Stack* ptrProgram = dStackInit(INSN_SIZE);
     state = compileFileToStack(input, ptrProgram);
