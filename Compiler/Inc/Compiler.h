@@ -20,8 +20,10 @@ typedef enum CompilerStates_ {
     CompilerErrorNullStack,
     CompilerErrorMemAlloc,
     CompilerErrorOverflowFrames,
+    CompilerErrorUserCode
 } CompilerStates;
 
 CompilerStates compileTextToText(FILE* input, FILE* output);
+void printCompilerState(CompilerStates state);
 
 #endif //DSP_GPU_COMPILER_COMPILER_H

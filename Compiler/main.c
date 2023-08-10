@@ -3,11 +3,7 @@
 //
 
 #include <stdio.h>
-//#include "Compiler/Compiler.h"
-
-//void printCompilerState(CompilerStates state){
-
-//}
+#include "Compiler.h"
 
 int main(){
     FILE* input = fopen("../input.txt", "r");
@@ -15,13 +11,6 @@ int main(){
 
     //CompilerStates state;
     //state = compileTextToText(input, output);
-    //printCompilerState(state);
-
-    int a,b,c;
-    a = getc(input);
-    ungetc(a, input);
-    b = getc(input);
-    c = EOF;
 
     fclose(input);
     fclose(output);

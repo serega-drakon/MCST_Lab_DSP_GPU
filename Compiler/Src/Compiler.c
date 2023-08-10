@@ -20,11 +20,11 @@ do { printf("%s%s", errorMsg, "\n");  \
 return errorCode; } while(0)
 
 #define ERROR_MSG(errorMsg, errorCode, lineNum) \
-do { printf("Line %d: %s%s", lineNum, errorMsg, "\n");  \
+do { printf("Line %d: %s%s", (lineNum), errorMsg, "\n");  \
 return errorCode; } while(0)
 
 #define ERROR_MSG_LEX(errorMsg, errorCode, ptrLex, lineNum) \
-do { printf("Line %d: %s%s", lineNum, errorMsg, "\n -> ");  \
+do { printf("Line %d: %s%s", (lineNum), errorMsg, "\n -> ");  \
 for (int index = 0; ptrLex->op[index] != '\0'; index++) \
     printf("%c", ptrLex->op[index]);                    \
 printf("\n");                                   \
@@ -71,6 +71,8 @@ LexInitStates lexInit(lexeme *ptrLex){ //fixme
 void lexFree(lexeme *ptrLex){
     free(ptrLex->op);
 }
+
+
 
 LexemeTypes translateRegFromStrToLex(Registers_str_enum strEnum){
     switch(strEnum){
@@ -251,32 +253,62 @@ void unGetLex(lexeme *ptrLex){
     ptrLex->unGetStatus = UnGetLexTrue;
 }
 
-/// лексема / уже получена
-SkipCommentsState skipComments(FILE* input, lexeme *ptrLex){
+void skipComments(FILE* input, lexeme *ptrLex, unsigned *ptrLineNum){
+    int c;
+    char commentEnd = 0;
+    do{
+        getLex(input, ptrLineNum, ptrLex);
+        if(ptrLex->lexType == Slash){
+            c = getc(input);
+            if(c == '/') {
+                while ((c = getc(input)) != '\n' || c != EOF)
+                    ;
+                ungetc(c, input);
+            }
+            else{
+                unGetLex(ptrLex);
+                commentEnd = 1;
+            }
+        }
+    } while(!commentEnd);
+}
+
+GetFrameStates getControlFrame(FILE* input, Stack *output, FrameData *ptrFrameData, lexeme *ptrLex,
+                               unsigned *ptrLineNum){
 
 }
 
-getFrameStates getControlFrame(FILE* input, Stack *output, lexeme *ptrLex, unsigned int *ptrLineNum){
-
-}
-
-getFrameStates getInsnFrame(FILE* input, Stack *output, Defines *defs, lexeme *ptrLex, unsigned int *ptrLineNum){
-    getLex(input, ptrLineNum, ptrLex);
-    switch(ptrLex->lexType){
-        case BracketCurlyOpen:
-        case Colon:
-        default:
-    }
-
-
+GetFrameStates getInsnFrame(FILE* input, Stack *output, Defines *ptrDefs, lexeme *ptrLex,
+                            unsigned *ptrLineNum){
     //FIXME: заполнить defs, использовать и сбросить
     //FIXME: подсчет команд внутри фрейма
 }
 
 
 //FIXME: считать фрейм и проверить, достигнут ли конец
-getFrameStates getFrame(FILE *input, Stack *output, Defines *defs, lexeme *ptrLex, unsigned int *ptrLineNum){
-
+GetFrameStates getFrame(FILE *input, Stack *output, Defines *ptrDefs, FrameData *ptrFrameData,
+                        lexeme *ptrLex, unsigned *ptrLineNum){
+    GetFrameStates frameState;
+    skipComments(input, ptrLex, ptrLineNum);
+    getLex(input, ptrLineNum, ptrLex);
+    switch(ptrLex->lexType){
+        case BracketCurlyOpen:
+            frameState = getControlFrame(input, output, ptrFrameData, ptrLex, ptrLineNum);
+            //FIXME: проверка на frameData
+            return frameState;
+        case Colon:
+            skipComments(input, ptrLex, ptrLineNum);
+            getLex(input, ptrLineNum, ptrLex);
+            if(ptrLex->lexType == Name){
+                //FIXME
+            }
+            else unGetLex(ptrLex);
+            frameState = getInsnFrame(input, output, ptrDefs, ptrLex, ptrLineNum);
+            //FIXME: проверка на frameData
+            return frameState;
+        default:
+            ERROR_MSG_LEX("Чо это такое, где символ начала фрейма?", GetFrameCodeError, ptrLex, *ptrLineNum);
+    }
     return GetFrameOk;
 }
 
@@ -292,7 +324,9 @@ CompilerStates compileFileToStack(FILE* input, Stack* output){
         definesFree(&defs);
         return CompilerErrorMemAlloc;
     }
-    getFrameStates frameState;
+    FrameData frameData;
+
+    GetFrameStates frameState;
     unsigned int lineNum = 0; ///< номер строки минус 1
     unsigned int i = 0;
     lexeme lex;
@@ -309,6 +343,13 @@ CompilerStates compileFileToStack(FILE* input, Stack* output){
               CompilerErrorOverflowFrames, (&lex), lineNum);
     }
     lexFree(&lex);
+    switch(frameState){
+    case GetFrameOk:
+    case GetFrameEnd:
+        return CompilerOK;
+    case GetFrameCodeError:
+        return CompilerErrorUserCode;
+    }
     return CompilerOK;
 }
 
@@ -316,10 +357,18 @@ void printProgramFromStackToFile(Stack* input, FILE* output){
 
 }
 
+void printCompilerState(CompilerStates state){
+    switch(state){
+        default://FIXME
+            return;
+    }
+}
+
 CompilerStates compileTextToText(FILE* input, FILE* output){ //FIXME
     CompilerStates state;
     Stack* ptrProgram = dStackInit(INSN_SIZE);
     state = compileFileToStack(input, ptrProgram);
+    printCompilerState(state);
     if(state == CompilerOK)
         printProgramFromStackToFile(ptrProgram, output);
     dStackFree(ptrProgram);
