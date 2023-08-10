@@ -1,6 +1,6 @@
 {
-initR0[!0] = $1,
-initR0[!2] = $f,
+InitR0[!0] = $1,
+InitR0[!2] = $f,
 
 CoreActive = !0,!2,!4, //sakdlaksl;dkl;asd
 

@@ -87,7 +87,7 @@ typedef enum OpCodes_str_enum_{
 } OpCodes_str_enum;
 
 char *CFParamNames_str_[] = {
-    "initR0",
+    "InitR0",
     "CoreActive",
     "Fence",
     "IFNum"

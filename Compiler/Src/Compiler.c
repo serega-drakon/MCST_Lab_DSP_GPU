@@ -166,10 +166,12 @@ LexemeTypes checkOthers(const int op[]){
     for(OpCodes_str_enum i = OpCodes_str_enum_MIN; i < OpCodes_str_enum_MAX; i++){
         if(compareStrIntChar(op, OpCodes_str_[i]))
             return translateOpCodeFromStrToLex(i);
-    }for(CFParamNames_str_enum i = CFParamNames_str_enum_MIN; i < CFParamNames_str_enum_MAX; i++){
+    }
+    for(CFParamNames_str_enum i = CFParamNames_str_enum_MIN; i < CFParamNames_str_enum_MAX; i++){
         if(compareStrIntChar(op, CFParamNames_str_[i]))
             return translateCFParamNamesFromStrToLex(i);
-    }for(FenceModes_str_enum i = FenceModes_str_enum_MIN; i < FenceModes_str_enum_MAX; i++){
+    }
+    for(FenceModes_str_enum i = FenceModes_str_enum_MIN; i < FenceModes_str_enum_MAX; i++){
         if(compareStrIntChar(op, FenceModes_str_[i]))
             return translateFenceModesFromStrToLex(i);
     }
@@ -220,8 +222,8 @@ int getOp(FILE* input, unsigned *ptrLineNum, int op[], unsigned int size){
     if(c != EOF){
         op[i++] = c;
         if(!checkOneCharOp(c)){
-            while (i < (size - 1) && (c = getc(input)) != ' ' && c != '\n' && c != '\t'
-            && !checkOneCharOp(c) && c != EOF) {
+            while (i < (size - 1) && (c = getc(input)) != ' ' && c != '\n'
+            && c != '\t' && !checkOneCharOp(c) && c != EOF) {
                 op[i++] = c;
             }
             if(checkOneCharOp(c) || c == '\n' || c == EOF)

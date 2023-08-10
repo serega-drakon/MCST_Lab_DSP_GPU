@@ -1,6 +1,4 @@
-`include "Inc/InsnSet.def.v"
-`include "Inc/Ranges.def.v"
-`include "Inc/InsnModes.def.v"
+`include "../SharedInc/IncAll.def.v"
 `include "RegisterFile.v"
 `include "InsnMemory.v"
 `include "ALU.v"
