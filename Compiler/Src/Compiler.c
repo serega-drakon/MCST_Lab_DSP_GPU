@@ -12,23 +12,38 @@
 #include "UsefulFuncs.h"
 #include "Enums&Structs.h"
 
-#define MEM_CHECK(ptrMem, errorMsg, errorCode) \
-do{ if(ptrMem == NULL){printf("%s", errorMsg); return errorCode;} } while(0)
+#define EMPTY
 
-#define ERROR_MSG_NL(errorMsg, errorCode) \
-do { printf("%s%s", errorMsg, "\n");  \
-return errorCode; } while(0)
+#define MEM_CHECK(ptrMem,  errorCode, errorMsg, ...) \
+do{ if(ptrMem == NULL){                              \
+printf(errorMsg, __VA_ARGS__);                       \
+     printf("\n");                                   \
+return errorCode;} } while(0)
 
-#define ERROR_MSG(errorMsg, errorCode, lineNum) \
-do { printf("Line %d: %s%s", (lineNum), errorMsg, "\n");  \
-return errorCode; } while(0)
+#define ERROR_MSG_NL(errorCode, errorMsg, ...) \
+do { printf(errorMsg, __VA_ARGS__);            \
+     printf("\n");                             \
+     return errorCode; } while(0)
 
-#define ERROR_MSG_LEX(errorMsg, errorCode, ptrLex, lineNum) \
-do { printf("Line %d: %s%s", (lineNum), errorMsg, "\n -> ");  \
-for (int index = 0; ptrLex->op[index] != '\0'; index++) \
-    printf("%c", ptrLex->op[index]);                    \
-printf("\n");                                   \
-return errorCode; } while(0)
+#define ERROR_MSG(ptrLineNum, errorCode, errorMsg, ...) \
+do { printf("Line %d: ", *(ptrLineNum));                   \
+     printf(errorMsg, __VA_ARGS__);                  \
+     printf("\n");                                   \
+     return errorCode; } while(0)
+
+#define ERROR_MSG_LEX(ptrLineNum, ptrLex, errorCode, errorMsg, ...) \
+do { printf("Line %d: ", *(ptrLineNum));                          \
+     printf(errorMsg, __VA_ARGS__);                          \
+     printf("\n -> ");                                      \
+     for (int index = 0; (ptrLex)->op[index] != '\0'; index++)\
+         printf("%c", (ptrLex)->op[index]);                   \
+     printf("\n");    \
+     return errorCode; } while(0)
+
+#define WARNING(ptrLineNum, errorMsg, ...) \
+do { printf("Line %d: ", *(ptrLineNum));     \
+     printf(errorMsg __VA_ARGS__);                  \
+     printf("\n"); } while(0)
 
 ///Конструктор
 DefinesInitStates definesInit(Defines *defs){
@@ -89,6 +104,12 @@ void frameDataFree(FrameData *ptrFrameData){
         free(ptrFrameData->CoreActiveVector);
         free(ptrFrameData->InitR0Vector);
     }
+}
+
+void allFree(Defines *ptrDefs, lexeme *ptrLex, FrameData *ptrFrameData){
+    definesFree(ptrDefs);
+    lexFree(ptrLex);
+    frameDataFree(ptrFrameData);
 }
 
 LexemeTypes translateRegFromStrToLex(Registers_str_enum strEnum){
@@ -310,6 +331,8 @@ GetFrameStates getFrame(FILE *input, Stack *output, Defines *ptrDefs, FrameData 
     getLex(input, ptrLineNum, ptrLex);
     switch(ptrLex->lexType){
         case BracketCurlyOpen:
+            if(ptrFrameData->IF_Num_left > 0)
+                WARNING(*ptrLineNum, "Warning: There are IF left - %d", ptrFrameData->IF_Num_left);
             frameState = getControlFrame(input, output, ptrFrameData, ptrLex, ptrLineNum);
             //FIXME: проверка на frameData
             return frameState;
@@ -319,7 +342,8 @@ GetFrameStates getFrame(FILE *input, Stack *output, Defines *ptrDefs, FrameData 
             if(ptrLex->lexType == Name){
                 //FIXME
             }
-            else unGetLex(ptrLex);
+            else
+                unGetLex(ptrLex);
             frameState = getInsnFrame(input, output, ptrDefs, ptrLex, ptrLineNum);
             //FIXME: проверка на frameData
             return frameState;
@@ -329,7 +353,7 @@ GetFrameStates getFrame(FILE *input, Stack *output, Defines *ptrDefs, FrameData 
 }
 
 CheckEndStates checkEnd(FILE *input, lexeme *ptrLex, unsigned *ptrLineNum){
-    skipComments(input, ptrLex, )
+    //skipComments(input, ptrLex, )
 }
 
 CompilerStates compileFileToStack(FILE* input, Stack* output){
@@ -351,15 +375,14 @@ CompilerStates compileFileToStack(FILE* input, Stack* output){
                               &frameData, &lex, &lineNum);
         i++;
     } while(i < FRAMES_COUNT && frameState == GetFrameOk);
-    definesFree(&defs);
-    frameDataFree(&frameData);
-    if(i == FRAMES_COUNT && frameState == GetFrameOk && checkEnd(input, &lex) == CheckEndNotReached) {
-        lexFree(&lex);
-        ERROR_MSG_LEX("Warning: Out of range, max count of frames has reached",
-              CompilerErrorOverflowFrames, (&lex), lineNum);
+
+    if(i == FRAMES_COUNT && frameState == GetFrameOk && checkEnd(input, &lex, &lineNum) == CheckEndNotReached) {
+        allFree(&defs, &lex, &frameData);
+        ERROR_MSG_LEX(&lineNum, &lex, CompilerErrorOverflowFrames,
+                      "Warning: Out of range, max count of frames has reached - %d", FRAMES_COUNT);
     }
 
-    lexFree(&lex);
+    allFree(&defs, &lex, &frameData);
     switch(frameState){
     case GetFrameOk: case GetFrameEnd:
         return CompilerOK;
@@ -369,11 +392,9 @@ CompilerStates compileFileToStack(FILE* input, Stack* output){
         assert(0);
     }
 
-    memAllocError:
+    memAllocError: //FIXME: pomenat
+    allFree(&defs, &lex, &frameData);
     printf("Error: mem alloc error\n");
-    definesFree(&defs);
-    frameDataFree(&frameData);
-    lexFree(&lex);
     return CompilerErrorMemAlloc;
 }
 
