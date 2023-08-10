@@ -75,7 +75,7 @@ typedef struct Defines_{
 
 ///Вспомогательные данные для поиска ошибок
 typedef struct FrameData_{
-    unsigned IF_Num;
+    unsigned IF_Num_left;
     char *CoreActiveVector;
     char *InitR0Vector;
 } FrameData;
@@ -101,10 +101,10 @@ typedef enum LexInitStates_{
     LexInitError
 } LexInitStates;
 
-typedef enum frameDataInitStates_{
+typedef enum FrameDataInitStates_{
     FrameDataInitSuccess = 0,
     FrameDataInitError
-} frameDataInitStates_;
+} FrameDataInitStates;
 
 typedef enum getFrameStates_{
     GetFrameEnd = -1, ///< если конец достигнут

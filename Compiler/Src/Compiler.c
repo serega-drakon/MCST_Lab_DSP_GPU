@@ -12,8 +12,8 @@
 #include "UsefulFuncs.h"
 #include "Enums&Structs.h"
 
-#define MEM_CHECK(ptrMem, errorName, errorCode) \
-do{ if(ptrMem == NULL){printf(errorName); return errorCode;} } while(0)
+#define MEM_CHECK(ptrMem, errorMsg, errorCode) \
+do{ if(ptrMem == NULL){printf("%s", errorMsg); return errorCode;} } while(0)
 
 #define ERROR_MSG_NL(errorMsg, errorCode) \
 do { printf("%s%s", errorMsg, "\n");  \
@@ -32,15 +32,15 @@ return errorCode; } while(0)
 
 ///Конструктор
 DefinesInitStates definesInit(Defines *defs){
-    const char error_msg[] = "defines memory allock error";
+    const char errorMsg[] = "defines memory allock error";
     defs->ptrLabelDefinedNames = dStackInit(sizeof(int));
-    MEM_CHECK(defs->ptrLabelDefinedNames, error_msg, DefinesInitError);
+    MEM_CHECK(defs->ptrLabelDefinedNames, errorMsg, DefinesInitError);
     defs->ptrLabelDefinedValues = dStackInit(sizeof(char));
-    MEM_CHECK(defs->ptrLabelDefinedValues, error_msg, DefinesInitError);
+    MEM_CHECK(defs->ptrLabelDefinedValues, errorMsg, DefinesInitError);
     defs->ptrLabelUsedNames = dStackInit(sizeof(int));
-    MEM_CHECK(defs->ptrLabelUsedNames, error_msg, DefinesInitError);
+    MEM_CHECK(defs->ptrLabelUsedNames, errorMsg, DefinesInitError);
     defs->ptrLabelUsedValuesPtr = dStackInit(sizeof(Stack *));
-    MEM_CHECK(defs->ptrLabelUsedValuesPtr, error_msg, DefinesInitError);
+    MEM_CHECK(defs->ptrLabelUsedValuesPtr, errorMsg, DefinesInitError);
     return DefinesInitOK;
 }
 
@@ -69,10 +69,27 @@ LexInitStates lexInit(lexeme *ptrLex){ //fixme
 }
 
 void lexFree(lexeme *ptrLex){
-    free(ptrLex->op);
+    if(ptrLex != NULL){
+        free(ptrLex->op);
+    }
 }
 
+FrameDataInitStates frameDataInit(FrameData *ptrFrameData){
+    char errorMsg[] = "Error: frameData mem alloc error";
+    ptrFrameData->IF_Num_left = 0;
+    ptrFrameData->CoreActiveVector = malloc(CORES_COUNT * sizeof(char));
+    MEM_CHECK(ptrFrameData->CoreActiveVector, errorMsg, FrameDataInitError);
+    ptrFrameData->InitR0Vector = malloc(CORES_COUNT * sizeof(char));
+    MEM_CHECK(ptrFrameData->InitR0Vector, errorMsg, FrameDataInitError);
+    return FrameDataInitSuccess;
+}
 
+void frameDataFree(FrameData *ptrFrameData){
+    if(ptrFrameData != NULL){
+        free(ptrFrameData->CoreActiveVector);
+        free(ptrFrameData->InitR0Vector);
+    }
+}
 
 LexemeTypes translateRegFromStrToLex(Registers_str_enum strEnum){
     switch(strEnum){
@@ -309,48 +326,55 @@ GetFrameStates getFrame(FILE *input, Stack *output, Defines *ptrDefs, FrameData 
         default:
             ERROR_MSG_LEX("Чо это такое, где символ начала фрейма?", GetFrameCodeError, ptrLex, *ptrLineNum);
     }
-    return GetFrameOk;
 }
 
-CheckEndStates checkEnd(FILE *input, lexeme *ptrLex){
-
+CheckEndStates checkEnd(FILE *input, lexeme *ptrLex, unsigned *ptrLineNum){
+    skipComments(input, ptrLex, )
 }
 
 CompilerStates compileFileToStack(FILE* input, Stack* output){
     MEM_CHECK(input, "Error: input file is NULL", CompilerErrorNullInput);
     MEM_CHECK(output, "Error: output stack is NULL", CompilerErrorNullStack);
     Defines defs;
-    if(definesInit(&defs) == DefinesInitError){
-        definesFree(&defs);
-        return CompilerErrorMemAlloc;
-    }
     FrameData frameData;
-
+    lexeme lex;
+    if(definesInit(&defs) == DefinesInitError
+    || lexInit(&lex) == LexInitError
+    || frameDataInit(&frameData) == FrameDataInitError)
+        goto memAllocError;
     GetFrameStates frameState;
     unsigned int lineNum = 0; ///< номер строки минус 1
     unsigned int i = 0;
-    lexeme lex;
-    if(lexInit(&lex) == LexInitError)
-        return CompilerErrorMemAlloc;
+
     do {
-        frameState = getFrame(input, output, &defs, &lex, &lineNum);
+        frameState = getFrame(input, output, &defs,
+                              &frameData, &lex, &lineNum);
         i++;
     } while(i < FRAMES_COUNT && frameState == GetFrameOk);
     definesFree(&defs);
-    if(i == FRAMES_COUNT && frameState == GetFrameOk && checkEnd(input, &lex)) {
+    frameDataFree(&frameData);
+    if(i == FRAMES_COUNT && frameState == GetFrameOk && checkEnd(input, &lex) == CheckEndNotReached) {
         lexFree(&lex);
-        ERROR_MSG_LEX("Error: Out of range, max count of frames has reached",
+        ERROR_MSG_LEX("Warning: Out of range, max count of frames has reached",
               CompilerErrorOverflowFrames, (&lex), lineNum);
     }
+
     lexFree(&lex);
     switch(frameState){
-    case GetFrameOk:
-    case GetFrameEnd:
+    case GetFrameOk: case GetFrameEnd:
         return CompilerOK;
     case GetFrameCodeError:
         return CompilerErrorUserCode;
+    default:
+        assert(0);
     }
-    return CompilerOK;
+
+    memAllocError:
+    printf("Error: mem alloc error\n");
+    definesFree(&defs);
+    frameDataFree(&frameData);
+    lexFree(&lex);
+    return CompilerErrorMemAlloc;
 }
 
 void printProgramFromStackToFile(Stack* input, FILE* output){
