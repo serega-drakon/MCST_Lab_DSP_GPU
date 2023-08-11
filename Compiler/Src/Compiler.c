@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <assert.h>
+#include <string.h>
 #include "Compiler.h"
 #include "dStack.h"
 #include "strings.h"
@@ -32,10 +33,7 @@ do { printf("Line %d: ", *(ptrLineNum));                \
 #define ERROR_MSG_LEX(ptrLineNum, ptrLex, errorCode, errorMsg, ...) \
 do { printf("Line %d: ", *(ptrLineNum));                            \
      printf(errorMsg __VA_ARGS__);                                 \
-     printf("\n -> ");                                              \
-     for (int index = 0; (ptrLex)->op[index] != '\0'; index++)\
-         printf("%c", (ptrLex)->op[index]);                   \
-     printf("\n");                                            \
+     printf("\n -> %ls\n", (ptrLex)->op);                           \
      return errorCode; } while(0)
 
 #define WARNING(ptrLineNum, errorMsg, ...)  \
@@ -90,9 +88,9 @@ void lexFree(lexeme *ptrLex){
 FrameDataInitStates frameDataInit(FrameData *ptrFrameData){
     const char errorMsg[] = "Error: frameData mem alloc error";
     ptrFrameData->IF_Num_left = 0;
-    ptrFrameData->CoreActiveVector = malloc(CORES_COUNT * sizeof(char));
+    ptrFrameData->CoreActiveVector = calloc(CORES_COUNT, sizeof(VectorStates));
     MEM_CHECK(ptrFrameData->CoreActiveVector, FrameDataInitError, errorMsg);
-    ptrFrameData->InitR0Vector = malloc(CORES_COUNT * sizeof(char));
+    ptrFrameData->InitR0Vector = calloc(CORES_COUNT, sizeof(VectorStates));
     MEM_CHECK(ptrFrameData->InitR0Vector, FrameDataInitError, errorMsg);
     return FrameDataInitSuccess;
 }
@@ -323,25 +321,30 @@ GetFrameStates getInsnFrame(FILE* input, Stack *output, Defines *ptrDefs, lexeme
 
 GetFrameStates processControlFrame(FILE* input, Stack *output, FrameData *ptrFrameData, lexeme *ptrLex,
                                    unsigned *ptrLineNum){
-    GetFrameStates frameState;
     if(ptrFrameData->IF_Num_left > 0)
         WARNING(ptrLineNum, "Warning: There are IFs left - %d",, ptrFrameData->IF_Num_left);
-    frameState = getControlFrame(input, output, ptrFrameData, ptrLex, ptrLineNum);
-    //FIXME: проверка на frameData
+    GetFrameStates frameState = getControlFrame(input, output, ptrFrameData, ptrLex, ptrLineNum);
+    if(ptr)
+    return frameState;
 }
 
-GetFrameStates processInsnFrame(FILE* input, Stack *output, Defines *ptrDefs, lexeme *ptrLex,
-                                    unsigned *ptrLineNum){
-    GetFrameStates frameState;
+GetFrameStates processInsnFrame(FILE* input, Stack *output, Defines *ptrDefs, FrameData *ptrFrameData,
+                                lexeme *ptrLex, unsigned *ptrLineNum){
     skipComments(input, ptrLex, ptrLineNum);
     getLex(input, ptrLineNum, ptrLex);
-    if(ptrLex->lexType == Name){
-        //FIXME
-    }
-    else
+    if(ptrLex->lexType != Name)
         unGetLex(ptrLex);
-    frameState = getInsnFrame(input, output, ptrDefs, ptrLex, ptrLineNum);
-    //FIXME: проверка на frameData
+    if(ptrFrameData->IF_Num_left > 0){
+        ptrFrameData->IF_Num_left--;
+    }
+    else {
+        if(ptrLex->lexType == Name)
+            WARNING(ptrLineNum, "Warning: There are CF needed before \"%ls%s",, ptrLex->op, "\"");
+        else
+            WARNING(ptrLineNum, "Warning: There are CF needed before");
+    }
+    GetFrameStates frameState = getInsnFrame(input, output, ptrDefs, ptrLex, ptrLineNum);
+    return frameState;
 }
 
 GetFrameStates getFrame(FILE *input, Stack *output, Defines *ptrDefs, FrameData *ptrFrameData,
@@ -352,7 +355,7 @@ GetFrameStates getFrame(FILE *input, Stack *output, Defines *ptrDefs, FrameData 
         case BracketCurlyOpen:
             return processControlFrame(input, output, ptrFrameData, ptrLex, ptrLineNum);
         case Colon:
-            return processInsnFrame(input, output, ptrDefs, ptrLex, ptrLineNum);
+            return processInsnFrame(input, output, ptrDefs, ptrFrameData, ptrLex, ptrLineNum);
         case Nothing:
             return GetFrameEnd;
         default:
@@ -361,7 +364,12 @@ GetFrameStates getFrame(FILE *input, Stack *output, Defines *ptrDefs, FrameData 
 }
 
 CheckEndStates checkEnd(FILE *input, lexeme *ptrLex, unsigned *ptrLineNum){
-    //skipComments(input, ptrLex, )
+    skipComments(input, ptrLex, ptrLineNum);
+    getLex(input, ptrLineNum, ptrLex);
+    if(ptrLex->lexType == Nothing)
+        return CheckEndReached;
+    else
+        return CheckEndNotReached;
 }
 
 CompilerStates compileFileToStack(FILE* input, Stack* output){
@@ -403,10 +411,6 @@ CompilerStates compileFileToStack(FILE* input, Stack* output){
     }
 }
 
-void printProgramFromStackToFile(Stack* input, FILE* output){
-    //todo
-}
-
 void printCompilerState(CompilerStates state){
     switch(state){
         default://todo
@@ -414,18 +418,32 @@ void printCompilerState(CompilerStates state){
     }
 }
 
+void printProgramFromStackToFile(Stack* input, FILE* output){
+    //todo
+}
+
 CompilerStates compileTextToText(FILE* input, FILE* output){
     CompilerStates state;
     Stack* ptrProgram = dStackInit(INSN_SIZE);
     state = compileFileToStack(input, ptrProgram);
     printCompilerState(state);
-    if(state == CompilerOK)
+    if(state == CompilerOK || state == CompilerErrorOverflowFrames)
         printProgramFromStackToFile(ptrProgram, output);
     dStackFree(ptrProgram);
     return state;
 }
 
-CompilerStates compileTextToBin(FILE *input, FILE *output){
+void printProgramFromStackToBin(Stack* input, FILE* output){
     //todo
-    return CompilerOK;
+}
+
+CompilerStates compileTextToBin(FILE *input, FILE *output){
+    CompilerStates state;
+    Stack* ptrProgram = dStackInit(INSN_SIZE);
+    state = compileFileToStack(input, ptrProgram);
+    printCompilerState(state);
+    if(state == CompilerOK || state == CompilerErrorOverflowFrames)
+        printProgramFromStackToBin(ptrProgram, output);
+    dStackFree(ptrProgram);
+    return state;
 }

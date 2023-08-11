@@ -24,6 +24,7 @@ typedef enum CompilerStates_ {
 } CompilerStates;
 
 CompilerStates compileTextToText(FILE* input, FILE* output);
+CompilerStates compileTextToBin(FILE *input, FILE *output);
 void printCompilerState(CompilerStates state);
 
 #endif //DSP_GPU_COMPILER_COMPILER_H

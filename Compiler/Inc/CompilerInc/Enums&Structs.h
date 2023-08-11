@@ -73,11 +73,16 @@ typedef struct Defines_{
     Stack* ptrLabelUsedValuesPtr;
 } Defines;
 
+typedef enum VectorStates_{
+    VectorNoActive = 0,
+    VectorActive
+} VectorStates;
+
 ///Вспомогательные данные для поиска ошибок
 typedef struct FrameData_{
     unsigned IF_Num_left;
-    char *CoreActiveVector;
-    char *InitR0Vector;
+    VectorStates *CoreActiveVector;
+    VectorStates *InitR0Vector;
 } FrameData;
 
 typedef enum DefinesInitStates_{
