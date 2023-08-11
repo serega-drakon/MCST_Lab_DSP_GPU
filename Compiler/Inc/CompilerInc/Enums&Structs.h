@@ -122,4 +122,8 @@ typedef enum CheckEndStates_{
     CheckEndNotReached
 } CheckEndStates;
 
+typedef enum CheckCFFlags_{
+    CheckCFFlagsSuccess = 0,
+    CheckCFFlagsWarning
+} CheckCFFlags;
 #endif //DSP_GPU_COMPILER_ENUMS_STRUCTS_H

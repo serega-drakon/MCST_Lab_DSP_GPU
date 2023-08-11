@@ -319,12 +319,22 @@ GetFrameStates getInsnFrame(FILE* input, Stack *output, Defines *ptrDefs, lexeme
     //FIXME: подсчет команд внутри фрейма
 }
 
+CheckCFFlags checkCFFlags(FrameData *ptrFrameData){
+    for(unsigned i = 0; i < CORES_COUNT; i++){
+        if(ptrFrameData->CoreActiveVector[i] == VectorNoActive
+        && ptrFrameData->InitR0Vector[i] == VectorActive)
+            return CheckCFFlagsWarning;
+    }
+    return CheckCFFlagsSuccess;
+}
+
 GetFrameStates processControlFrame(FILE* input, Stack *output, FrameData *ptrFrameData, lexeme *ptrLex,
                                    unsigned *ptrLineNum){
     if(ptrFrameData->IF_Num_left > 0)
         WARNING(ptrLineNum, "Warning: There are IFs left - %d",, ptrFrameData->IF_Num_left);
     GetFrameStates frameState = getControlFrame(input, output, ptrFrameData, ptrLex, ptrLineNum);
-    if(ptr)
+    if(checkCFFlags(ptrFrameData) == CheckCFFlagsWarning)
+        WARNING(ptrLineNum, "Warning: InitR0 > CoreActive???");
     return frameState;
 }
 
