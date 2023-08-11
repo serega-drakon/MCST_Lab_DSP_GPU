@@ -20,6 +20,7 @@ typedef enum CompilerStates_ {
     CompilerErrorNullStack,
     CompilerErrorMemAlloc,
     CompilerErrorOverflowFrames,
+    CompilerErrorZeroFrameCount,
     CompilerErrorUserCode
 } CompilerStates;
 

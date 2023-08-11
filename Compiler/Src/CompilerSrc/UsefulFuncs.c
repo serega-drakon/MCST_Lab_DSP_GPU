@@ -34,3 +34,8 @@ u_int8_t getConst16D(const int op[]){
         value = value * 16 + op[i] - (isdigit(op[i]) ? '0' : 'A' - 10);
     return value;
 }
+
+void putZeroes(void* dst, unsigned size){
+    for(unsigned i = 0; i < size; i++)
+        ((char*)dst)[i] = 0;
+}

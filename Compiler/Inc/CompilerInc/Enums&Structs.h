@@ -78,11 +78,20 @@ typedef enum VectorStates_{
     VectorActive
 } VectorStates;
 
+typedef enum FenceModes_{
+    FenceNo_mode = 0,
+    FenceAcq_mode,
+    FenceRel_mode
+} FenceModes;
+
 ///Вспомогательные данные для поиска ошибок
 typedef struct FrameData_{
     unsigned IF_Num_left;
-    VectorStates *CoreActiveVector;
-    VectorStates *InitR0Vector;
+    VectorStates *coreActiveVector;
+    VectorStates *initR0Vector;
+    char *initR0data;
+    FenceModes fenceMode;
+
 } FrameData;
 
 typedef enum DefinesInitStates_{
@@ -126,4 +135,10 @@ typedef enum CheckCFFlags_{
     CheckCFFlagsSuccess = 0,
     CheckCFFlagsWarning
 } CheckCFFlags;
+
+typedef enum ProcessStates_{
+    ProcessOK,
+    ProcessError
+} ProcessStates;
+
 #endif //DSP_GPU_COMPILER_ENUMS_STRUCTS_H
