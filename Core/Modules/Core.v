@@ -1,4 +1,4 @@
-`include "../SharedInc/IncAll.def.v"
+`include "IncAllCore.def.v"
 `include "RegisterFile.v"
 `include "InsnMemory.v"
 `include "ALU.v"
@@ -202,9 +202,9 @@ module Core #(
     wire X_branch_cond_ALU;
 
     ALU ALU(.src_0_data_ALU(src_0_data_ALU), .src_1_data_ALU(src_1_data_ALU),
-        .insn_F2_const_ALU(insn_DX_const), .insn_set_const_mode(insn_DX_set_const_mode),
-        .DX_insn_opc(insn_DX_opc), .X_result_ALU(X_result_ALU),
-        .X_branch_cond_ALU(X_branch_cond_ALU));
+        .insn_F2_const_ALU(insn_DX_const), .core_id(CORE_ID[`CORE_ID_RANGE]),
+        .insn_set_const_mode(insn_DX_set_const_mode), .DX_insn_opc(insn_DX_opc),
+        .X_result_ALU(X_result_ALU), .X_branch_cond_ALU(X_branch_cond_ALU));
 
     wire X_branch_cond = X_branch_cond_ALU & insn_DX_is_F4; //под F4 только переходы
 

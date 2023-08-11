@@ -1,5 +1,4 @@
-`include "Inc/InsnSet.def.v"
-`include "Inc/Ranges.def.v"
+`include "IncAllCore.def.v"
 
 module ALU (
     input wire [`REG_RANGE] src_0_data_ALU,
