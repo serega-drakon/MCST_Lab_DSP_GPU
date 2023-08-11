@@ -392,6 +392,14 @@ ProcessStates processLabelDefinition(){
 
 }
 
+ProcessStates processCheckLabels(){
+
+}
+
+void processPutLabels(){
+
+}
+
 void pushIFtoStack(Stack *output){
 
 }
@@ -432,7 +440,9 @@ GetFrameStates getInsnFrame(FILE* input, Stack *output, Defines *ptrDefs, lexeme
         }
     } while(insnNum < INSN_COUNT
     && ptrLex->lexType != Nothing && ptrLex->lexType != Colon && ptrLex->lexType != BracketCurlyOpen);
-
+    if(processCheckLabels() == ProcessError)
+        ;
+    processPutLabels();
     pushIFtoStack(output);
     return GetFrameOk;
 
