@@ -1,12 +1,12 @@
 {
-InitR0[!0] = $1,
-InitR0[!2] = $f,
+InitR0[!0] = $12;
+InitR0[!2] = $F1;
 
-CoreActive = !0,!2,!4, //sakdlaksl;dkl;asd
+CoreActive = !0,!2,!4; //sakdlaksl;dkl;asd
 
-Fence = acq,
+Fence = acq;
 
-IFNum = !4,
+IFNum = !4;
 }
 
 :name_1
@@ -15,7 +15,7 @@ sub %r3 %r3 %r3     //jdaksjljdkasjkd
 add %r0 %r3 %r3
 bnz %r3 .target
 
-set_const %r3 $ff
+set_const %r3 $FF
 
 .target
 

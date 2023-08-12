@@ -6,11 +6,11 @@
 #include "Compiler.h"
 
 int main(){
-    FILE* input = fopen("../input.txt", "r");
-    FILE* output = fopen("../output.txt", "w");
+    FILE* input = fopen("../Data/input.txt", "r");
+    FILE* output = fopen("../Data/output.txt", "w");
 
-    //CompilerStates state;
-    //state = compileTextToText(input, output);
+    CompilerStates state;
+    state = compileTextToText(input, output);
 
     fclose(input);
     fclose(output);

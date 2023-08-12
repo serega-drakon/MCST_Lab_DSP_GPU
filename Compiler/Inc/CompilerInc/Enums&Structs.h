@@ -55,6 +55,7 @@ typedef enum LexemeTypes_ {
     Comma,  // в переводе запятая
     Equal,
     Slash,
+    Semicolon,
     InitR0,
     CoreActive,
     Fence,
@@ -89,15 +90,9 @@ typedef struct FrameData_{
     unsigned IF_Num_left;
     VectorStates *coreActiveVector;
     VectorStates *initR0Vector;
-    char *initR0data;
+    uint8_t *initR0data;
     FenceModes fenceMode;
-
-} FrameData;
-
-typedef enum DefinesInitStates_{
-    DefinesInitOK = 0,
-    DefinesInitError
-} DefinesInitStates;
+} ControlFrameData;
 
 typedef enum UnGetLexStatus_{
     UnGetLexFalse = 0,
@@ -110,15 +105,19 @@ typedef struct lexeme_{
     UnGetLexStatus unGetStatus;
 } lexeme;
 
-typedef enum LexInitStates_{
-    LexInitSuccess = 0,
-    LexInitError
-} LexInitStates;
+typedef struct insn_{
+    InsnOpCodes opCode;
+    InsnSrcDst src0;
+    InsnSrcDst src1;
+    InsnSrcDst src2dst;
+    uint8_t constData;
+    uint8_t target;
+} insn;
 
-typedef enum FrameDataInitStates_{
-    FrameDataInitSuccess = 0,
-    FrameDataInitError
-} FrameDataInitStates;
+typedef enum InitStates_{
+    InitOK,
+    InitError
+} InitStates;
 
 typedef enum getFrameStates_{
     GetFrameEnd = -1, ///< если конец достигнут

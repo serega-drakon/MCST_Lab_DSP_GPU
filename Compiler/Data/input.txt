@@ -1,0 +1,10 @@
+{
+InitR0[!0] = $12;
+InitR0[!2] = $F1;
+
+CoreActive = !0,!2,!4; //sakdlaksl;dkl;asd
+
+Fence = acq;
+
+IFNum = !4;
+}

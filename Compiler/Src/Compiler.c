@@ -14,7 +14,7 @@
 #include "UsefulFuncs.h"
 #include "Enums&Structs.h"
 
-#define MEM_CHECK(ptrMem,  errorCode, errorMsg, ...) \
+#define MEM_CHECK(ptrMem, errorCode, errorMsg, ...) \
 do{ if(ptrMem == NULL){                              \
         printf(errorMsg __VA_ARGS__);               \
         printf("\n");                                \
@@ -26,33 +26,33 @@ do { printf(errorMsg __VA_ARGS__);            \
      return errorCode; } while(0)
 
 #define ERROR_MSG(ptrLineNum, errorCode, errorMsg, ...) \
-do { printf("Line %d: ", *(ptrLineNum));                \
+do { printf("Line %d: ", *(ptrLineNum) + 1);                \
      printf(errorMsg __VA_ARGS__);                     \
      printf("\n");                                      \
      return errorCode; } while(0)
 
 #define ERROR_MSG_LEX(ptrLineNum, ptrLex, errorCode, errorMsg, ...) \
-do { printf("Line %d: ", *(ptrLineNum));                            \
+do { printf("Line %d: ", *(ptrLineNum) + 1);                            \
      printf(errorMsg __VA_ARGS__);                                 \
      printf("\n -> %ls\n", (ptrLex)->op);                           \
      return errorCode; } while(0)
 
 #define WARNING(ptrLineNum, errorMsg, ...)  \
-do { printf("Line %d: ", *(ptrLineNum));    \
+do { printf("Line %d: ", *(ptrLineNum) + 1);    \
      printf(errorMsg __VA_ARGS__);          \
      printf("\n"); } while(0)
 
-DefinesInitStates definesInit(Defines *defs){
+InitStates definesInit(Defines *defs){
     const char errorMsg[] = "Defines memory alloc error";
     defs->ptrLabelDefinedNames = dStackInit(sizeof(int));
-    MEM_CHECK(defs->ptrLabelDefinedNames, DefinesInitError, errorMsg);
+    MEM_CHECK(defs->ptrLabelDefinedNames, InitError, errorMsg);
     defs->ptrLabelDefinedValues = dStackInit(sizeof(char));
-    MEM_CHECK(defs->ptrLabelDefinedValues, DefinesInitError, errorMsg);
+    MEM_CHECK(defs->ptrLabelDefinedValues, InitError, errorMsg);
     defs->ptrLabelUsedNames = dStackInit(sizeof(int));
-    MEM_CHECK(defs->ptrLabelUsedNames, DefinesInitError, errorMsg);
+    MEM_CHECK(defs->ptrLabelUsedNames, InitError, errorMsg);
     defs->ptrLabelUsedValuesPtr = dStackInit(sizeof(Stack *));
-    MEM_CHECK(defs->ptrLabelUsedValuesPtr, DefinesInitError, errorMsg);
-    return DefinesInitOK;
+    MEM_CHECK(defs->ptrLabelUsedValuesPtr, InitError, errorMsg);
+    return InitOK;
 }
 
 void definesFree(struct Defines_ *ptrDef){
@@ -69,13 +69,13 @@ void definesFree(struct Defines_ *ptrDef){
     }
 }
 
-LexInitStates lexInit(lexeme *ptrLex){ //fixme
+InitStates lexInit(lexeme *ptrLex){ //fixme
     assert(MAX_OP > 0);
     ptrLex->op = malloc(MAX_OP * sizeof(int));
-    MEM_CHECK(ptrLex->op, LexInitError, "Error: lex mem alloc error");
+    MEM_CHECK(ptrLex->op, InitError, "Error: lex mem alloc error");
     ptrLex->unGetStatus = UnGetLexFalse;
     ptrLex->lexType = Nothing;
-    return LexInitSuccess;
+    return InitOK;
 }
 
 void lexFree(lexeme *ptrLex){
@@ -84,38 +84,46 @@ void lexFree(lexeme *ptrLex){
     }
 }
 
-FrameDataInitStates frameDataInit(FrameData *ptrFrameData){
+InitStates frameDataInit(ControlFrameData *ptrCFData){
     const char errorMsg[] = "Error: frameData mem alloc error";
-    ptrFrameData->IF_Num_left = 0;
-    ptrFrameData->fenceMode = FenceNo_mode;
-    ptrFrameData->coreActiveVector = calloc(CORES_COUNT, sizeof(VectorStates));
-    MEM_CHECK(ptrFrameData->coreActiveVector, FrameDataInitError, errorMsg);
-    ptrFrameData->initR0Vector = calloc(CORES_COUNT, sizeof(VectorStates));
-    MEM_CHECK(ptrFrameData->initR0Vector, FrameDataInitError, errorMsg);
-    ptrFrameData->initR0data = calloc(CORES_COUNT, REG_SIZE);
-    MEM_CHECK(ptrFrameData->initR0data, FrameDataInitError, errorMsg);
-    return FrameDataInitSuccess;
+    ptrCFData->IF_Num_left = 0;
+    ptrCFData->fenceMode = FenceNo_mode;
+    ptrCFData->coreActiveVector = calloc(CORES_COUNT, sizeof(VectorStates));
+    MEM_CHECK(ptrCFData->coreActiveVector, InitError, errorMsg);
+    ptrCFData->initR0Vector = calloc(CORES_COUNT, sizeof(VectorStates));
+    MEM_CHECK(ptrCFData->initR0Vector, InitError, errorMsg);
+    ptrCFData->initR0data = calloc(CORES_COUNT, REG_SIZE);
+    MEM_CHECK(ptrCFData->initR0data, InitError, errorMsg);
+    return InitOK;
 }
 
-void frameDataReset(FrameData *ptrFrameData){
-    ptrFrameData->IF_Num_left = 0;
-    ptrFrameData->fenceMode = FenceNo_mode;
-    putZeroes(ptrFrameData->coreActiveVector, CORES_COUNT * sizeof(VectorStates));
-    putZeroes(ptrFrameData->initR0Vector, CORES_COUNT * sizeof(VectorStates));
-    putZeroes(ptrFrameData->initR0data, CORES_COUNT * REG_SIZE);
+void frameDataReset(ControlFrameData *ptrCFData){
+    ptrCFData->IF_Num_left = 0;
+    ptrCFData->fenceMode = FenceNo_mode;
+    putZeroes(ptrCFData->coreActiveVector, CORES_COUNT * sizeof(VectorStates));
+    putZeroes(ptrCFData->initR0Vector, CORES_COUNT * sizeof(VectorStates));
+    putZeroes(ptrCFData->initR0data, CORES_COUNT * REG_SIZE);
 }
 
-void frameDataFree(FrameData *ptrFrameData){
-    if(ptrFrameData != NULL){
-        free(ptrFrameData->coreActiveVector);
-        free(ptrFrameData->initR0Vector);
+void frameDataFree(ControlFrameData *ptrCFData){
+    if(ptrCFData != NULL){
+        free(ptrCFData->coreActiveVector);
+        free(ptrCFData->initR0Vector);
     }
 }
 
-void allFree(Defines *ptrDefs, lexeme *ptrLex, FrameData *ptrFrameData){
+InitStates allInit(Defines *ptrDefs, lexeme *ptrLex, ControlFrameData *ptrCFData){
+    if(definesInit(ptrDefs) == InitError
+    || lexInit(ptrLex) == InitError
+    || frameDataInit(ptrCFData) == InitError)
+        return InitError;
+    return InitOK;
+}
+
+void allFree(Defines *ptrDefs, lexeme *ptrLex, ControlFrameData *ptrCFData){
     definesFree(ptrDefs);
     lexFree(ptrLex);
-    frameDataFree(ptrFrameData);
+    frameDataFree(ptrCFData);
 }
 
 LexemeTypes translateRegFromStrToLex(Registers_str_enum strEnum){
@@ -239,6 +247,7 @@ LexemeTypes getType(const int op[]){
         case '=': return Equal;
         case '/': return Slash;
         case ':': return Colon;
+        case ';': return Semicolon;
         case '\0': return Nothing;
         default: return checkOthers(op);
     }
@@ -251,6 +260,7 @@ char checkOneCharOp(int c){
     switch(c){
         case '{': case '}': case '[': case ']':
         case ',': case '=': case '/': case ':':
+        case ';':
             return 1;
         default:
             return 0;
@@ -306,7 +316,7 @@ void skipComments(FILE *input, unsigned *ptrLineNum, lexeme *ptrLex) {
         if(ptrLex->lexType == Slash){
             c = getc(input);
             if(c == '/') {
-                while ((c = getc(input)) != '\n' || c != EOF)
+                while ((c = getc(input)) != '\n' && c != EOF)
                     ;
                 ungetc(c, input);
             }
@@ -315,50 +325,132 @@ void skipComments(FILE *input, unsigned *ptrLineNum, lexeme *ptrLex) {
                 commentEnd = 1;
             }
         }
+        else{
+            unGetLex(ptrLex);
+            commentEnd = 1;
+        }
     } while(!commentEnd);
 }
 
-ProcessStates processInitR0(FILE* input, FrameData *ptrFrameData, lexeme *ptrLex, unsigned *ptrLineNum){
+uint8_t isConst(lexeme *ptrLex){
+    return (ptrLex->lexType == Const10 || ptrLex->lexType == Const16);
+}
+
+uint8_t getConst(lexeme *ptrLex){
+    assert(ptrLex->lexType == Const10 || ptrLex->lexType == Const16);
+    return (ptrLex->lexType == Const10) ? getConst10D(ptrLex->op) : getConst16D(ptrLex->op);
+}
+
+void getLexNoComments(FILE *input, unsigned *ptrLineNum, lexeme *ptrLex){
+    skipComments(input, ptrLineNum, ptrLex);
+    getLex(input, ptrLineNum, ptrLex);
+}
+
+ProcessStates processInitR0(FILE* input, ControlFrameData *ptrCFData, lexeme *ptrLex, unsigned *ptrLineNum){
+    getLexNoComments(input, ptrLineNum, ptrLex);
+    if(ptrLex->lexType != BracketSquareOpen)
+        ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо открыть скобочку");
+    getLexNoComments(input, ptrLineNum, ptrLex);
+    if(!isConst(ptrLex))
+        ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо число");
+    uint8_t index = getConst(ptrLex);
+    getLexNoComments(input, ptrLineNum, ptrLex);;
+    if(ptrLex->lexType != BracketSquareClose)
+        ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо закрыть скобочку");
+    getLexNoComments(input, ptrLineNum, ptrLex);
+    if(ptrLex->lexType != Equal)
+        ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо знак равно");
+    getLexNoComments(input, ptrLineNum, ptrLex);
+    if(!isConst(ptrLex))
+        ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "А тут надо значение");
+    uint8_t data = getConst(ptrLex);
+    getLexNoComments(input, ptrLineNum, ptrLex);
+    if(ptrLex->lexType != Semicolon)
+        ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут точку с запятой");
+    ptrCFData->initR0data[index] = data;
+    return ProcessOK;
+}
+
+ProcessStates processCoreActive(FILE* input, ControlFrameData *ptrCFData, lexeme *ptrLex, unsigned *ptrLineNum){
+    getLexNoComments(input, ptrLineNum, ptrLex);
+    if(ptrLex->lexType != Equal)
+        ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо знак равно");
+    do {
+        getLexNoComments(input, ptrLineNum, ptrLex);
+        if (!isConst(ptrLex))
+            ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "А тут надо значение");
+        uint8_t index = getConst(ptrLex);
+        ptrCFData->coreActiveVector[index] = VectorActive;
+        getLexNoComments(input, ptrLineNum, ptrLex);
+        if (ptrLex->lexType != Comma && ptrLex->lexType != Semicolon)
+            ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "А тут надо запятую или точку с запятой");
+    } while(ptrLex->lexType != Semicolon);
+    return ProcessOK;
+}
+
+ProcessStates processFence(FILE* input, ControlFrameData *ptrCFData, lexeme *ptrLex, unsigned *ptrLineNum){
+    getLexNoComments(input, ptrLineNum, ptrLex);
+    if(ptrLex->lexType != Equal)
+        ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо знак равно");
+    getLexNoComments(input, ptrLineNum, ptrLex);
+    switch(ptrLex->lexType){
+        case FenceNo:
+            ptrCFData->fenceMode = FenceNo_mode;
+            break;
+        case FenceAcq:
+            ptrCFData->fenceMode = FenceAcq_mode;
+            break;
+        case FenceRel:
+            ptrCFData->fenceMode = FenceRel_mode;
+            break;
+        default:
+            ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо режим Fence");
+    }
+    getLexNoComments(input, ptrLineNum, ptrLex);
+    if(ptrLex->lexType != Semicolon)
+        ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут точку с запятой");
+    return ProcessOK;
+}
+
+ProcessStates processIFNum(FILE* input, ControlFrameData *ptrCFData, lexeme *ptrLex, unsigned *ptrLineNum){
+    getLexNoComments(input, ptrLineNum, ptrLex);
+    if(ptrLex->lexType != Equal)
+        ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо знак равно");
+    getLexNoComments(input, ptrLineNum, ptrLex);
+    if(!isConst(ptrLex))
+        ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо число");
+    uint8_t count = getConst(ptrLex);
+    getLexNoComments(input, ptrLineNum, ptrLex);
+    if(ptrLex->lexType != Semicolon)
+        ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут точку с запятой");
+    ptrCFData->IF_Num_left = count;
+    return ProcessOK;
+}
+
+void pushCFtoStack(Stack *output, ControlFrameData *frameData){
 
 }
 
-ProcessStates processCoreActive(FILE* input, FrameData *ptrFrameData, lexeme *ptrLex, unsigned *ptrLineNum){
-
-}
-
-ProcessStates processFence(FILE* input, FrameData *ptrFrameData, lexeme *ptrLex, unsigned *ptrLineNum){
-
-}
-
-ProcessStates processIFNum(FILE* input, FrameData *ptrFrameData, lexeme *ptrLex, unsigned *ptrLineNum){
-
-}
-
-void pushCFtoStack(Stack *output, FrameData *frameData){
-
-}
-
-GetFrameStates getControlFrame(FILE* input, Stack *output, FrameData *ptrFrameData, lexeme *ptrLex,
+GetFrameStates getControlFrame(FILE* input, Stack *output, ControlFrameData *ptrCFData, lexeme *ptrLex,
                                unsigned *ptrLineNum){
-    frameDataReset(ptrFrameData);
+    frameDataReset(ptrCFData);
     do{
-        skipComments(input, ptrLineNum, ptrLex);
-        getLex(input, ptrLineNum, ptrLex);
+        getLexNoComments(input, ptrLineNum, ptrLex);
         switch(ptrLex->lexType){
             case InitR0:
-                if(processInitR0(input, ptrFrameData, ptrLex, ptrLineNum) == ProcessError)
+                if(processInitR0(input, ptrCFData, ptrLex, ptrLineNum) == ProcessError)
                     ERROR_MSG(ptrLineNum, GetFrameCodeError, "Error: InitR0 error");
                 break;
             case CoreActive:
-                if(processCoreActive(input, ptrFrameData, ptrLex, ptrLineNum) == ProcessError)
+                if(processCoreActive(input, ptrCFData, ptrLex, ptrLineNum) == ProcessError)
                     ERROR_MSG(ptrLineNum, GetFrameCodeError, "Error: CoreActive error");
                 break;
             case Fence:
-                if(processFence(input, ptrFrameData, ptrLex, ptrLineNum) == ProcessError)
+                if(processFence(input, ptrCFData, ptrLex, ptrLineNum) == ProcessError)
                     ERROR_MSG(ptrLineNum, GetFrameCodeError, "Error: Fence error");
                 break;
             case IFNum:
-                if(processIFNum(input, ptrFrameData, ptrLex, ptrLineNum) == ProcessError)
+                if(processIFNum(input, ptrCFData, ptrLex, ptrLineNum) == ProcessError)
                     ERROR_MSG(ptrLineNum, GetFrameCodeError, "Error: IFNum error");
                 break;
             case BracketCurlyClose:
@@ -368,8 +460,8 @@ GetFrameStates getControlFrame(FILE* input, Stack *output, FrameData *ptrFrameDa
             default:
                 ERROR_MSG_LEX(ptrLineNum, ptrLex, GetFrameCodeError, "Чо это такое в CF?");
         }
-    } while(ptrLex->lexType == BracketCurlyClose);
-    pushCFtoStack(output, ptrFrameData);
+    } while(ptrLex->lexType != BracketCurlyClose);
+    pushCFtoStack(output, ptrCFData);
     return GetFrameOk;
 }
 
@@ -409,23 +501,26 @@ GetFrameStates getInsnFrame(FILE* input, Stack *output, Defines *ptrDefs, lexeme
                             unsigned *ptrLineNum){
     unsigned insnNum = 0;
     do{
-        skipComments(input, ptrLineNum, ptrLex);
-        getLex(input, ptrLineNum, ptrLex);
+        getLexNoComments(input, ptrLineNum, ptrLex);
         switch (ptrLex->lexType) { // оп оп грамматика пошла
             case Nop: case Ready:
+                insnNum++;
                 if(processInsnWithNoArgs() == ProcessError)
                     ERROR_MSG(ptrLineNum, GetFrameCodeError, "Error: Insn with no args error");
                 break;
             case Add: case Sub: case Mul: case Div: case Cmpge: case Rshift:
             case Lshift: case And: case Or: case Xor: case Ld:  case St:
+                insnNum++;
                 if(processInsnWithTwoRegs() == ProcessError)
                     ERROR_MSG(ptrLineNum, GetFrameCodeError, "Error: Insn with two regs error");
                 break;
             case Set_const:
+                insnNum++;
                 if(processInsnWithRegAndConst() == ProcessError)
                     ERROR_MSG(ptrLineNum, GetFrameCodeError, "Error: Insn with reg and Const error");
                 break;
             case Bnz:
+                insnNum++;
                 if(processInsnWithLabel() == ProcessError)
                     ERROR_MSG(ptrLineNum, GetFrameCodeError, "Error: Insn with reg and Const error");
                 break;
@@ -452,34 +547,33 @@ GetFrameStates getInsnFrame(FILE* input, Stack *output, Defines *ptrDefs, lexeme
     //FIXME: подсчет команд внутри фрейма
 }
 
-CheckCFFlags checkCFFlags(FrameData *ptrFrameData){
-    assert(ptrFrameData != NULL && ptrFrameData->initR0Vector != NULL && ptrFrameData->coreActiveVector != NULL);
+CheckCFFlags checkCFFlags(ControlFrameData *ptrCFData){
+    assert(ptrCFData != NULL && ptrCFData->initR0Vector != NULL && ptrCFData->coreActiveVector != NULL);
     for(unsigned i = 0; i < CORES_COUNT; i++){
-        if(ptrFrameData->initR0Vector[i] == VectorActive
-        && ptrFrameData->coreActiveVector[i] == VectorNoActive)
+        if(ptrCFData->initR0Vector[i] == VectorActive
+        && ptrCFData->coreActiveVector[i] == VectorNoActive)
             return CheckCFFlagsWarning;
     }
     return CheckCFFlagsSuccess;
 }
 
-GetFrameStates processControlFrame(FILE* input, Stack *output, FrameData *ptrFrameData, lexeme *ptrLex,
+GetFrameStates processControlFrame(FILE* input, Stack *output, ControlFrameData *ptrCFData, lexeme *ptrLex,
                                    unsigned *ptrLineNum){
-    if(ptrFrameData->IF_Num_left > 0)
-        WARNING(ptrLineNum, "Warning: There are IFs left - %d",, ptrFrameData->IF_Num_left);
-    GetFrameStates frameState = getControlFrame(input, output, ptrFrameData, ptrLex, ptrLineNum);
-    if(checkCFFlags(ptrFrameData) == CheckCFFlagsWarning)
+    if(ptrCFData->IF_Num_left > 0)
+        WARNING(ptrLineNum, "Warning: There are IFs left - %d",, ptrCFData->IF_Num_left);
+    GetFrameStates frameState = getControlFrame(input, output, ptrCFData, ptrLex, ptrLineNum);
+    if(checkCFFlags(ptrCFData) == CheckCFFlagsWarning)
         WARNING(ptrLineNum, "Warning: InitR0 > CoreActive???");
     return frameState;
 }
 
-GetFrameStates processInsnFrame(FILE* input, Stack *output, Defines *ptrDefs, FrameData *ptrFrameData,
+GetFrameStates processInsnFrame(FILE* input, Stack *output, Defines *ptrDefs, ControlFrameData *ptrCFData,
                                 lexeme *ptrLex, unsigned *ptrLineNum){
-    skipComments(input, ptrLineNum, ptrLex);
-    getLex(input, ptrLineNum, ptrLex);
+    getLexNoComments(input, ptrLineNum, ptrLex);
     if(ptrLex->lexType != Name)
         unGetLex(ptrLex);
-    if(ptrFrameData->IF_Num_left > 0){
-        ptrFrameData->IF_Num_left--;
+    if(ptrCFData->IF_Num_left > 0){
+        ptrCFData->IF_Num_left--;
     }
     else {
         if(ptrLex->lexType == Name)
@@ -491,15 +585,14 @@ GetFrameStates processInsnFrame(FILE* input, Stack *output, Defines *ptrDefs, Fr
     return frameState;
 }
 
-GetFrameStates getFrame(FILE *input, Stack *output, Defines *ptrDefs, FrameData *ptrFrameData,
+GetFrameStates getFrame(FILE *input, Stack *output, Defines *ptrDefs, ControlFrameData *ptrCFData,
                         lexeme *ptrLex, unsigned *ptrLineNum){
-    skipComments(input, ptrLineNum, ptrLex);
-    getLex(input, ptrLineNum, ptrLex);
+    getLexNoComments(input, ptrLineNum, ptrLex);
     switch(ptrLex->lexType){
         case BracketCurlyOpen:
-            return processControlFrame(input, output, ptrFrameData, ptrLex, ptrLineNum);
+            return processControlFrame(input, output, ptrCFData, ptrLex, ptrLineNum);
         case Colon:
-            return processInsnFrame(input, output, ptrDefs, ptrFrameData, ptrLex, ptrLineNum);
+            return processInsnFrame(input, output, ptrDefs, ptrCFData, ptrLex, ptrLineNum);
         case Nothing:
             return GetFrameEnd;
         default:
@@ -508,8 +601,7 @@ GetFrameStates getFrame(FILE *input, Stack *output, Defines *ptrDefs, FrameData 
 }
 
 CheckEndStates checkEnd(FILE *input, lexeme *ptrLex, unsigned *ptrLineNum){
-    skipComments(input, ptrLineNum, ptrLex);
-    getLex(input, ptrLineNum, ptrLex);
+    getLexNoComments(input, ptrLineNum, ptrLex);
     if(ptrLex->lexType == Nothing)
         return CheckEndReached;
     else
@@ -520,33 +612,33 @@ CompilerStates compileFileToStack(FILE* input, Stack* output){
     MEM_CHECK(input, CompilerErrorNullInput, "Error: input file is NULL");
     MEM_CHECK(output, CompilerErrorNullStack, "Error: output stack is NULL");
     Defines defs;
-    FrameData frameData;
     lexeme lex;
-    if(definesInit(&defs) == DefinesInitError
-    || lexInit(&lex) == LexInitError
-    || frameDataInit(&frameData) == FrameDataInitError){
-        allFree(&defs, &lex, &frameData);
+    ControlFrameData CFData;
+    if(allInit(&defs, &lex, &CFData) == InitError){
+        allFree(&defs, &lex, &CFData);
         ERROR_MSG_NL(CompilerErrorMemAlloc, "Error: mem alloc error");
     }
+
     GetFrameStates frameState;
     unsigned int lineNum = 0; ///< номер строки минус 1
     unsigned int i = 0;
 
     do {
         frameState = getFrame(input, output, &defs,
-                  &frameData, &lex, &lineNum);
+                              &CFData, &lex, &lineNum);
     } while(++i < FRAMES_COUNT && frameState == GetFrameOk);
 
     if(i == FRAMES_COUNT && frameState == GetFrameOk
     && checkEnd(input, &lex, &lineNum) == CheckEndNotReached) {
-        allFree(&defs, &lex, &frameData);
+        allFree(&defs, &lex, &CFData);
         ERROR_MSG_LEX(&lineNum, &lex, CompilerErrorOverflowFrames,
                       "Warning: Out of range, max count of frames has reached - %d",, FRAMES_COUNT);
     }
 
-    //todo: warning frame count
+    if(CFData.IF_Num_left > 0)
+        WARNING(&lineNum, "Warning: There are IF needed - %d",, CFData.IF_Num_left);
 
-    allFree(&defs, &lex, &frameData);
+    allFree(&defs, &lex, &CFData);
     switch(frameState){
     case GetFrameOk: case GetFrameEnd:
         return CompilerOK;
