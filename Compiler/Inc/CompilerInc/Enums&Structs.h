@@ -105,14 +105,18 @@ typedef struct lexeme_{
     UnGetLexStatus unGetStatus;
 } lexeme;
 
-typedef struct insn_{
+typedef struct insnData_{
     InsnOpCodes opCode;
     InsnSrcDst src0;
     InsnSrcDst src1;
     InsnSrcDst src2dst;
     uint8_t constData;
     uint8_t target;
-} insn;
+} insnData;
+
+typedef struct InsnFrameData_{
+    insnData *ptrInsn;
+} InsnFrameData;
 
 typedef enum InitStates_{
     InitOK,
@@ -121,7 +125,7 @@ typedef enum InitStates_{
 
 typedef enum getFrameStates_{
     GetFrameEnd = -1, ///< если конец достигнут
-    GetFrameOk = 0, ///< если конец не достигнут
+    GetFrameOK = 0, ///< если конец не достигнут
     GetFrameCodeError = 1 ///< если возникла ошибка
 } GetFrameStates;
 
