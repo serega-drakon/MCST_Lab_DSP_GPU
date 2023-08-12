@@ -48,20 +48,34 @@ do { printf("Line %d: ", *(ptrLineNum) + 1);            \
      printf("\n -> %ls\n", (ptrLex)->op);               \
      printf("\n"); } while(0)
 
-InitStates definesInit(Defines *defs){
+InitStates definesInit(Defines *ptrDef){
+    assert(ptrDef != NULL);
     const char errorMsg[] = "Defines memory alloc error";
-    defs->ptrLabelDefinedNames = dStackInit(sizeof(int));
-    MEM_CHECK(defs->ptrLabelDefinedNames, InitError, errorMsg);
-    defs->ptrLabelDefinedValues = dStackInit(sizeof(char));
-    MEM_CHECK(defs->ptrLabelDefinedValues, InitError, errorMsg);
-    defs->ptrLabelUsedNames = dStackInit(sizeof(int));
-    MEM_CHECK(defs->ptrLabelUsedNames, InitError, errorMsg);
-    defs->ptrLabelUsedValuesPtr = dStackInit(sizeof(Stack *));
-    MEM_CHECK(defs->ptrLabelUsedValuesPtr, InitError, errorMsg);
+    ptrDef->ptrLabelDefinedNames = dStackInit(sizeof(int));
+    MEM_CHECK(ptrDef->ptrLabelDefinedNames, InitError, errorMsg);
+    ptrDef->ptrLabelDefinedValues = dStackInit(sizeof(char));
+    MEM_CHECK(ptrDef->ptrLabelDefinedValues, InitError, errorMsg);
+    ptrDef->ptrLabelUsedNames = dStackInit(sizeof(int));
+    MEM_CHECK(ptrDef->ptrLabelUsedNames, InitError, errorMsg);
+    ptrDef->ptrLabelUsedValuesPtr = dStackInit(sizeof(Stack *));
+    MEM_CHECK(ptrDef->ptrLabelUsedValuesPtr, InitError, errorMsg);
     return InitOK;
 }
 
-void definesFree(struct Defines_ *ptrDef){
+void definesReset(Defines *ptrDef){
+    assert(ptrDef != NULL);
+    dStackReset(ptrDef->ptrLabelDefinedNames);
+    dStackReset(ptrDef->ptrLabelDefinedValues);
+    dStackReset(ptrDef->ptrLabelUsedNames);
+    if(ptrDef->ptrLabelUsedValuesPtr != NULL) {
+        const u_int32_t size = getsize_dStack(ptrDef->ptrLabelUsedValuesPtr);
+        for (int i = 0; i < size; i++)
+            dStackReset(*(void **) dStack_r(ptrDef->ptrLabelUsedValuesPtr, i));
+        dStackReset(ptrDef->ptrLabelUsedValuesPtr);
+    }
+}
+
+void definesFree(Defines *ptrDef){
     if(ptrDef != NULL) {
         dStackFree(ptrDef->ptrLabelDefinedNames);
         dStackFree(ptrDef->ptrLabelDefinedValues);
@@ -153,8 +167,8 @@ InitStates allInit(Defines *ptrDefs, lexeme *ptrLex, ControlFrameData *ptrCFData
     return InitOK;
 }
 
-void allFree(Defines *ptrDefs, lexeme *ptrLex, ControlFrameData *ptrCFData, InsnFrameData *ptrIFData){
-    definesFree(ptrDefs);
+void allFree(Defines *ptrDef, lexeme *ptrLex, ControlFrameData *ptrCFData, InsnFrameData *ptrIFData){
+    definesFree(ptrDef);
     lexFree(ptrLex);
     controlFrameDataFree(ptrCFData);
     insnFrameDataFree(ptrIFData);
@@ -380,7 +394,8 @@ void getLexNoComments(FILE *input, unsigned *ptrLineNum, lexeme *ptrLex){
     getLex(input, ptrLineNum, ptrLex);
 }
 
-ProcessStates processInitR0(FILE* input, ControlFrameData *ptrCFData, lexeme *ptrLex, unsigned *ptrLineNum){
+ProcessStates processInitR0(FILE* input, ControlFrameData *ptrCFData, lexeme *ptrLex,
+                            unsigned *ptrLineNum){
     getLexNoComments(input, ptrLineNum, ptrLex);
     if(ptrLex->lexType != BracketSquareOpen)
         ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо открыть скобочку");
@@ -405,7 +420,8 @@ ProcessStates processInitR0(FILE* input, ControlFrameData *ptrCFData, lexeme *pt
     return ProcessOK;
 }
 
-ProcessStates processCoreActive(FILE* input, ControlFrameData *ptrCFData, lexeme *ptrLex, unsigned *ptrLineNum){
+ProcessStates processCoreActive(FILE* input, ControlFrameData *ptrCFData, lexeme *ptrLex,
+                                unsigned *ptrLineNum){
     getLexNoComments(input, ptrLineNum, ptrLex);
     if(ptrLex->lexType != Equal)
         ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо знак равно");
@@ -422,7 +438,8 @@ ProcessStates processCoreActive(FILE* input, ControlFrameData *ptrCFData, lexeme
     return ProcessOK;
 }
 
-ProcessStates processFence(FILE* input, ControlFrameData *ptrCFData, lexeme *ptrLex, unsigned *ptrLineNum){
+ProcessStates processFence(FILE* input, ControlFrameData *ptrCFData, lexeme *ptrLex,
+                           unsigned *ptrLineNum){
     getLexNoComments(input, ptrLineNum, ptrLex);
     if(ptrLex->lexType != Equal)
         ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо знак равно");
@@ -446,7 +463,8 @@ ProcessStates processFence(FILE* input, ControlFrameData *ptrCFData, lexeme *ptr
     return ProcessOK;
 }
 
-ProcessStates processIFNum(FILE* input, ControlFrameData *ptrCFData, lexeme *ptrLex, unsigned *ptrLineNum){
+ProcessStates processIFNum(FILE* input, ControlFrameData *ptrCFData, lexeme *ptrLex,
+                           unsigned *ptrLineNum){
     getLexNoComments(input, ptrLineNum, ptrLex);
     if(ptrLex->lexType != Equal)
         ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо знак равно");
@@ -463,7 +481,6 @@ ProcessStates processIFNum(FILE* input, ControlFrameData *ptrCFData, lexeme *ptr
 
 GetFrameStates getControlFrame(FILE* input, ControlFrameData *ptrCFData, lexeme *ptrLex,
                                unsigned *ptrLineNum){
-    controlFrameDataReset(ptrCFData);
     do{
         getLexNoComments(input, ptrLineNum, ptrLex);
         switch(ptrLex->lexType){
@@ -494,64 +511,146 @@ GetFrameStates getControlFrame(FILE* input, ControlFrameData *ptrCFData, lexeme 
     return GetFrameOK;
 }
 
-ProcessStates processInsnWithNoArgs(){
+InsnOpCodes translateLexTypeToInsnOpCode(LexemeTypes lexType){
+    switch(lexType){
+        case Nop: return Nop_insn;
+        case Add: return Add_insn;
+        case Sub: return Sub_insn;
+        case Mul: return Mul_insn;
+        case Div: return Div_insn;
+        case Cmpge: return Cmpge_insn;
+        case Rshift: return Rshift_insn;
+        case Lshift: return Lshift_insn;
+        case And: return And_insn;
+        case Or: return Or_insn;
+        case Xor: return Xor_insn;
+        case Ld: return Ld_insn;
+        case Set_const: return Set_const_insn;
+        case St: return St_insn;
+        case Bnz: return Bnz_insn;
+        case Ready: return Ready_insn;
+        default: assert(0);
+    }
+}
+
+void processInsnWithNoArgs(insnData *ptrInsn, LexemeTypes lexType){
+    ptrInsn->opCode = translateLexTypeToInsnOpCode(lexType);
+}
+
+uint8_t isRegLex(LexemeTypes lexType){
+    return (lexType == Reg_R0
+            || lexType == Reg_R1
+            || lexType == Reg_R2
+            || lexType == Reg_R3
+            || lexType == Reg_R4
+            || lexType == Reg_R5
+            || lexType == Reg_R6
+            || lexType == Reg_R7
+            || lexType == Reg_R8
+            || lexType == Reg_R9
+            || lexType == Reg_R10
+            || lexType == Reg_R11
+            || lexType == Reg_R12
+            || lexType == Reg_R13
+            || lexType == Reg_R14
+            || lexType == Reg_R15);
+}
+
+InsnReg translateLexTypeToInsnReg(LexemeTypes lexType){
+    switch(lexType){
+        case Reg_R0: return Reg_R0_insn;
+        case Reg_R1: return Reg_R1_insn;
+        case Reg_R2: return Reg_R2_insn;
+        case Reg_R3: return Reg_R3_insn;
+        case Reg_R4: return Reg_R4_insn;
+        case Reg_R5: return Reg_R5_insn;
+        case Reg_R6: return Reg_R6_insn;
+        case Reg_R7: return Reg_R7_insn;
+        case Reg_R8: return Reg_R8_insn;
+        case Reg_R9: return Reg_R9_insn;
+        case Reg_R10: return Reg_R10_insn;
+        case Reg_R11: return Reg_R11_insn;
+        case Reg_R12: return Reg_R12_insn;
+        case Reg_R13: return Reg_R13_insn;
+        case Reg_R14: return Reg_R14_insn;
+        case Reg_R15: return Reg_R15_insn;
+        default: assert(0);
+    }
+}
+
+ProcessStates processInsnWithTwoRegs(FILE *input, insnData *ptrInsn, lexeme *ptrLex,
+                                     unsigned *ptrLineNum){
+    ptrInsn->opCode = translateLexTypeToInsnOpCode(ptrLex->lexType);
+    getLexNoComments(input, ptrLineNum, ptrLex);
+    if(!isRegLex(ptrLex->lexType))
+        ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо регистр");
+    ptrInsn->src0 = translateLexTypeToInsnReg(ptrLex->lexType);
+    getLexNoComments(input, ptrLineNum, ptrLex);
+    if(!isRegLex(ptrLex->lexType))
+        ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо регистр");
+    ptrInsn->src1 = translateLexTypeToInsnReg(ptrLex->lexType);
+    getLexNoComments(input, ptrLineNum, ptrLex);
+    if(!isRegLex(ptrLex->lexType))
+        ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо регистр");
+    ptrInsn->src2dst = translateLexTypeToInsnReg(ptrLex->lexType);
+    return ProcessOK;
+}
+
+ProcessStates processInsnWithRegAndConst(FILE *input, insnData *ptrInsn, lexeme *ptrLex,
+                                         unsigned *ptrLineNum){
+    ptrInsn->opCode = translateLexTypeToInsnOpCode(ptrLex->lexType);
+}
+
+ProcessStates processInsnWithLabel(FILE *input, Defines *ptrDef, insnData *ptrInsn, lexeme *ptrLex,
+                                   unsigned *ptrLineNum){
+    ptrInsn->opCode = translateLexTypeToInsnOpCode(ptrLex->lexType);
+
 
 }
 
-ProcessStates processInsnWithTwoRegs(){
+ProcessStates processLabelDefinition(Defines *ptrDef, int lexOp[]){
 
 }
 
-ProcessStates processInsnWithRegAndConst(){
+ProcessStates processCheckLabels(Defines *ptrDef){
+    return ProcessOK;
+}
+
+void processPutLabels(Defines *ptrDef, InsnFrameData *ptrIFData){
 
 }
 
-ProcessStates processInsnWithLabel(){
-
-}
-
-ProcessStates processLabelDefinition(){
-
-}
-
-ProcessStates processCheckLabels(){
-
-}
-
-void processPutLabels(){
-
-}
-
-GetFrameStates getInsnFrame(FILE *input, Defines *ptrDefs, InsnFrameData *ptrIFData,
+GetFrameStates getInsnFrame(FILE *input, Defines *ptrDef, InsnFrameData *ptrIFData,
                             lexeme *ptrLex, unsigned *ptrLineNum){
-    insnFrameDataReset(ptrIFData);
     unsigned insnNum = 0;
     do{
         getLexNoComments(input, ptrLineNum, ptrLex);
         switch (ptrLex->lexType) { // оп оп грамматика пошла
             case Nop: case Ready:
                 insnNum++;
-                if(processInsnWithNoArgs() == ProcessError)
-                    ERROR_MSG(ptrLineNum, GetFrameCodeError, "Error: Insn with no args error");
+                processInsnWithNoArgs(&ptrIFData->ptrInsn[insnNum], ptrLex->lexType);
                 break;
             case Add: case Sub: case Mul: case Div: case Cmpge: case Rshift:
             case Lshift: case And: case Or: case Xor: case Ld:  case St:
                 insnNum++;
-                if(processInsnWithTwoRegs() == ProcessError)
+                if(processInsnWithTwoRegs(input, &ptrIFData->ptrInsn[insnNum], ptrLex,
+                                          ptrLineNum) == ProcessError)
                     ERROR_MSG(ptrLineNum, GetFrameCodeError, "Error: Insn with two regs error");
                 break;
             case Set_const:
                 insnNum++;
-                if(processInsnWithRegAndConst() == ProcessError)
+                if(processInsnWithRegAndConst(input, &ptrIFData->ptrInsn[insnNum], ptrLex,
+                                              ptrLineNum) == ProcessError)
                     ERROR_MSG(ptrLineNum, GetFrameCodeError, "Error: Insn with reg and Const error");
                 break;
             case Bnz:
                 insnNum++;
-                if(processInsnWithLabel() == ProcessError)
+                if(processInsnWithLabel(input, ptrDef, &ptrIFData->ptrInsn[insnNum], ptrLex,
+                                        ptrLineNum) == ProcessError)
                     ERROR_MSG(ptrLineNum, GetFrameCodeError, "Error: Insn with reg and Const error");
                 break;
             case Label:
-                if(processLabelDefinition() == ProcessError)
+                if(processLabelDefinition(ptrDef, ptrLex->op) == ProcessError)
                     ERROR_MSG(ptrLineNum, GetFrameCodeError, "Error: Label definition error");
                 break;
             case Colon: case BracketCurlyOpen: case Nothing:
@@ -562,14 +661,16 @@ GetFrameStates getInsnFrame(FILE *input, Defines *ptrDefs, InsnFrameData *ptrIFD
         }
     } while(insnNum < INSN_COUNT
     && ptrLex->lexType != Nothing && ptrLex->lexType != Colon && ptrLex->lexType != BracketCurlyOpen);
-    if(processCheckLabels() == ProcessError)
+    if(insnNum == INSN_COUNT
+    && ptrLex->lexType != Nothing
+    && ptrLex->lexType != Colon
+    && ptrLex->lexType != BracketCurlyOpen)
+        ERROR_MSG_LEX(ptrLineNum, ptrLex, GetFrameCodeError,
+                      "Уже наступил конец фрейма, всего комманд может быть - %d",, INSN_COUNT);
+    if(processCheckLabels(ptrDef) == ProcessError)
         ERROR_MSG_NL(GetFrameCodeError, "Чот тут метки не сходятся");
-    processPutLabels();
+    processPutLabels(ptrDef, ptrIFData);
     return GetFrameOK;
-
-    //все лейблы прочитать не забыть!
-    //FIXME: заполнить defs, использовать и сбросить
-    //FIXME: подсчет команд внутри фрейма
 }
 
 CheckCFFlags checkCFFlags(ControlFrameData *ptrCFData){
@@ -594,6 +695,7 @@ GetFrameStates processControlFrame(FILE* input, Stack *output, ControlFrameData 
     if(checkCFFlags(ptrCFData) == CheckCFFlagsWarning)
         WARNING(ptrLineNum, "Warning: InitR0 > CoreActive???");
     pushCFtoStack(output, ptrCFData);
+    controlFrameDataReset(ptrCFData);
     return frameState;
 }
 
@@ -601,7 +703,7 @@ void pushIFtoStack(Stack *output, InsnFrameData *ptrIFData){
     //todo
 }
 
-GetFrameStates processInsnFrame(FILE* input, Stack *output, Defines *ptrDefs, ControlFrameData *ptrCFData,
+GetFrameStates processInsnFrame(FILE* input, Stack *output, Defines *ptrDef, ControlFrameData *ptrCFData,
                                 InsnFrameData *ptrIFData, lexeme *ptrLex, unsigned *ptrLineNum){
     getLexNoComments(input, ptrLineNum, ptrLex);
     if(ptrLex->lexType != Name)
@@ -615,19 +717,21 @@ GetFrameStates processInsnFrame(FILE* input, Stack *output, Defines *ptrDefs, Co
         else
             WARNING(ptrLineNum, "Warning: There are CF needed before");
     }
-    GetFrameStates frameState = getInsnFrame(input, ptrDefs, ptrIFData, ptrLex, ptrLineNum);
+    GetFrameStates frameState = getInsnFrame(input, ptrDef, ptrIFData, ptrLex, ptrLineNum);
     pushIFtoStack(output, ptrIFData);
+    definesReset(ptrDef);
+    insnFrameDataReset(ptrIFData);
     return frameState;
 }
 
-GetFrameStates getFrame(FILE *input, Stack *output, Defines *ptrDefs, ControlFrameData *ptrCFData,
+GetFrameStates getFrame(FILE *input, Stack *output, Defines *ptrDef, ControlFrameData *ptrCFData,
                         InsnFrameData *ptrIFData, lexeme *ptrLex, unsigned *ptrLineNum){
     getLexNoComments(input, ptrLineNum, ptrLex);
     switch(ptrLex->lexType){
         case BracketCurlyOpen:
             return processControlFrame(input, output, ptrCFData, ptrLex, ptrLineNum);
         case Colon:
-            return processInsnFrame(input, output, ptrDefs, ptrCFData, ptrIFData, ptrLex, ptrLineNum);
+            return processInsnFrame(input, output, ptrDef, ptrCFData, ptrIFData, ptrLex, ptrLineNum);
         case Nothing:
             return GetFrameEnd;
         default:
@@ -646,12 +750,12 @@ CheckEndStates checkEnd(FILE *input, lexeme *ptrLex, unsigned *ptrLineNum){
 CompilerStates compileFileToStack(FILE* input, Stack* output){
     MEM_CHECK(input, CompilerErrorNullInput, "Error: input file is NULL");
     MEM_CHECK(output, CompilerErrorNullStack, "Error: output stack is NULL");
-    Defines defs;
+    Defines def;
     lexeme lex;
     ControlFrameData CFData;
     InsnFrameData IFData;
-    if(allInit(&defs, &lex, &CFData, &IFData) == InitError){
-        allFree(&defs, &lex, &CFData, &IFData);
+    if(allInit(&def, &lex, &CFData, &IFData) == InitError){
+        allFree(&def, &lex, &CFData, &IFData);
         ERROR_MSG_NL(CompilerErrorMemAlloc, "Error: mem alloc error");
     }
 
@@ -660,7 +764,7 @@ CompilerStates compileFileToStack(FILE* input, Stack* output){
     unsigned int i = 0;
 
     do {
-        frameState = getFrame(input, output, &defs,
+        frameState = getFrame(input, output, &def,
                               &CFData, &IFData, &lex, &lineNum);
     } while(++i < FRAMES_COUNT && frameState == GetFrameOK);
 
@@ -672,7 +776,7 @@ CompilerStates compileFileToStack(FILE* input, Stack* output){
     if(CFData.IF_Num_left > 0)
         WARNING(&lineNum, "Warning: There are IF needed - %d",, CFData.IF_Num_left);
 
-    allFree(&defs, &lex, &CFData, &IFData);
+    allFree(&def, &lex, &CFData, &IFData);
     switch(frameState){
     case GetFrameOK: case GetFrameEnd:
         return CompilerOK;
@@ -714,7 +818,7 @@ CompilerStates compileTextToBin(FILE *input, FILE *output){
     Stack* ptrProgram = dStackInit(INSN_SIZE);
     state = compileFileToStack(input, ptrProgram);
     printCompilerState(state);
-    if(state == CompilerOK || state == CompilerErrorOverflowFrames)
+    if(state == CompilerOK)
         printProgramFromStackToBin(ptrProgram, output);
     dStackFree(ptrProgram);
     return state;

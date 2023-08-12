@@ -15,5 +15,6 @@ void *pop_dStack(Stack *ptrStack);
 void *getLast_dStack(Stack *ptrStack);
 u_int32_t getsize_dStack(Stack *ptrStack);
 void dStackFree(Stack *ptrStack);
+void dStackReset(Stack *ptrStack);
 
 #endif //PROCESSOR_EMULATOR_MEMORY_H

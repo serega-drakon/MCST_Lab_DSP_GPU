@@ -367,3 +367,8 @@ u_int32_t getsize_dStack(Stack *ptrStack){
     else
         return 0;
 }
+
+/// попает все элементы
+void dStackReset(Stack *ptrStack){
+    //todo
+}

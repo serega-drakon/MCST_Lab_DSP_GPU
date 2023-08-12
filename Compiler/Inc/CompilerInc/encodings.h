@@ -30,7 +30,7 @@ typedef enum InsnOpCodes_ {
     Ready_insn = 0xF
 } InsnOpCodes;
 
-typedef enum InsnSrcDst_{
+typedef enum InsnReg_{
     Reg_R0_insn = 0x0,
     Reg_R1_insn = 0x1,
     Reg_R2_insn = 0x2,
@@ -47,6 +47,6 @@ typedef enum InsnSrcDst_{
     Reg_R13_insn = 0xD,
     Reg_R14_insn = 0xE,
     Reg_R15_insn = 0xF
-} InsnSrcDst;
+} InsnReg;
 
 #endif //DSP_GPU_COMPILER_ENCODINGS_H
