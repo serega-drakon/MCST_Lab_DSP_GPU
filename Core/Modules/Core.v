@@ -33,11 +33,11 @@ module Core #(
     wire [`INSN_OPC_RANGE] insn_XM_opc = insn_XM_r[`INSN_OPC_OFFSET_RANGE];
     wire [`INSN_OPC_RANGE] insn_MW_opc = insn_MW_r[`INSN_OPC_OFFSET_RANGE];
 
-    wire [`INSN_SRC_0_RANGE] insn_curr_src_0 = insn_curr[`INSN_OPC_OFFSET_RANGE];
-    wire [`INSN_SRC_0_RANGE] insn_FD_src_0 = insn_FD_r[`INSN_OPC_OFFSET_RANGE];
-    wire [`INSN_SRC_0_RANGE] insn_DX_src_0 = insn_DX_r[`INSN_OPC_OFFSET_RANGE];
-    wire [`INSN_SRC_0_RANGE] insn_XM_src_0 = insn_XM_r[`INSN_OPC_OFFSET_RANGE];
-    wire [`INSN_SRC_0_RANGE] insn_MW_src_0 = insn_MW_r[`INSN_OPC_OFFSET_RANGE];
+    wire [`INSN_SRC_0_RANGE] insn_curr_src_0 = insn_curr[`INSN_SRC_0_OFFSET_RANGE];
+    wire [`INSN_SRC_0_RANGE] insn_FD_src_0 = insn_FD_r[`INSN_SRC_0_OFFSET_RANGE];
+    wire [`INSN_SRC_0_RANGE] insn_DX_src_0 = insn_DX_r[`INSN_SRC_0_OFFSET_RANGE];
+    wire [`INSN_SRC_0_RANGE] insn_XM_src_0 = insn_XM_r[`INSN_SRC_0_OFFSET_RANGE];
+    wire [`INSN_SRC_0_RANGE] insn_MW_src_0 = insn_MW_r[`INSN_SRC_0_OFFSET_RANGE];
 
     wire [`INSN_SRC_1_RANGE] insn_curr_src_1 = insn_curr[`INSN_SRC_1_OFFSET_RANGE];
     wire [`INSN_SRC_1_RANGE] insn_FD_src_1 = insn_FD_r[`INSN_SRC_1_OFFSET_RANGE];
@@ -70,39 +70,39 @@ module Core #(
     wire [`INSN_TARGET_RANGE] insn_MW_target = insn_MW_r[`INSN_TARGET_OFFSET_RANGE];
 
     function insn_is_F0; // а это - инструкции без аргументов
-        input [`INSN_OPC_RANGE] insn_ops;
+        input [`INSN_OPC_RANGE] insn_opc;
         begin
-            insn_is_F0 = (insn_ops == `NOP | insn_ops == `READY);
+            insn_is_F0 = (insn_opc == `NOP | insn_opc == `READY);
         end
     endfunction
 
     function insn_is_F1;
-        input [`INSN_OPC_RANGE] insn_ops;
+        input [`INSN_OPC_RANGE] insn_opc;
         begin
-            insn_is_F1 = (insn_ops == `ADD | insn_ops == `SUB | insn_ops == `MUL
-                | insn_ops == `DIV | insn_ops == `CMPGE | insn_ops == `RSHIFT | insn_ops == `LSHIFT
-                | insn_ops == `AND | insn_ops == `OR | insn_ops == `XOR | insn_ops == `LD);
+            insn_is_F1 = (insn_opc == `ADD | insn_opc == `SUB | insn_opc == `MUL
+                | insn_opc == `DIV | insn_opc == `CMPGE | insn_opc == `RSHIFT | insn_opc == `LSHIFT
+                | insn_opc == `AND | insn_opc == `OR | insn_opc == `XOR | insn_opc == `LD);
         end
     endfunction
 
     function insn_is_F2;
-        input [`INSN_OPC_RANGE] insn_ops;
+        input [`INSN_OPC_RANGE] insn_opc;
         begin
-            insn_is_F2 = (insn_ops == `SET_CONST);
+            insn_is_F2 = (insn_opc == `SET_CONST);
         end
     endfunction
 
     function insn_is_F3;
-        input [`INSN_OPC_RANGE] insn_ops;
+        input [`INSN_OPC_RANGE] insn_opc;
         begin
-            insn_is_F3 = (insn_ops == `ST);
+            insn_is_F3 = (insn_opc == `ST);
         end
     endfunction
 
     function insn_is_F4;
-        input [`INSN_OPC_RANGE] insn_ops;
+        input [`INSN_OPC_RANGE] insn_opc;
         begin
-            insn_is_F4 = (insn_ops == `BNZ);
+            insn_is_F4 = (insn_opc == `BNZ);
         end
     endfunction
 
@@ -251,7 +251,7 @@ module Core #(
 
     always @(posedge clk)
         if(reset)
-            Ready_r <= 0;
+            Ready_r <= 1;
         else if(Start & Ready_r)
             Ready_r <= 0;
         else
@@ -267,23 +267,27 @@ module Core #(
                 (X_branch_cond) ? insn_DX_target: insn_ptr_r+ 1;
 
     always @(posedge clk)
-        if(~reset)
+        if(reset)
+            FD_insn_ptr_r <= 0;
+        else
             FD_insn_ptr_r <= (stall | block_all_pipe) ? FD_insn_ptr_r:insn_ptr_r;
 
     always @(posedge clk)
-        if(~reset)
+        if(reset)
+            DX_insn_ptr_r <= 0;
+        else
             DX_insn_ptr_r <= (stall | block_all_pipe) ? DX_insn_ptr_r:FD_insn_ptr_r;
 
     always @(posedge clk)
         if(reset | Start & Ready_r)
             insn_FD_r <= `NOP;
         else
-            insn_FD_r <= (stall | block_all_pipe) ? insn_FD_r:
+            insn_FD_r <= (stall | block_all_pipe) ? insn_FD_r :
                 (X_branch_cond) ? `NOP :
                 (FD_insn_ptr_r == `INSN_COUNT - 1) ? `READY :insn_curr;
 
     always @(posedge clk)
-        if(reset)
+        if(reset | Start & Ready_r)
             insn_DX_r <= `NOP;
         else
             insn_DX_r <= (block_all_pipe) ? insn_DX_r:

@@ -51,4 +51,7 @@ module RegisterFile (
     end
     endgenerate
 
+    // debug
+    wire [`REG_RANGE] R0 = r[0];
+
 endmodule
