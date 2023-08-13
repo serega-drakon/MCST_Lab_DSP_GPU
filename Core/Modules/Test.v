@@ -56,7 +56,17 @@ module Test;
         insn_data[2 * `INSN_SIZE - 1 : 1 * `INSN_SIZE] <= {{`ST }, {(`INSN_SIZE - `INSN_OPC_SIZE){1'b0}}};
         insn_data[3 * `INSN_SIZE - 1 : 2 * `INSN_SIZE] <= {{`READY }, {(`INSN_SIZE - `INSN_OPC_SIZE){1'b0}}};
         Start <= 1;
-        #10 Start <= 0; //todo: stall check
+        #10 Start <= 0;
+        #100;
+        init_R0_flag <= 1;
+        init_R0_data <= 0;
+        rd_data_M <= 2;
+        insn_data[1 * `INSN_SIZE - 1 : 0 * `INSN_SIZE] <= {{`LD }, {(`INSN_SIZE - `INSN_OPC_SIZE){1'b0}}};
+        insn_data[2 * `INSN_SIZE - 1 : 1 * `INSN_SIZE] <= {{`ADD }, {(`INSN_SIZE - `INSN_OPC_SIZE){1'b0}}};
+        insn_data[3 * `INSN_SIZE - 1 : 2 * `INSN_SIZE] <= {{`ADD }, {(`INSN_SIZE - `INSN_OPC_SIZE){1'b0}}};
+        insn_data[4 * `INSN_SIZE - 1 : 3 * `INSN_SIZE] <= {{`READY }, {(`INSN_SIZE - `INSN_OPC_SIZE){1'b0}}};
+        Start <= 1;
+        #10 Start <= 0;
 
     end
 
@@ -76,7 +86,7 @@ module Test;
     end
 
     initial begin
-        #600 $finish();
+        #800 $finish();
     end
 
 endmodule
