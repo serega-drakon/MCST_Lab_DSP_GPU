@@ -48,10 +48,19 @@ module Test;
         insn_data[4 * `INSN_SIZE - 1 : 3 * `INSN_SIZE] <= {{`READY }, {(`INSN_SIZE - `INSN_OPC_SIZE){1'b0}}};
         Start <= 1;
         #10 Start <= 0;
+        #100;
+        init_R0_flag <= 1;
+        init_R0_data <= 3;
+        rd_data_M <= 8;
+        insn_data[1 * `INSN_SIZE - 1 : 0 * `INSN_SIZE] <= {{`LD }, {(`INSN_SIZE - `INSN_OPC_SIZE){1'b0}}};
+        insn_data[2 * `INSN_SIZE - 1 : 1 * `INSN_SIZE] <= {{`ST }, {(`INSN_SIZE - `INSN_OPC_SIZE){1'b0}}};
+        insn_data[3 * `INSN_SIZE - 1 : 2 * `INSN_SIZE] <= {{`READY }, {(`INSN_SIZE - `INSN_OPC_SIZE){1'b0}}};
+        Start <= 1;
+        #10 Start <= 0; //todo: stall check
 
     end
 
-    always @(posedge (enable_M[1] | enable_M[0])) begin
+    always @(posedge (enable_M[1])  or posedge(enable_M[0])) begin
         ready_M <= 0;
         #10 ready_M <= 1;
     end
@@ -67,7 +76,7 @@ module Test;
     end
 
     initial begin
-        #400 $finish();
+        #600 $finish();
     end
 
 endmodule
