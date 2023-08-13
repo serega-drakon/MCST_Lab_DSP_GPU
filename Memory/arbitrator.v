@@ -1,5 +1,6 @@
-`include"../SharedInc/Ranges.def.v"
+`include"../SharedInc/IncAll.def.v"
 `include"bank.v"
+
 module arbitrator
 (
 	input	wire 				clk,
@@ -25,17 +26,16 @@ wire	[`CORE_ID_RANGE]	id_current_core;
 wire	[`BANK_ID_RANGE]	bank_addr;
 wire	[`REG_RANGE]		data_addr_core;
 
-wire	[`REG_RANGE]		data_addr_bank	[`BANK_ID_RANGE];
-wire	[`REG_RANGE]		wr_data_bank	[`BANK_ID_RANGE];
-wire	[`BANK_ID_RANGE]	read_request_bank;
-wire	[`BANK_ID_RANGE]	write_request_bank;
-wire	[`CORE_ID_RANGE]	read_core;
-wire	[`BANK_ID_RANGE]	rd_data_bank	[`BANK_ID_RANGE];
+wire	[`REG_RANGE]		data_addr_bank	[`BANKS_RANGE];
+wire	[`REG_RANGE]		wr_data_bank	[`BANKS_RANGE];
+wire	[`BANKS_RANGE]		read_request_bank;
+wire	[`BANKS_RANGE]		write_request_bank;
+wire	[`REG_RANGE]		rd_data_bank	[`BANKS_RANGE];
 
 genvar id_core;
 generate for (id_core = 0; id_core < `NUM_OF_CORES; id_core = id_core + 1)
 begin: form_request
-	assign	request_core[id_core] = enable[id_core * 2 + 1: id_core * 2];
+	assign	request_core[id_core] = enable[(id_core + 1) * 2 - 1: id_core * 2];
 end
 endgenerate
 
@@ -72,37 +72,40 @@ endgenerate
 function [`CORE_ID_SIZE:0]		find_id_core;	
 	input [`CORE_ID_RANGE]		start_search;	
 	input [`ENABLE_BUS_RANGE]	request_all;	
-	input [`CORE_ID_RANGE]		iteration;	
+	input [`CORE_ID_SIZE:0]		iteration;
 begin
-	if(iteration == `CORE_ID_SIZE'hf)
+	if(iteration == `NUM_OF_CORES)
 	begin
 		find_id_core = {1'b1, start_search};
 	end
-	else if({request_all[(start_search + 1) * 2 + 1], request_all[(start_search + 1) * 2]} == 2'b00)
+	else if({request_all[(start_search) * 2 + 1], request_all[(start_search) * 2]} == 2'b00)
 	begin
-		find_id_core = find_id_core(start_search + 1, request_all, iteration + 1);
+		if(start_search == `NUM_OF_CORES - 1)
+			find_id_core = find_id_core(0, request_all, iteration + 1);
+		else
+			find_id_core = find_id_core(start_search + 1, request_all, iteration + 1);
 	end
 	else
 	begin
-		find_id_core = start_search + 1;
+		find_id_core = start_search;
 	end
 end
 endfunction
 
-assign	{skip, id_curent_core} = find_id_core(id_last_core, enable, 0);
-assign	{bank_addr, data_addr_core} = addr_core[id_curent_core];
+assign	{skip, id_current_core} = (id_last_core == `NUM_OF_CORES - 1) ? find_id_core(0, enable, 0) : find_id_core(id_last_core + 1, enable, 0);
+assign	{bank_addr, data_addr_core} = addr_core[id_current_core];
 
 genvar id_bank;
 generate for(id_bank = 0; id_bank < `NUM_OF_BANKS; id_bank = id_bank + 1)
-	begin
+	begin:connection_wires
 		assign	data_addr_bank[id_bank] = (bank_addr == id_bank) ? (data_addr_core) : (`REG_SIZE'h0);
-		assign	wr_data_bank[id_bank] = (bank_addr == id_bank) ? (wr_data_core[id_curent_core]) : (`REG_SIZE'h0);
-		assign	{write_request_bank[id_bank], read_request_bank[id_bank]} = (bank_addr == id_bank) ? (request_core[id_curent_core]) : (2'b00);
+		assign	wr_data_bank[id_bank] = (bank_addr == id_bank) ? (wr_data_core[id_current_core]) : (`REG_SIZE'h0);
+		assign	{write_request_bank[id_bank], read_request_bank[id_bank]} = (bank_addr == id_bank) ? (request_core[id_current_core]) : (2'b00);
 	end
 endgenerate
 
 generate for(id_bank = 0; id_bank < `NUM_OF_BANKS; id_bank = id_bank + 1)
-	begin
+	begin:connection_banks
 		bank bank_0
 	(
 		.clk(clk),
