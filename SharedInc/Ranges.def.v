@@ -85,5 +85,6 @@
 	(`TASK_MEM_WIDTH - `REG_SIZE * (`NUM_OF_CORES - jj))
 
 `define FENCE_NEXT Task_Memory[Task_Pointer][`TS_FENCE_RANGE]
+`define CORE_ACTIVE_VECT_NEXT Task_Memory[Task_Pointer][`CORE_ACTIVE_VECT_RANGE]
 
 `endif //CONSTANTS
