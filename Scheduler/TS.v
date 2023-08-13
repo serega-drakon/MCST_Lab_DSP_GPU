@@ -1,77 +1,55 @@
 `include "../SharedInc/Ranges.def.v"
-`include "../SharedInc/TaskMemory.def.v"
+`include "../SharedInc/Fence.def.v"
 
 module Task_Scheduler
-#(
-	parameter CORES_COUNT		= 16,
-
-	parameter TASK_MEM_DEPTH	= `TASK_MEM_DEPTH,
-	parameter TASK_MEM_WIDTH	= `TASK_MEM_WIDTH,
-
-	parameter INSN_COUNT  		= `INSN_COUNT,
-	parameter INSN_SIZE  		= `INSN_SIZE,
-	parameter REG_SIZE 		= `REG_SIZE
-)
 (
-	input	wire					clk,				//TS <- Env
-	input	wire					reset,				//TS <- Env
-	input	wire	[CORES_COUNT * INSN_SIZE * INSN_COUNT - 1:0]	
-							env_task_memory,		//TS <- Env 
+	input		wire				clk,				//TS <- Env
+	input		wire				reset,				//TS <- Env
+	input		wire	[`TM_RANGE]		env_task_memory,		//TS <- Env 
 
 
-	input	wire	[CORES_COUNT -1:0]		Ready,				//TS <- Cores
-	output  reg	[CORES_COUNT -1:0]		Start,				//TS -> Cores
-	output	reg	[INSN_COUNT * INSN_SIZE -1:0]	Insn_Data,			//TS -> Cores
-	output  reg	[CORES_COUNT -1:0]		Init_R0_Vect,			//TS -> Cores
-	output  reg	[CORES_COUNT * REG_SIZE -1:0]	Init_R0				//TS -> Cores
+	input		wire	[`CORES_RANGE]		Ready,				//TS <- Cores
+
+	output		reg	[`CORES_RANGE]		Start,				//TS -> Cores
+	output		reg	[`INSN_BUS_RANGE]	Insn_Data,			//TS -> Cores
+	output		reg	[`CORES_RANGE]		Init_R0_Vect,			//TS -> Cores
+	output  	reg	[`REG_BUS_RANGE]	Init_R0				//TS -> Cores
 );
 
 
-reg [TASK_MEM_DEPTH :0]	Task_Memory [TASK_MEM_WIDTH - 1:0];
+reg	[`TM_DEPTH_RANGE]	Task_Memory [`TM_WIDTH_RANGE];
 
-reg [5:0]		Task_Pointer;	
-reg [CORES_COUNT - 1:0]	EXEC_MASK;
-reg [5:0]		Insn_Frame_Num;
+reg	[`IF_NUM_RANGE]		Task_Pointer;	
+reg	[`IF_NUM_RANGE]		Insn_Frame_Num;
+reg	[`CORES_RANGE]		EXEC_MASK;
 
 
-reg [1 :0]		Fence;								//for Control Frame
-reg [15:0]		Core_Active_Vect;
+reg 	[1:0]			fence;							//for Control Frame
+reg 	[`CORES_RANGE]		Core_Active_Vect;
 
 
 genvar ii;
-generate for (ii = 0; ii < TASK_MEM_DEPTH; ii = ii + 1) begin: init_TM_loop
+generate for (ii = 0; ii < `TASK_MEM_DEPTH; ii = ii + 1) begin: init_TM_loop
 	always @(posedge clk)								//TM from Env
-		if (Task_Pointer == TASK_MEM_DEPTH)
+		if (Task_Pointer == `TASK_MEM_DEPTH - 1)
 			Task_Memory[ii] <= env_task_memory[ii];
 end
 endgenerate
 
-
-always @(posedge clk)
-	EXEC_MASK <= (reset)? 0 : ~Ready;
-
-always @(posedge clk)
+always @(posedge clk)									//Insn Data
 begin
-	if (reset)
+	if (reset) begin
 		Insn_Data	<= 0;
+		Start		<= 0;
+	end
 
-	if (~reset & Insn_Frame_Num)
+	if (~reset & Insn_Frame_Num) begin
 		Insn_Data <= Task_Memory[Task_Pointer];
-end
-
-
-always @(posedge clk)									//Control Frame
-begin
-	if (reset)
-		Insn_Frame_Num <= 0;
+		Start <= Core_Active_Vect;
+	end
 	
-	if (~Insn_Frame_Num & ~reset) begin
-		Insn_Frame_Num   <= Task_Memory[Task_Pointer][5 : 0];
-		Fence		 <= Task_Memory[Task_Pointer][7 : 6];
-		Core_Active_Vect <= Task_Memory[Task_Pointer][2 * 16 -1 : 1 * 16];	//[...+header, +header] todo
-	end else
-		Insn_Frame_Num	 <= Insn_Frame_Num - 1;		
-		
+	if (~Insn_Frame_Num)
+		Start <= 0;
 end
 
 
@@ -82,51 +60,48 @@ begin
 
 
 	if (~Insn_Frame_Num & ~reset) begin
-		Init_R0_Vect <= Task_Memory[Task_Pointer][3 * 16 -1 : 2 * 16]; 
+		Init_R0_Vect <= Task_Memory[Task_Pointer][`R0_VECT_RANGE]; 
 	end
 end
 
-always @(posedge clk)									//Start
-begin
-	Start <= (~reset & ~Insn_Frame_Num)? Core_Active_Vect : 0;
-end
-
-
 genvar jj;
-generate for (jj = CORES_COUNT - 1; jj >= 0; jj = jj - 1) begin: init_R0_loop		//Init_R0
+generate for (jj = `NUM_OF_CORES - 1; jj >= 0; jj = jj - 1) begin: init_R0_loop		//Init_R0
 	always @(posedge clk)
 		if (~Insn_Frame_Num & ~reset) begin
-			Init_R0[jj * REG_SIZE + REG_SIZE - 1 : jj * REG_SIZE] <= Task_Memory
-			[Task_Pointer][TASK_MEM_WIDTH - REG_SIZE * (CORES_COUNT - jj) + REG_SIZE -1: 
-				       TASK_MEM_WIDTH - REG_SIZE * (CORES_COUNT - jj)];
+			Init_R0[`R0_RANGE(jj)] <= Task_Memory[Task_Pointer][`TM_R0_RANGE(jj)];
 		end
 end
 endgenerate
 
 
-always @(posedge clk)									//Task_Pointer
+assign EXEC_MASK = ~Ready;
+
+
+always @(posedge clk)									//Control Frame
 begin
-	if (reset)
-		Task_Pointer <= 0;
-
-	case (Fence)
-		`NO: begin
-			if (~EXEC_MASK & ~reset)					//todo: fence
-				Task_Pointer <= Task_Pointer + 1;
+	if (reset) begin
+		Task_Pointer 	<= 0;
+		Insn_Frame_Num 	<= 0;
+		fence 		<= `NO;
+	end else begin
+		if ((Core_Active_Vect & Ready == Core_Active_Vect) & Insn_Frame_Num) begin				
+			Insn_Frame_Num	 <= Insn_Frame_Num - 1;		
+			Task_Pointer	 <= Task_Pointer   + 1;
 		end
 
-		`ACQ: begin
 
+
+		if (~Insn_Frame_Num) begin
+			if ( ( (fence == `REL | `FENCE_NEXT == `ACQ) & ~EXEC_MASK    ) |
+			     (  fence == `NO & ~(EXEC_MASK & `CORE_ACTIVE_VECT_NEXT) ) )
+			begin
+				Insn_Frame_Num   <= Task_Memory[Task_Pointer][`IF_NUM_RANGE];
+				fence		 <= Task_Memory[Task_Pointer][`TS_FENCE_RANGE];
+				Core_Active_Vect <= `CORE_ACTIVE_VECT_NEXT;
+				Task_Pointer 	 <= Task_Pointer + 1;
+			end
 		end
-
-		`REL: begin
-
-		end
-
-		`RSV: begin
-
-		end
-	endcase
+	end	
 end
 
 endmodule
