@@ -67,7 +67,16 @@ module Test;
         insn_data[4 * `INSN_SIZE - 1 : 3 * `INSN_SIZE] <= {{`READY }, {(`INSN_SIZE - `INSN_OPC_SIZE){1'b0}}};
         Start <= 1;
         #10 Start <= 0;
-
+        #100;
+        init_R0_flag <= 1;
+        init_R0_data <= 1;
+        rd_data_M <= 0;
+        insn_data[1 * `INSN_SIZE - 1 : 0 * `INSN_SIZE] <= {{`BNZ }, {4{1'b0}}, {4'h3}, {4{1'b0}}};
+        insn_data[2 * `INSN_SIZE - 1 : 1 * `INSN_SIZE] <= {{`ADD }, {(`INSN_SIZE - `INSN_OPC_SIZE){1'b0}}};
+        insn_data[3 * `INSN_SIZE - 1 : 2 * `INSN_SIZE] <= {{`ADD }, {(`INSN_SIZE - `INSN_OPC_SIZE){1'b0}}};
+        insn_data[4 * `INSN_SIZE - 1 : 3 * `INSN_SIZE] <= {{`READY }, {(`INSN_SIZE - `INSN_OPC_SIZE){1'b0}}};
+        Start <= 1;
+        #10 Start <= 0;
     end
 
     always @(posedge (enable_M[1])  or posedge(enable_M[0])) begin
