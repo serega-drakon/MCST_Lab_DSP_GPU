@@ -107,9 +107,9 @@ typedef struct lexeme_{
 
 typedef struct insnData_{
     InsnOpCodes opCode;
-    InsnSrcDst src0;
-    InsnSrcDst src1;
-    InsnSrcDst src2dst;
+    InsnReg src0;
+    InsnReg src1;
+    InsnReg src2dst;
     uint8_t constData;
     uint8_t target;
 } insnData;

@@ -37,6 +37,12 @@ do { printf("Line %d: ", *(ptrLineNum) + 1);                        \
      printf("\n -> %ls\n", (ptrLex)->op);                           \
      return errorCode; } while(0)
 
+#define ERROR_MSG_OP_NL_FREE_OP(ptrOp, errorCode, errorMsg, ...)\
+do { printf(errorMsg __VA_ARGS__);                              \
+     printf("\n -> %ls\n", (ptrOp));                            \
+     free(ptrOp);                                               \
+     return errorCode; } while(0)
+
 #define WARNING(ptrLineNum, errorMsg, ...)      \
 do { printf("Line %d: ", *(ptrLineNum) + 1);    \
      printf(errorMsg __VA_ARGS__);              \
@@ -51,11 +57,11 @@ do { printf("Line %d: ", *(ptrLineNum) + 1);            \
 InitStates definesInit(Defines *ptrDef){
     assert(ptrDef != NULL);
     const char errorMsg[] = "Defines memory alloc error";
-    ptrDef->ptrLabelDefinedNames = dStackInit(sizeof(int));
+    ptrDef->ptrLabelDefinedNames = dStackInit(MAX_OP * sizeof(int));
     MEM_CHECK(ptrDef->ptrLabelDefinedNames, InitError, errorMsg);
-    ptrDef->ptrLabelDefinedValues = dStackInit(sizeof(char));
+    ptrDef->ptrLabelDefinedValues = dStackInit(sizeof(unsigned));
     MEM_CHECK(ptrDef->ptrLabelDefinedValues, InitError, errorMsg);
-    ptrDef->ptrLabelUsedNames = dStackInit(sizeof(int));
+    ptrDef->ptrLabelUsedNames = dStackInit(MAX_OP * sizeof(int));
     MEM_CHECK(ptrDef->ptrLabelUsedNames, InitError, errorMsg);
     ptrDef->ptrLabelUsedValuesPtr = dStackInit(sizeof(Stack *));
     MEM_CHECK(ptrDef->ptrLabelUsedValuesPtr, InitError, errorMsg);
@@ -64,13 +70,13 @@ InitStates definesInit(Defines *ptrDef){
 
 void definesReset(Defines *ptrDef){
     assert(ptrDef != NULL);
-    dStackReset(ptrDef->ptrLabelDefinedNames);
+    dStackReset(ptrDef->ptrLabelDefinedNames); //FIXME: сделать
     dStackReset(ptrDef->ptrLabelDefinedValues);
     dStackReset(ptrDef->ptrLabelUsedNames);
     if(ptrDef->ptrLabelUsedValuesPtr != NULL) {
         const u_int32_t size = getsize_dStack(ptrDef->ptrLabelUsedValuesPtr);
         for (int i = 0; i < size; i++)
-            dStackReset(*(void **) dStack_r(ptrDef->ptrLabelUsedValuesPtr, i));
+            dStackFree(*(Stack **) pop_dStack(ptrDef->ptrLabelUsedValuesPtr));
         dStackReset(ptrDef->ptrLabelUsedValuesPtr);
     }
 }
@@ -596,28 +602,76 @@ ProcessStates processInsnWithTwoRegs(FILE *input, insnData *ptrInsn, lexeme *ptr
     return ProcessOK;
 }
 
-ProcessStates processInsnWithRegAndConst(FILE *input, insnData *ptrInsn, lexeme *ptrLex,
+ProcessStates processInsnWithConstAndReg(FILE *input, insnData *ptrInsn, lexeme *ptrLex,
                                          unsigned *ptrLineNum){
     ptrInsn->opCode = translateLexTypeToInsnOpCode(ptrLex->lexType);
-}
-
-ProcessStates processInsnWithLabel(FILE *input, Defines *ptrDef, insnData *ptrInsn, lexeme *ptrLex,
-                                   unsigned *ptrLineNum){
-    ptrInsn->opCode = translateLexTypeToInsnOpCode(ptrLex->lexType);
-
-
-}
-
-ProcessStates processLabelDefinition(Defines *ptrDef, int lexOp[]){
-
-}
-
-ProcessStates processCheckLabels(Defines *ptrDef){
+    getLexNoComments(input, ptrLineNum, ptrLex);
+    if(!isConst(ptrLex))
+        ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо число");
+    ptrInsn->constData = getConst(ptrLex);
+    getLexNoComments(input, ptrLineNum, ptrLex);
+    if(!isRegLex(ptrLex->lexType))
+        ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо регистр");
+    ptrInsn->src2dst = translateLexTypeToInsnReg(ptrLex->lexType);
     return ProcessOK;
 }
 
-void processPutLabels(Defines *ptrDef, InsnFrameData *ptrIFData){
+void processLabelUsage(Defines *ptrDef, unsigned insnNum, int *labelLexOp){
+    int search = searchFor(ptrDef->ptrLabelUsedNames, labelLexOp, MAX_OP);
+    Stack* ptrStack;
+    if(search == NONE){
+        push_dStack(ptrDef->ptrLabelUsedNames, labelLexOp);
+        ptrStack = dStackInit(sizeof(unsigned));
+        push_dStack(ptrDef->ptrLabelUsedValuesPtr, &ptrStack);
+    }
+    else
+        ptrStack = *(Stack**) dStack_r(ptrDef->ptrLabelUsedValuesPtr, search);
+    push_dStack(ptrStack, &insnNum);
+}
 
+ProcessStates processInsnWithLabel(FILE *input, Defines *ptrDef, insnData *ptrInsn,
+                                   lexeme *ptrLex, unsigned insnNum, unsigned *ptrLineNum){
+    ptrInsn->opCode = translateLexTypeToInsnOpCode(ptrLex->lexType);
+    getLexNoComments(input, ptrLineNum, ptrLex);
+    if(!isRegLex(ptrLex->lexType))
+        ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо регистр");
+    ptrInsn->src0 = translateLexTypeToInsnReg(ptrLex->lexType);
+    getLexNoComments(input, ptrLineNum, ptrLex);
+    if(ptrLex->lexType != Label)
+        ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо метку");
+    processLabelUsage(ptrDef, insnNum, ptrLex->op);
+    ptrInsn->target = 0;
+    return ProcessOK;
+}
+
+ProcessStates processLabelDefinition(Defines *ptrDef, lexeme *ptrLex, unsigned insnNum,
+                                     const unsigned *ptrLineNum){
+    if(searchFor(ptrDef->ptrLabelDefinedNames, ptrLex->op, MAX_OP) != NONE)
+        ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Метка переопределена");
+    push_dStack(ptrDef->ptrLabelDefinedNames, ptrLex->op);
+    push_dStack(ptrDef->ptrLabelDefinedValues, &insnNum);
+    return ProcessOK;
+}
+
+ProcessStates processCheckAndPutLabels(Defines *ptrDef, InsnFrameData *ptrIFData){
+    unsigned size = getsize_dStack(ptrDef->ptrLabelUsedNames);
+    int search;
+    unsigned labelData;
+    unsigned insnNum;
+    int *buffOp = malloc(MAX_OP);
+    Stack *ptrLabelUsedValues;
+    for(unsigned i = 0; i < size; i++){
+        memcpy(buffOp, dStack_r(ptrDef->ptrLabelUsedNames, i), MAX_OP);
+        search = searchFor(ptrDef->ptrLabelDefinedNames, buffOp, MAX_OP);
+        if(search == NONE)
+            ERROR_MSG_OP_NL_FREE_OP(buffOp, ProcessError, "Использованная метка не определена");
+        labelData = *(unsigned *)dStack_r(ptrDef->ptrLabelDefinedValues, search);
+        ptrLabelUsedValues = *(Stack**) dStack_r(ptrDef->ptrLabelUsedValuesPtr, search);
+        insnNum = *(unsigned *) pop_dStack(ptrLabelUsedValues);
+        ptrIFData->ptrInsn[insnNum].target = labelData;
+    }
+    free(buffOp);
+    return ProcessOK;
 }
 
 GetFrameStates getInsnFrame(FILE *input, Defines *ptrDef, InsnFrameData *ptrIFData,
@@ -627,30 +681,30 @@ GetFrameStates getInsnFrame(FILE *input, Defines *ptrDef, InsnFrameData *ptrIFDa
         getLexNoComments(input, ptrLineNum, ptrLex);
         switch (ptrLex->lexType) { // оп оп грамматика пошла
             case Nop: case Ready:
-                insnNum++;
                 processInsnWithNoArgs(&ptrIFData->ptrInsn[insnNum], ptrLex->lexType);
+                insnNum++;
                 break;
             case Add: case Sub: case Mul: case Div: case Cmpge: case Rshift:
             case Lshift: case And: case Or: case Xor: case Ld:  case St:
-                insnNum++;
                 if(processInsnWithTwoRegs(input, &ptrIFData->ptrInsn[insnNum], ptrLex,
                                           ptrLineNum) == ProcessError)
                     ERROR_MSG(ptrLineNum, GetFrameCodeError, "Error: Insn with two regs error");
+                insnNum++;
                 break;
             case Set_const:
-                insnNum++;
-                if(processInsnWithRegAndConst(input, &ptrIFData->ptrInsn[insnNum], ptrLex,
+                if(processInsnWithConstAndReg(input, &ptrIFData->ptrInsn[insnNum], ptrLex,
                                               ptrLineNum) == ProcessError)
                     ERROR_MSG(ptrLineNum, GetFrameCodeError, "Error: Insn with reg and Const error");
+                insnNum++;
                 break;
             case Bnz:
-                insnNum++;
                 if(processInsnWithLabel(input, ptrDef, &ptrIFData->ptrInsn[insnNum], ptrLex,
-                                        ptrLineNum) == ProcessError)
+                                        insnNum, ptrLineNum) == ProcessError)
                     ERROR_MSG(ptrLineNum, GetFrameCodeError, "Error: Insn with reg and Const error");
+                insnNum++;
                 break;
             case Label:
-                if(processLabelDefinition(ptrDef, ptrLex->op) == ProcessError)
+                if(processLabelDefinition(ptrDef, ptrLex, insnNum, ptrLineNum) == ProcessError)
                     ERROR_MSG(ptrLineNum, GetFrameCodeError, "Error: Label definition error");
                 break;
             case Colon: case BracketCurlyOpen: case Nothing:
@@ -667,9 +721,8 @@ GetFrameStates getInsnFrame(FILE *input, Defines *ptrDef, InsnFrameData *ptrIFDa
     && ptrLex->lexType != BracketCurlyOpen)
         ERROR_MSG_LEX(ptrLineNum, ptrLex, GetFrameCodeError,
                       "Уже наступил конец фрейма, всего комманд может быть - %d",, INSN_COUNT);
-    if(processCheckLabels(ptrDef) == ProcessError)
+    if(processCheckAndPutLabels(ptrDef, ptrIFData) == ProcessError)
         ERROR_MSG_NL(GetFrameCodeError, "Чот тут метки не сходятся");
-    processPutLabels(ptrDef, ptrIFData);
     return GetFrameOK;
 }
 
@@ -691,11 +744,11 @@ GetFrameStates processControlFrame(FILE* input, Stack *output, ControlFrameData 
                                    unsigned *ptrLineNum){
     if(ptrCFData->IF_Num_left > 0)
         WARNING(ptrLineNum, "Warning: There are IFs left - %d",, ptrCFData->IF_Num_left);
+    controlFrameDataReset(ptrCFData);
     GetFrameStates frameState = getControlFrame(input, ptrCFData, ptrLex, ptrLineNum);
     if(checkCFFlags(ptrCFData) == CheckCFFlagsWarning)
         WARNING(ptrLineNum, "Warning: InitR0 > CoreActive???");
     pushCFtoStack(output, ptrCFData);
-    controlFrameDataReset(ptrCFData);
     return frameState;
 }
 

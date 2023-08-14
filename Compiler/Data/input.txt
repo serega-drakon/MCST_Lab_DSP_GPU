@@ -6,21 +6,19 @@ CoreActive = !0,!2,!4; //sakdlaksl;dkl;asd
 
 Fence = acq;
 
-IFNum = !4;
+IFNum = !2;
 }
-{IFNum = !1;}
-{}
-{}
-{}
-{}
-{}
-{}
-{}
-{}
-{}
-{}
-{}
-{}
-{}
-{}
-{}
+: name1
+.label1
+bnz %r0 .label1
+.label2
+bnz %r0 .label2
+
+: name2
+
+.label2
+bnz %r0 .label2
+add %r0 %r1 %r2
+set_const $FF %r3
+nop
+ready

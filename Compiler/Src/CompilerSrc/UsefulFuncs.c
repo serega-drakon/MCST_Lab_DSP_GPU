@@ -5,6 +5,7 @@
 #include "UsefulFuncs.h"
 #include <stdlib.h>
 #include <ctype.h>
+#include <memory.h>
 
 ///Сравнивает строки    \n
 ///Возвращет 1 если совпали, иначе - 0
@@ -38,4 +39,30 @@ u_int8_t getConst16D(const int op[]){
 void putZeroes(void* dst, unsigned size){
     for(unsigned i = 0; i < size; i++)
         ((char*)dst)[i] = 0;
+}
+
+///Сравнивает обычную строку и строку из стека index
+int compareStrStack(const int a[], unsigned size, Stack* ptrStack, u_int32_t index){
+    int j = 0;
+    dStack_r(ptrStack, index);
+    unsigned dStackSize = getSizeOfUnit_dStack(ptrStack);
+    int *buff = malloc(dStackSize);
+    memcpy(buff, dStack_r(ptrStack, index), dStackSize);
+    for(j = 0; a[j] != '\0' && buff[j] != '\0' && a[j] == buff[j]
+        && j < dStackSize && j < size; j++)
+        ;
+    if(a[j] == '\0' && buff[j] == '\0') {
+        free(buff);
+        return 1;
+    }
+    free(buff);
+    return 0;
+}
+
+///Смотрит по массиву есть ли данная "op" в списке и возвращает ее индекс, иначе возвращает NONE
+int searchFor(Stack *ptrNames, int op[], unsigned size){
+    unsigned dStackSize = getsize_dStack(ptrNames);
+    for(int i = 0; i < dStackSize; i++)
+        if(compareStrStack(op, size, ptrNames, i)) return i;
+    return NONE;
 }

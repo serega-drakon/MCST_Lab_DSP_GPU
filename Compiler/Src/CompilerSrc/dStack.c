@@ -38,33 +38,33 @@ struct Stack_ {
     void *buffForErr;///< buffForErr returns if error occurred
     void *buffForRes;///< buffForRes points to result of stack_main() func
     void *buffForPop;///< buffer for pop_dStack func
-    u_int32_t sizeOfUnit; ///< Size of one element of ptrData in bytes
-    u_int32_t num; ///< Number of elements of ptrData (malloced memory)
-    u_int32_t pos; ///< Next free position of stack (pop_dStack/push_dStack/getlast)
+    unsigned sizeOfUnit; ///< Size of one element of ptrData in bytes
+    unsigned num; ///< Number of elements of ptrData (malloced memory)
+    unsigned pos; ///< Next free position of stack (pop_dStack/push_dStack/getlast)
     u_int8_t *meta; ///< "Poison" check of ptrData
 
-    u_int32_t metaNum; ///< Number of elements of meta (malloced memory)
+    unsigned metaNum; ///< Number of elements of meta (malloced memory)
     u_int8_t error;///< is an array of bools
 };
 
 int error_main_read(Stack *ptrStack, Errors numOfError);
 int error_main_write(Stack *ptrStack, Errors numOfError);
 
-void stack_extend(Stack *ptrStack, u_int32_t x);
+void stack_extend(Stack *ptrStack, unsigned x);
 
-int meta_main_read(Stack *ptrStack, u_int32_t x);
-int meta_main_has_used(Stack *ptrStack, u_int32_t x);
-int meta_main_reset(Stack *ptrStack, u_int32_t x);
+int meta_main_read(Stack *ptrStack, unsigned x);
+int meta_main_has_used(Stack *ptrStack, unsigned x);
+int meta_main_reset(Stack *ptrStack, unsigned x);
 
 int kanareiyka_check(Stack *ptrStack);
 
-void saveResToBuff(Stack *ptrStack, u_int32_t x){
-    const u_int32_t shift_in_stack = (x + KAN_NUM) * ptrStack->sizeOfUnit;
+void saveResToBuff(Stack *ptrStack, unsigned x){
+    const unsigned shift_in_stack = (x + KAN_NUM) * ptrStack->sizeOfUnit;
     const void* from_buf = &((char *) ptrStack->ptrData)[shift_in_stack];
     memcpy(ptrStack->buffForRes, from_buf, ptrStack->sizeOfUnit);
 }
 
-void *stack_main_write(Stack *ptrStack, u_int32_t x, const void *ptrValue){
+void *stack_main_write(Stack *ptrStack, unsigned x, const void *ptrValue){
     assert(ptrStack != NULL);
     assert(ptrValue != NULL);
     assert(x >= 0);
@@ -89,7 +89,7 @@ void *stack_main_write(Stack *ptrStack, u_int32_t x, const void *ptrValue){
     return ptrStack->buffForRes;
 }
 
-void *stack_main_read(Stack *ptrStack, u_int32_t x){
+void *stack_main_read(Stack *ptrStack, unsigned x){
     assert(ptrStack != NULL);
     assert(x >= 0);
 
@@ -114,7 +114,7 @@ void *stack_main_read(Stack *ptrStack, u_int32_t x){
 }
 
 /// Extends given Stack
-void stack_extend(Stack *ptrStack, u_int32_t x) {
+void stack_extend(Stack *ptrStack, unsigned x) {
     assert(ptrStack != NULL);
     assert(x >= 0);
 
@@ -151,7 +151,7 @@ void stack_extend(Stack *ptrStack, u_int32_t x) {
     //Потом выделяем память для meta
     if (x > ptrStack->metaNum * 8) {
         previousPtr = ptrStack->meta;
-        u_int32_t y;
+        unsigned y;
         for(y = ptrStack->metaNum; y * 8 < x; y *= 2)
             ;
         ptrStack->meta = calloc(y, sizeof(char));
@@ -170,7 +170,7 @@ void stack_extend(Stack *ptrStack, u_int32_t x) {
 }
 
 ///Битовый массив, который содержит информацию об использовании каждого из элементов массива
-int meta_main_read(Stack *ptrStack, u_int32_t x){
+int meta_main_read(Stack *ptrStack, unsigned x){
     assert(ptrStack != NULL);
     //нумерация справа налево
     const int numOfBit = 7 - (char) (x % 8);
@@ -178,7 +178,7 @@ int meta_main_read(Stack *ptrStack, u_int32_t x){
 }
 
 ///Битовый массив, который содержит информацию об использовании каждого из элементов массива
-int meta_main_has_used(Stack *ptrStack, u_int32_t x){
+int meta_main_has_used(Stack *ptrStack, unsigned x){
     assert(ptrStack != NULL);
     //нумерация справа налево
     const int numOfBit = 7 - (char) (x % 8);
@@ -187,7 +187,7 @@ int meta_main_has_used(Stack *ptrStack, u_int32_t x){
 }
 
 ///Битовый массив, который содержит информацию об использовании каждого из элементов массива
-int meta_main_reset(Stack *ptrStack, u_int32_t x){
+int meta_main_reset(Stack *ptrStack, unsigned x){
     assert(ptrStack != NULL);
     //нумерация справа налево
     const int numOfBit = 7 - (char) (x % 8);
@@ -213,7 +213,7 @@ int error_main_write(Stack *ptrStack, Errors numOfError){
 ///проверяет канарейки массива и возвращает 1 если они повреждены, 0 если нет.
 int kanareiyka_check(Stack *ptrStack){
     int check = 0;
-    const u_int32_t shift = (KAN_NUM + ptrStack->num) * ptrStack->sizeOfUnit;
+    const unsigned shift = (KAN_NUM + ptrStack->num) * ptrStack->sizeOfUnit;
     for(int i = 0; i < KAN_NUM * ptrStack->sizeOfUnit; i++)
         if(((unsigned char*)ptrStack->ptrData)[i] != KAN_VALUE
            || ((unsigned char*)ptrStack->ptrData)[shift + i] != KAN_VALUE)
@@ -222,8 +222,8 @@ int kanareiyka_check(Stack *ptrStack){
 }
 
 ///сбрасывает текущую позицию массива до пойзона.
-void stack_reset_pos(Stack *ptrStack, u_int32_t x){
-    u_int32_t i;
+void stack_reset_pos(Stack *ptrStack, unsigned x){
+    unsigned i;
     for(i = 0; i < ptrStack->sizeOfUnit; i++)
         ((unsigned char*)ptrStack->buffForErr)[i] = POISON_VALUE;
     stack_main_write(ptrStack, x, ptrStack->buffForErr);
@@ -260,7 +260,7 @@ void dStackErrorPrint(Stack *ptrStack){
 }
 
 /// Constructor of stack.
-Stack *dStackInit(u_int32_t size) {
+Stack *dStackInit(unsigned size) {
     if (size <= 0)
         return NULL;
     Stack *ptrStack;
@@ -289,7 +289,7 @@ Stack *dStackInit(u_int32_t size) {
         if(ptrStack->ptrData != NULL) {    //заполняем канарейки
             ptrStack->num = 1;
             int i;
-            const u_int32_t shift = (KAN_NUM + ptrStack->num) * ptrStack->sizeOfUnit;
+            const unsigned shift = (KAN_NUM + ptrStack->num) * ptrStack->sizeOfUnit;
 
             for(i = 0; i < KAN_NUM * ptrStack->sizeOfUnit; i++){
                 ((unsigned char*)ptrStack->ptrData)[i] = KAN_VALUE;
@@ -318,7 +318,7 @@ void dStackFree(Stack *ptrStack){
 }
 
 /// Array READ function
-void *dStack_r(Stack *ptrStack, u_int32_t x) {
+void *dStack_r(Stack *ptrStack, unsigned x) {
     if (!dStackErrorCheck(ptrStack))
         return stack_main_read(ptrStack, x);
     else
@@ -326,7 +326,7 @@ void *dStack_r(Stack *ptrStack, u_int32_t x) {
 }
 
 /// Array WRITE function
-void *dStack_w(Stack *ptrStack, u_int32_t x, const void *ptrValue) {
+void *dStack_w(Stack *ptrStack, unsigned x, const void *ptrValue) {
     if (!dStackErrorCheck(ptrStack) && ptrValue != NULL)
         return stack_main_write(ptrStack, x, ptrValue);
     else
@@ -361,14 +361,22 @@ void *getLast_dStack(Stack *ptrStack) {
         EXIT;
 }
 
-u_int32_t getsize_dStack(Stack *ptrStack){
+unsigned getsize_dStack(Stack *ptrStack){
     if(!dStackErrorCheck(ptrStack))
         return ptrStack->pos;
     else
         return 0;
 }
 
+unsigned getSizeOfUnit_dStack(Stack *ptrStack){
+    if(!dStackErrorCheck(ptrStack))
+        return ptrStack->sizeOfUnit;
+    else
+        return 0;
+}
+
 /// попает все элементы
 void dStackReset(Stack *ptrStack){
-    //todo
+    while(getsize_dStack(ptrStack) > 0)
+        pop_dStack(ptrStack);
 }
