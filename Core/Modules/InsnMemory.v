@@ -16,7 +16,7 @@ module InsnMemory (
     generate for(genvar i = 0; i < `INSN_COUNT; i = i + 1) begin : insn_mem_loop
         always @(posedge clk)
             if(~reset)
-                insn_mem_r[i][`INSN_SIZE - 1 : 0] = (init_insn_mem) ?
+                insn_mem_r[i][`INSN_SIZE - 1 : 0] <= (init_insn_mem) ?
                     insn_data[(i + 1) * `INSN_SIZE - 1 : i * `INSN_SIZE] :
                     insn_mem_r[i][`INSN_SIZE - 1 : 0];
     end
