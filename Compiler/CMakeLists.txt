@@ -7,7 +7,10 @@ add_executable(main.c
         Src/CompilerSrc/dStack.c
         Src/Compiler.c
         main.c
-        Src/CompilerSrc/UsefulFuncs.c)
+        Src/CompilerSrc/UsefulFuncs.c
+        Src/CompilerSrc/TranslateEnumTables.c
+        Src/CompilerSrc/strings.c
+)
 
 include_directories(Inc
                     Inc/CompilerInc)

@@ -5,25 +5,10 @@
 #ifndef DSP_GPU_COMPILER_STRINGS_H
 #define DSP_GPU_COMPILER_STRINGS_H
 
-///Представления регистров %..
-const char *Registers_str_[] = { //емае пошло говно по трубам
-        "r0",
-        "r1",
-        "r2",
-        "r3",
-        "r4",
-        "r5",
-        "r6",
-        "r7",
-        "r8",
-        "r9",
-        "r10",
-        "r11",
-        "r12",
-        "r13",
-        "r14",
-        "r15"
-};
+extern const char *Registers_str_[];
+extern const char *OpCodes_str_[];
+extern const char *CFParamNames_str_[];
+extern const char *FenceModes_str_[];
 
 typedef enum Registers_str_enum_{
     Registers_str_enum_MIN = 0,
@@ -46,25 +31,6 @@ typedef enum Registers_str_enum_{
     Registers_str_enum_MAX
 } Registers_str_enum;
 
-const char *OpCodes_str_[] = {
-    "nop",
-    "add",
-    "sub",
-    "mul",
-    "div",
-    "cmpge",
-    "rshift",
-    "lshift",
-    "and",
-    "or",
-    "xor",
-    "ld",
-    "set_const",
-    "st",
-    "bnz",
-    "ready"
-};
-
 typedef enum OpCodes_str_enum_{
     OpCodes_str_enum_MIN = 0,
     Nop_str = OpCodes_str_enum_MIN,
@@ -86,13 +52,6 @@ typedef enum OpCodes_str_enum_{
     OpCodes_str_enum_MAX
 } OpCodes_str_enum;
 
-char *CFParamNames_str_[] = {
-    "InitR0",
-    "CoreActive",
-    "Fence",
-    "IFNum"
-};
-
 typedef enum CFParamNames_str_enum_{
     CFParamNames_str_enum_MIN = 0,
     InitR0_str = CFParamNames_str_enum_MIN,
@@ -101,12 +60,6 @@ typedef enum CFParamNames_str_enum_{
     IFNum_str,
     CFParamNames_str_enum_MAX
 } CFParamNames_str_enum;
-
-char *FenceModes_str_[] = {
-    "no",
-    "acq",
-    "rel"
-};
 
 typedef enum FenceModes_str_enum_{
     FenceModes_str_enum_MIN = 0,

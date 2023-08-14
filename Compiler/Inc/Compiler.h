@@ -5,6 +5,8 @@
 #ifndef DSP_GPU_COMPILER_COMPILER_H
 #define DSP_GPU_COMPILER_COMPILER_H
 
+#include <stdio.h>
+
 #define FRAMES_COUNT 16
 #define INSN_SIZE (2 * sizeof(char))
 #define INSN_COUNT 16
