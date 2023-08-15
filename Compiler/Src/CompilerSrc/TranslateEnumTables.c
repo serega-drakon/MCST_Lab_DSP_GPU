@@ -130,7 +130,3 @@ uint8_t isRegLex(LexemeTypes lexType){
             || lexType == Reg_R14
             || lexType == Reg_R15);
 }
-
-uint8_t isConst(LexemeTypes lexType){
-    return (lexType == Const10 || lexType == Const16);
-}

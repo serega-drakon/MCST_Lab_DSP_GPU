@@ -16,6 +16,5 @@ LexemeTypes translateFenceModesFromStrToLex(FenceModes_str_enum strEnum);
 InsnOpCodes translateLexTypeToInsnOpCode(LexemeTypes lexType);
 InsnReg translateLexTypeToInsnReg(LexemeTypes lexType);
 uint8_t isRegLex(LexemeTypes lexType);
-uint8_t isConst(LexemeTypes lexType);
 
 #endif //DSP_GPU_COMPILER_TRANSLATEENUMTABLES_H
