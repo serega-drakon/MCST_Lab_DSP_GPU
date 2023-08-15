@@ -66,7 +66,7 @@ end
 
 generate for (ii = `NUM_OF_CORES - 1; ii >= 0; ii = ii - 1) begin: init_R0_loop		//Init_R0
 	always @(posedge clk)
-		if (~reset & (Insn_Frame_Num == 0)) begin
+		if (~reset & Insn_Frame_Num == 0) begin
 			Init_R0[`R0_RANGE(ii)] <= Task_Memory[Task_Pointer][`TM_R0_RANGE(ii)];
 		end
 end
@@ -78,19 +78,19 @@ begin
 	if (reset)
 		Insn_Frame_Num 	<= 0;
 	else begin
-		if ((Core_Active_Vect & Ready == Core_Active_Vect) & Insn_Frame_Num)				
+		if ( (Core_Active_Vect & EXEC_MASK) == 0 & Insn_Frame_Num)				
 			Insn_Frame_Num	 <= Insn_Frame_Num - 1;		
 
-		if ( (Insn_Frame_Num == 0) & ( (fence == `ACQ | `FENCE_NEXT == `REL) & EXEC_MASK == 0) |
-			     (  fence == `NO & (EXEC_MASK & `CORE_ACTIVE_VECT_NEXT == 0) ) )
+		if ( (Insn_Frame_Num == 0 & (fence == `ACQ | `FENCE_NEXT == `REL) & EXEC_MASK == 0) |
+			     (  fence == `NO & (EXEC_MASK & `CORE_ACTIVE_VECT_NEXT) == 0) )
 			Insn_Frame_Num   <= Task_Memory[Task_Pointer][`IF_NUM_RANGE];
 	end	
 end
 
 always @(posedge clk)
 begin
-	if ( (~reset & (Insn_Frame_Num == 0)) & ( (fence == `ACQ | `FENCE_NEXT == `REL) & EXEC_MASK == 0) |
-			     (  fence == `NO & (EXEC_MASK & `CORE_ACTIVE_VECT_NEXT == 0) ) )
+	if ( (~reset & Insn_Frame_Num == 0) & ( (fence == `ACQ | `FENCE_NEXT == `REL) & EXEC_MASK == 0) |
+			     (  fence == `NO & (EXEC_MASK & `CORE_ACTIVE_VECT_NEXT) == 0) )
 		Core_Active_Vect <= `CORE_ACTIVE_VECT_NEXT;
 end
 
@@ -99,11 +99,11 @@ begin
 	if (reset)
 		Task_Pointer <= 0;
 	else begin
-		if ((Core_Active_Vect & Ready == Core_Active_Vect) & Insn_Frame_Num)
+		if ((Core_Active_Vect & EXEC_MASK) == 0 & Insn_Frame_Num)
 			Task_Pointer	<= Task_Pointer   + 1;
 
-		if ( (Insn_Frame_Num == 0) & ( ((fence == `ACQ | `FENCE_NEXT == `REL) & EXEC_MASK == 0) |
-			     		    (fence == `NO & (EXEC_MASK & `CORE_ACTIVE_VECT_NEXT == 0)) ) )
+		if ( Insn_Frame_Num == 0 & ( ((fence == `ACQ | `FENCE_NEXT == `REL) & EXEC_MASK == 0) |
+			     		     (fence == `NO & (EXEC_MASK & `CORE_ACTIVE_VECT_NEXT) == 0) ) )
 			Task_Pointer	<= Task_Pointer + 1;
 
 	end
@@ -114,8 +114,8 @@ always @(posedge clk)									//fence
 begin
 	if (reset)
 		fence <= `NO;
-	else if ( (Insn_Frame_Num == 0) & ( ((fence == `ACQ | `FENCE_NEXT == `REL) & EXEC_MASK == 0) |
-			     		    (fence == `NO & (EXEC_MASK & `CORE_ACTIVE_VECT_NEXT == 0)) ) )
+	else if ( Insn_Frame_Num == 0 & ( ((fence == `ACQ | `FENCE_NEXT == `REL) & EXEC_MASK == 0) |
+			     		   (fence == `NO & (EXEC_MASK & `CORE_ACTIVE_VECT_NEXT) == 0) ) )
 		fence <= Task_Memory[Task_Pointer][`TS_FENCE_RANGE];
 end
 
