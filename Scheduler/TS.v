@@ -17,7 +17,7 @@ module Task_Scheduler
 );
 
 
-reg	[`TM_DEPTH_RANGE]	Task_Memory [`TM_WIDTH_RANGE];
+reg	[`TM_WIDTH_RANGE]	Task_Memory [`TM_DEPTH_RANGE];
 wire 	[`TM_WIDTH_RANGE]	Task_Memory_Frame;
 
 reg	[`IF_NUM_RANGE]		Task_Pointer;	
@@ -50,7 +50,7 @@ endgenerate
 
 
 always @(posedge clk)									//Start
-	Start <= (~reset & Insn_Frame_Num)? Core_Active_Vect : 0;
+	Start <= (~reset & Insn_Frame_Num != 0)? Core_Active_Vect : 0;
 	
 
 always @(posedge clk)									//Insn Data
@@ -95,8 +95,10 @@ end
 
 always @(posedge clk)
 begin
-	if ( (~reset & Insn_Frame_Num == 0) & ( (fence == `ACQ | FENCE_NEXT == `REL) & EXEC_MASK == 0) |
-			     (  fence == `NO & (EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0) )
+	if (reset)
+		Core_Active_Vect <= 0;
+	else if ( (Insn_Frame_Num == 0) & ( (fence == `ACQ | FENCE_NEXT == `REL) & EXEC_MASK == 0) |
+			    		  (  fence == `NO & (EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0) )
 		Core_Active_Vect <= CORE_ACTIVE_VECT_NEXT;
 end
 
@@ -121,8 +123,9 @@ begin
 	if (reset)
 		fence <= `NO;
 	else if ( Insn_Frame_Num == 0 & ( ((fence == `ACQ | FENCE_NEXT == `REL) & EXEC_MASK == 0) |
-			     		   (fence == `NO & (EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0) ) )
+			     		   (fence == `NO & (EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0) ) ) begin
 		fence <= Task_Memory_Frame[`TS_FENCE_RANGE];
+	end
 end
 
 endmodule
