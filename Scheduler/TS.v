@@ -29,7 +29,10 @@ reg 	[1:0]			fence;							//for Control Frame
 reg 	[`CORES_RANGE]		Core_Active_Vect;
 
 
-assign Task_Memory_Frame = Task_Memory[Task_Pointer];
+assign Task_Memory_Frame	= Task_Memory[Task_Pointer];
+
+assign FENCE_NEXT 		= Task_Memory_Frame[`TS_FENCE_RANGE];
+assign CORE_ACTIVE_VECT_NEXT	= Task_Memory_Frame[`CORE_ACTIVE_VECT_RANGE];
 
 genvar ii;
 generate for (ii = 0; ii < `NUM_OF_CORES; ii = ii + 1) begin: exec_mask_loop
@@ -84,29 +87,29 @@ begin
 		if ( (Core_Active_Vect & EXEC_MASK) == 0 & Insn_Frame_Num)				
 			Insn_Frame_Num	 <= Insn_Frame_Num - 1;		
 
-		if ( (Insn_Frame_Num == 0 & (fence == `ACQ | `FENCE_NEXT == `REL) & EXEC_MASK == 0) |
-			     (  fence == `NO & (EXEC_MASK & `CORE_ACTIVE_VECT_NEXT) == 0) )
+		if ( (Insn_Frame_Num == 0 & (fence == `ACQ | FENCE_NEXT == `REL) & EXEC_MASK == 0) |
+			     (  fence == `NO & (EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0) )
 			Insn_Frame_Num   <= Task_Memory_Frame[`IF_NUM_RANGE];
 	end	
 end
 
 always @(posedge clk)
 begin
-	if ( (~reset & Insn_Frame_Num == 0) & ( (fence == `ACQ | `FENCE_NEXT == `REL) & EXEC_MASK == 0) |
-			     (  fence == `NO & (EXEC_MASK & `CORE_ACTIVE_VECT_NEXT) == 0) )
-		Core_Active_Vect <= `CORE_ACTIVE_VECT_NEXT;
+	if ( (~reset & Insn_Frame_Num == 0) & ( (fence == `ACQ | FENCE_NEXT == `REL) & EXEC_MASK == 0) |
+			     (  fence == `NO & (EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0) )
+		Core_Active_Vect <= CORE_ACTIVE_VECT_NEXT;
 end
 
 always @(posedge clk)									//Task Pointer
 begin
 	if (reset)
-		Task_Pointer <= 0;
+		Task_Pointer <= `TASK_MEM_DEPTH - 1;					//initially TM is empty or old
 	else begin
 		if ((Core_Active_Vect & EXEC_MASK) == 0 & Insn_Frame_Num)
 			Task_Pointer	<= Task_Pointer   + 1;
 
-		if ( Insn_Frame_Num == 0 & ( ((fence == `ACQ | `FENCE_NEXT == `REL) & EXEC_MASK == 0) |
-			     		     (fence == `NO & (EXEC_MASK & `CORE_ACTIVE_VECT_NEXT) == 0) ) )
+		if ( Insn_Frame_Num == 0 & ( ((fence == `ACQ | FENCE_NEXT == `REL) & EXEC_MASK == 0) |
+			     		     (fence == `NO & (EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0) ) )
 			Task_Pointer	<= Task_Pointer + 1;
 
 	end
@@ -117,8 +120,8 @@ always @(posedge clk)									//fence
 begin
 	if (reset)
 		fence <= `NO;
-	else if ( Insn_Frame_Num == 0 & ( ((fence == `ACQ | `FENCE_NEXT == `REL) & EXEC_MASK == 0) |
-			     		   (fence == `NO & (EXEC_MASK & `CORE_ACTIVE_VECT_NEXT) == 0) ) )
+	else if ( Insn_Frame_Num == 0 & ( ((fence == `ACQ | FENCE_NEXT == `REL) & EXEC_MASK == 0) |
+			     		   (fence == `NO & (EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0) ) )
 		fence <= Task_Memory_Frame[`TS_FENCE_RANGE];
 end
 
