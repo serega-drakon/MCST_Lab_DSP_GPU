@@ -74,7 +74,7 @@
 
 
 `define TM_DEPTH_RANGE (`TASK_MEM_DEPTH - 1) : (0)
-`define TM_WIDTH_RANGE (`TASK_MEM_DEPTH - 1) : (0)
+`define TM_WIDTH_RANGE (`TASK_MEM_WIDTH - 1) : (0)
 `define TM_RANGE       (`NUM_OF_CORES * `INSN_SIZE * `INSN_COUNT - 1) : (0)
 `define R0_VECT_RANGE (3 * 16 - 1) : (2 * 16)
 `define CORE_ACTIVE_VECT_RANGE (2 * 16 - 1) : (1 * 16)
