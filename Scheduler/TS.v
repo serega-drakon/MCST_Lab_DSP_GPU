@@ -11,7 +11,7 @@ module Task_Scheduler
 	input		wire	[`CORES_RANGE]		Ready,				//TS <- Cores
 
 	output		reg	[`CORES_RANGE]		Start,				//TS -> Cores
-	output		reg	[`INSN_BUS_RANGE]	Insn_Data,			//TS -> Cores
+	output		reg	[`TM_WIDTH_RANGE]	Insn_Data,			//TS -> Cores
 	output		reg	[`CORES_RANGE]		Init_R0_Vect,			//TS -> Cores
 	output  	reg	[`REG_BUS_RANGE]	Init_R0				//TS -> Cores
 );
@@ -24,9 +24,10 @@ reg	[`IF_NUM_RANGE]		Task_Pointer;
 reg	[`IF_NUM_RANGE]		Insn_Frame_Num;
 wire	[`CORES_RANGE]		EXEC_MASK;
 
-
 reg 	[1:0]			fence;							//for Control Frame
 reg 	[`CORES_RANGE]		Core_Active_Vect;
+wire	[`CORES_RANGE]		CORE_ACTIVE_VECT_NEXT;
+wire	[1:0]			FENCE_NEXT;
 
 
 assign Task_Memory_Frame	= Task_Memory[Task_Pointer];
@@ -43,14 +44,15 @@ endgenerate
 generate for (ii = 0; ii < `TASK_MEM_DEPTH; ii = ii + 1) begin: init_TM_loop
 	always @(posedge clk)								//TM from Env
 		if (Task_Pointer == `TASK_MEM_DEPTH - 1)
-			Task_Memory[ii] <= env_task_memory[ii];
+			Task_Memory[ii] <= env_task_memory[`ENV_TASK_MEMORY_RANGE(ii)];
+
 end
 endgenerate
 
 
 
 always @(posedge clk)									//Start
-	Start <= (~reset & Insn_Frame_Num != 0)? Core_Active_Vect : 0;
+	Start <= (~reset & Insn_Frame_Num)? Core_Active_Vect : 0;
 	
 
 always @(posedge clk)									//Insn Data
@@ -82,14 +84,19 @@ endgenerate
 always @(posedge clk)									//Instruction Frame Num
 begin
 	if (reset)
-		Insn_Frame_Num 	<= 0;
+		Insn_Frame_Num 	<= 1;							//-> to beginning
 	else begin
-		if ( (Core_Active_Vect & EXEC_MASK) == 0 & Insn_Frame_Num)				
-			Insn_Frame_Num	 <= Insn_Frame_Num - 1;		
+		if ( (EXEC_MASK & Core_Active_Vect) == 0 & Insn_Frame_Num ) begin			
+			Insn_Frame_Num <= Insn_Frame_Num - 1;		
+			$display ("Insn_Frame_Num--");
+		end
 
-		if ( (Insn_Frame_Num == 0 & (fence == `ACQ | FENCE_NEXT == `REL) & EXEC_MASK == 0) |
-			     (  fence == `NO & (EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0) )
-			Insn_Frame_Num   <= Task_Memory_Frame[`IF_NUM_RANGE];
+		if ( Insn_Frame_Num == 0 & 
+			     ( (EXEC_MASK == 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
+			     ((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO) ) ) begin
+			Insn_Frame_Num <= Task_Memory_Frame[`IF_NUM_RANGE];
+			$display ("Insn_Frame_Num loaded");
+		end
 	end	
 end
 
@@ -97,9 +104,12 @@ always @(posedge clk)
 begin
 	if (reset)
 		Core_Active_Vect <= 0;
-	else if ( (Insn_Frame_Num == 0) & ( (fence == `ACQ | FENCE_NEXT == `REL) & EXEC_MASK == 0) |
-			    		  (  fence == `NO & (EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0) )
+	else if ( Insn_Frame_Num == 0 & 
+			( (EXEC_MASK == 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
+			((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence  == `NO) ) ) begin
 		Core_Active_Vect <= CORE_ACTIVE_VECT_NEXT;
+		$display ("CAV changed");
+	end
 end
 
 always @(posedge clk)									//Task Pointer
@@ -107,13 +117,17 @@ begin
 	if (reset)
 		Task_Pointer <= `TASK_MEM_DEPTH - 1;					//initially TM is empty or old
 	else begin
-		if ((Core_Active_Vect & EXEC_MASK) == 0 & Insn_Frame_Num)
+		if (Insn_Frame_Num & (EXEC_MASK & Core_Active_Vect) == 0) begin
 			Task_Pointer	<= Task_Pointer   + 1;
+			$display ("TP just changed");
+		end
 
-		if ( Insn_Frame_Num == 0 & ( ((fence == `ACQ | FENCE_NEXT == `REL) & EXEC_MASK == 0) |
-			     		     (fence == `NO & (EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0) ) )
+		if ( Insn_Frame_Num == 0 & 
+				( (EXEC_MASK == 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
+			     	((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO) ) ) begin
 			Task_Pointer	<= Task_Pointer + 1;
-
+			$display("TP changed with fence");
+		end
 	end
 end
 
@@ -122,9 +136,12 @@ always @(posedge clk)									//fence
 begin
 	if (reset)
 		fence <= `NO;
-	else if ( Insn_Frame_Num == 0 & ( ((fence == `ACQ | FENCE_NEXT == `REL) & EXEC_MASK == 0) |
-			     		   (fence == `NO & (EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0) ) ) begin
+	else if ( Insn_Frame_Num == 0 & (
+				(EXEC_MASK & (fence == `ACQ | FENCE_NEXT == `REL)) |
+			     	((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO) ) ) begin
 		fence <= Task_Memory_Frame[`TS_FENCE_RANGE];
+		$display ("Insn_Frame_Num = %d", Insn_Frame_Num);
+		$display ("fence changed");
 	end
 end
 

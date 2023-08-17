@@ -5,10 +5,12 @@
 
 
 module top();
-reg		   clk 	 = 1'b0;
-reg		   reset = 1'b1;
-reg [`TM_RANGE]	   data;
-reg [`CORES_RANGE] ready;
+reg			clk   = 1'b0;
+reg			reset = 1'b1;
+reg	[`TM_RANGE]	data;
+reg	[`CORES_RANGE]	ready;
+
+wire	[`IF_NUM_RANGE] tpointer;	
 
 Task_Scheduler TS (
 	.clk			( clk	),
@@ -23,13 +25,19 @@ Task_Scheduler TS (
 	.Init_R0		(	)
 );
 
-assign ready = TS.Core_Active_Vect;
+assign tpointer = TS.Task_Pointer;
+assign ready	= 16'hAAAA;
 
-initial
-begin
-data[16383:49] = 0;
-data[48:0] = {16'hAAAA, 16'hFFFF, 16'b0000000010100000};
 
+genvar i;
+generate
+	for (i = 0; i <  64; i = i + 1) begin: env_data
+		initial data[256*i + 255: 256*i +49] = 2**(255-49) - 1;
+		initial data[256*i + 48:  256*i + 0] = {16'hAAAA, 16'hABCD, 8'b00000000, 2'b00, 6'b100000};
+	end
+endgenerate
+
+initial begin
 end	
 
 
