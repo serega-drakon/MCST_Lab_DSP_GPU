@@ -74,6 +74,8 @@ sh_mem_uns my_arbitrator
 	.dump(dump)
 );
 
+integer f;
+
 initial
 begin
 	#6;
@@ -111,6 +113,8 @@ begin
 	#2;
 	$write("%b, %b \n", (core_ready[4] == 1), (core_rd_data[4] == 8'd67));
 	core_request[4] = 2'b00;
+	f = $fopen(`FILE, "w");
+	$fclose(f);
 	dump = 1;
 end
 

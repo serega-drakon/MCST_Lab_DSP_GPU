@@ -1,4 +1,7 @@
 `include"../SharedInc/IncAll.def.v"
+
+`define FILE "input.txt"
+
 module bank_uns
 (
 	input 				clk,
@@ -41,7 +44,7 @@ always @(posedge dump)
 begin
 	if(~reset)
 	begin
-		f = $fopen("input.txt","ab");
+		f = $fopen(`FILE,"ab");
 		for( i = 0; i < 64; i = i + 1)
 			$fwrite(f,"%h ", memory[i]);
 		$fwrite(f,"\n");
