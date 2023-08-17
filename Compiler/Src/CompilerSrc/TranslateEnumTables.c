@@ -89,3 +89,12 @@ InsnOpCodes translateLexTypeToInsnOpCode(LexemeTypes lexType){
         default: assert(0);
     }
 }
+
+FenceModes_insn translateFenceModesToInsn(FenceModes fenceMode){
+    switch(fenceMode){
+        case FenceNo_mode: return FenceNo_insn;
+        case FenceAcq_mode: return FenceAcq_insn;
+        case FenceRel_mode: return FenceRel_insn;
+        default: assert(0);
+    }
+}

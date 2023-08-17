@@ -8,8 +8,8 @@
 typedef enum FenceModes_insn_{
     FenceNo_insn = 0x0,
     FenceAcq_insn = 0x1,
-    FenceRel_insn = 0x2,
-} FenceModes_insn_;
+    FenceRel_insn = 0x2
+} FenceModes_insn;
 
 typedef enum InsnOpCodes_ {
     Nop_insn = 0x0,

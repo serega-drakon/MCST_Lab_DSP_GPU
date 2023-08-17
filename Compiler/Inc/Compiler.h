@@ -13,6 +13,7 @@
 #define CORES_COUNT 16
 #define REG_COUNT 16
 #define REG_SIZE (1 * sizeof(char))
+#define RESERVED (0)
 
 #define MAX_OP 64
 

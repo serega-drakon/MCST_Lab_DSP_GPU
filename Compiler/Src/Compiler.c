@@ -684,8 +684,62 @@ CheckCFFlags checkCFFlags(ControlFrameData *ptrCFData){
     return CheckCFFlagsSuccess;
 }
 
-void pushCFtoStack(Stack *output, ControlFrameData *ptrCFData){
-    //todo
+void resetData(unsigned char data[]){
+    for(unsigned i = 0; i < INSN_SIZE; i++)
+        data[i] = 0;
+}
+
+// 0 - старший, 1 - младший байты
+void putHeader(unsigned char data[], const ControlFrameData *ptrCFData){
+    resetData(data);
+    data[0] = RESERVED;
+    unsigned char fenceMode_insn = translateFenceModesToInsn(ptrCFData->fenceMode);
+    data[1] |= fenceMode_insn << 6;
+    unsigned char IF_Num = ptrCFData->IF_Num_left;
+    data[1] |= (IF_Num << 2) >> 2; //todo: overflow check
+}
+
+void putCoreActive(unsigned char data[], const ControlFrameData *ptrCFData){
+    resetData(data);
+    for(unsigned i = 0; i < 8; i++)
+        if(ptrCFData->coreActiveVector[i] == VectorActive)
+            data[1] |= 1 << i;
+    for(unsigned i = 8; i < CORES_COUNT; i++)
+        if(ptrCFData->coreActiveVector[i] == VectorActive)
+            data[0] |= 1 << (i - 8);
+}
+
+void putInitR0Vect(unsigned char data[], const ControlFrameData *ptrCFData){
+    resetData(data);
+    for(unsigned i = 0; i < 8; i++)
+        if(ptrCFData->initR0Vector[i] == VectorActive)
+            data[1] |= 1 << i;
+    for(unsigned i = 8; i < CORES_COUNT; i++)
+        if(ptrCFData->initR0Vector[i] == VectorActive)
+            data[0] |= 1 << (i - 8);
+}
+
+void putReserved(unsigned char data[], const ControlFrameData *ptrCFData){
+    for(unsigned i = 0; i < INSN_SIZE; i++)
+        data[i] = RESERVED;
+}
+
+void pushCFtoStack(Stack *output, const ControlFrameData *ptrCFData){
+    unsigned char data[INSN_SIZE];
+    putHeader(data, ptrCFData);
+    push_dStack(output, data);
+    putCoreActive(data, ptrCFData);
+    push_dStack(output, data);
+    putInitR0Vect(data, ptrCFData);
+    push_dStack(output, data);
+    putReserved(data, ptrCFData);
+    for(unsigned i = 0; i < 5; i++)
+        push_dStack(output, data);
+    for(unsigned i = 0; i < CORES_COUNT / 2; i++){
+        data[0] = ptrCFData->initR0data[2 * i + 1];
+        data[1] = ptrCFData->initR0data[2 * i];
+        push_dStack(output, data);
+    }
 }
 
 GetFrameStates processControlFrame(FILE* input, Stack *output, ControlFrameData *ptrCFData,
@@ -700,11 +754,7 @@ GetFrameStates processControlFrame(FILE* input, Stack *output, ControlFrameData 
     return frameState;
 }
 
-void resetInsn(unsigned char insn[]){
-    for(unsigned i = 0; i < INSN_SIZE; i++)
-        insn[i] = 0;
-}
-
+// 0 - старший, 1 - младший байты
 void putOpCode(unsigned char insn[], InsnOpCodes opCode){
     insn[0] |= ((unsigned char) opCode) << 4;
 }
@@ -731,7 +781,7 @@ void putTarget(unsigned char insn[], unsigned char target){
 }
 
 void pushSrc0Src1Src2Dst(unsigned char insn[], const insnData *ptrInsnData){
-    resetInsn(insn);
+    resetData(insn);
     putOpCode(insn, ptrInsnData->opCode);
     putSrc0(insn, ptrInsnData->src0);
     putSrc1(insn, ptrInsnData->src1);
@@ -739,21 +789,21 @@ void pushSrc0Src1Src2Dst(unsigned char insn[], const insnData *ptrInsnData){
 }
 
 void pushSrc0Target(unsigned char insn[], const insnData *ptrInsnData){
-    resetInsn(insn);
+    resetData(insn);
     putOpCode(insn, ptrInsnData->opCode);
     putSrc0(insn, ptrInsnData->src0);
     putTarget(insn, ptrInsnData->target);
 }
 
 void pushConstDst(unsigned char insn[], const insnData *ptrInsnData){
-    resetInsn(insn);
+    resetData(insn);
     putOpCode(insn, ptrInsnData->opCode);
     putConst(insn, ptrInsnData->constData);
     putSrc2Dst(insn, ptrInsnData->src2dst);
 }
 
 void pushOpCode(unsigned char insn[], const insnData *ptrInsnData){
-    resetInsn(insn);
+    resetData(insn);
     putOpCode(insn, ptrInsnData->opCode);
 }
 
@@ -847,11 +897,9 @@ CompilerStates compileFileToStack(FILE* input, Stack* output){
         allFree(&def, &lex, &CFData, &IFData);
         ERROR_MSG_NL(CompilerErrorMemAlloc, "Error: mem alloc error");
     }
-
     GetFrameStates frameState;
     unsigned int lineNum = 0; ///< номер строки минус 1
     unsigned int i = 0;
-
     do {
         frameState = getFrame(input, output, &def,
                               &CFData, &IFData, &lex, &lineNum);
@@ -884,7 +932,16 @@ void printCompilerState(CompilerStates state){
 }
 
 void printProgramFromStackToFile(Stack* input, FILE* output){
-    //todo
+    unsigned size = getsize_dStack(input);
+    unsigned char *ptrValue;
+    unsigned i = 0;
+    while(i < size){
+        do {
+            ptrValue = dStack_r(input, i++);
+            fprintf(output, "%.2x%.2x ", ptrValue[0], ptrValue[1]);
+        } while(i % 4 != 0 && i < size);
+        fprintf(output, "\n");
+    }
 }
 
 CompilerStates compileTextToText(FILE* input, FILE* output){
