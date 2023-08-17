@@ -26,7 +26,12 @@ Task_Scheduler TS (
 );
 
 assign tpointer = TS.Task_Pointer;
-assign ready	= 16'hAAAA;
+assign ready	= 16'hFFFF;
+
+
+always  #1    clk <= ~clk;
+
+initial #2 reset <= 1'b0;
 
 
 genvar i;
@@ -38,10 +43,7 @@ generate
 endgenerate
 
 initial begin
+#500 $finish();
 end	
-
-
-always  #1    clk <= ~clk;
-initial #2 reset <= 1'b0;
 
 endmodule

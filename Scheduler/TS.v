@@ -86,18 +86,16 @@ begin
 	if (reset)
 		Insn_Frame_Num 	<= 1;							//-> to beginning
 	else begin
-		if ( (EXEC_MASK & Core_Active_Vect) == 0 & Insn_Frame_Num ) begin			
-			Insn_Frame_Num <= Insn_Frame_Num - 1;		
-			$display ("Insn_Frame_Num--");
-		end
+		if ( (EXEC_MASK & Core_Active_Vect) == 0 & Insn_Frame_Num ) 			
+			Insn_Frame_Num <= Insn_Frame_Num - 1;	
+		
 
 		if ( Insn_Frame_Num == 0 & 
 			     ( (EXEC_MASK == 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
-			     ((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO) ) ) begin
+			     ((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO) ) )
 			Insn_Frame_Num <= Task_Memory_Frame[`IF_NUM_RANGE];
-			$display ("Insn_Frame_Num loaded");
-		end
-	end	
+		
+	end
 end
 
 always @(posedge clk)
@@ -108,7 +106,6 @@ begin
 			( (EXEC_MASK == 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
 			((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence  == `NO) ) ) begin
 		Core_Active_Vect <= CORE_ACTIVE_VECT_NEXT;
-		$display ("CAV changed");
 	end
 end
 
@@ -117,17 +114,15 @@ begin
 	if (reset)
 		Task_Pointer <= `TASK_MEM_DEPTH - 1;					//initially TM is empty or old
 	else begin
-		if (Insn_Frame_Num & (EXEC_MASK & Core_Active_Vect) == 0) begin
+		if (Insn_Frame_Num & (EXEC_MASK & Core_Active_Vect) == 0) 
 			Task_Pointer	<= Task_Pointer   + 1;
-			$display ("TP just changed");
-		end
+		
 
 		if ( Insn_Frame_Num == 0 & 
 				( (EXEC_MASK == 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
-			     	((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO) ) ) begin
+			     	((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO) ) )
 			Task_Pointer	<= Task_Pointer + 1;
-			$display("TP changed with fence");
-		end
+		
 	end
 end
 
@@ -138,11 +133,9 @@ begin
 		fence <= `NO;
 	else if ( Insn_Frame_Num == 0 & (
 				(EXEC_MASK & (fence == `ACQ | FENCE_NEXT == `REL)) |
-			     	((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO) ) ) begin
+			     	((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO) ) )
 		fence <= Task_Memory_Frame[`TS_FENCE_RANGE];
-		$display ("Insn_Frame_Num = %d", Insn_Frame_Num);
-		$display ("fence changed");
-	end
+
 end
 
 endmodule
