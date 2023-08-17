@@ -63,8 +63,9 @@
 `define ADDR_BUS_RANGE (`ADDR_SIZE * `NUM_OF_CORES - 1) : (0)
 `define	REG_BUS_RANGE (`REG_SIZE * `NUM_OF_CORES - 1) : (0)
 `define ENABLE_SIZE 2
-`define	ENABLE_BUS_RANGE (`ENABLE_SIZE * `NUM_OF_CORES - 1) : (0)
+`define ENABLE_BUS_RANGE (`ENABLE_SIZE * `NUM_OF_CORES - 1) : (0)
 `define ENABLE_RANGE (`ENABLE_SIZE - 1) : (0)
+
 
 
 `define TASK_MEM_DEPTH	64
@@ -85,5 +86,8 @@
 `define TM_R0_RANGE(jj)									\
 	(`TASK_MEM_WIDTH - `REG_SIZE * (`NUM_OF_CORES - jj) + `REG_SIZE - 1) : 		\
 	(`TASK_MEM_WIDTH - `REG_SIZE * (`NUM_OF_CORES - jj))
+
+`define ENV_TASK_MEMORY_RANGE(jj)							\
+	(jj * `TASK_MEM_WIDTH + `TASK_MEM_WIDTH - 1) : (jj * `TASK_MEM_WIDTH)
 
 `endif //CONSTANTS
