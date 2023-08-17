@@ -377,6 +377,7 @@ ProcessStates processInitR0(FILE* input, ControlFrameData *ptrCFData, lexeme *pt
     if(ptrLex->lexType != Semicolon)
         ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут точку с запятой");
     ptrCFData->initR0data[index] = data;
+    ptrCFData->initR0Vector[index] = VectorActive;
     return ProcessOK;
 }
 
