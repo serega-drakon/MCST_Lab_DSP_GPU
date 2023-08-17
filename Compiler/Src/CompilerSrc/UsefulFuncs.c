@@ -21,16 +21,16 @@ int compareStrIntChar(const int a[], const char b[]){
 }
 
 ///Возвращает константу в 10-ной СС
-u_int8_t getConst10D(const int op[]){
-    u_int8_t value = 0;
+unsigned char getConst10D(const int op[]){
+    unsigned char value = 0;
     for(int i = 1; op[i] != '\0'; i++)
         value = value * 10 + op[i] - '0';
     return value;
 }
 
 ///Возвращает константу в 16-ной СС
-u_int8_t getConst16D(const int op[]){
-    u_int8_t value = 0;
+unsigned char getConst16D(const int op[]){
+    unsigned char value = 0;
     for(int i = 1; op[i] != '\0'; i++)
         value = value * 16 + op[i] - (isdigit(op[i]) ? '0' : 'A' - 10);
     return value;

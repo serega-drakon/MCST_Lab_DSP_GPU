@@ -38,6 +38,12 @@ do { printf("Line %d: ", *(ptrLineNum) + 1);                        \
      printf("\n -> %ls\n", (ptrLex)->op);                           \
      return errorCode; } while(0)
 
+#define ERROR_MSG_OP(ptrLineNum, ptrOp, errorCode, errorMsg, ...) \
+do { printf("Line %d: ", *(ptrLineNum) + 1);                        \
+     printf(errorMsg __VA_ARGS__);                                  \
+     printf("\n -> %ls\n", (ptrOp));                           \
+     return errorCode; } while(0)
+
 #define ERROR_MSG_OP_NL_FREE_OP(ptrOp, errorCode, errorMsg, ...)\
 do { printf(errorMsg __VA_ARGS__);                              \
      printf("\n -> %ls\n", (ptrOp));                            \
@@ -184,30 +190,34 @@ void allFree(Defines *ptrDef, lexeme *ptrLex, ControlFrameData *ptrCFData,
 }
 
 ///Подфункция getType
-LexemeTypes checkConst16(const int op[]){
+LexemeTypes checkConst16(const int op[], const unsigned *ptrLineNum){
+    const char errorMsg[] = "Ошибка в определении шестнадцатеричной константы";
     if(op[1] == '\0')
-        return Error;
+        ERROR_MSG_OP(ptrLineNum, op, Error, errorMsg);
     for (int i = 1; op[i] != '\0'; i++)
-        if (!isdigit(op[i]) && (op[i] < 'A' || op[i] > 'F')) return Error;
+        if (!isdigit(op[i]) && (op[i] < 'A' || op[i] > 'F'))
+            ERROR_MSG_OP(ptrLineNum, op, Error, errorMsg);
     return Const16;
 }
 
 ///Подфункция getType
-LexemeTypes checkConst10(const int op[]){
+LexemeTypes checkConst10(const int op[], const unsigned *ptrLineNum){
+    const char errorMsg[] = "Ошибка в определении десятичной константы";
     if(op[1] == '\0')
-        return Error; //fixme ;error
+        ERROR_MSG_OP(ptrLineNum, op, Error, errorMsg);
     for(int i = 1; op[i] != '\0'; i++)
-        if(!isdigit(op[i])) return Error;
+        if(!isdigit(op[i]))
+            ERROR_MSG_OP(ptrLineNum, op, Error, errorMsg);
     return Const10;
 }
 
 ///Подфункция getType
-LexemeTypes checkReg(const int op[]){
+LexemeTypes checkReg(const int op[], const unsigned *ptrLineNum){
     for(Registers_str_enum i = Registers_str_enum_MIN; i < Registers_str_enum_MAX; i++){
         if(compareStrIntChar(&op[1], Registers_str_[i]))
             return translateRegFromStrToLex(i);
     }
-    return Error;
+    ERROR_MSG_OP(ptrLineNum, op, Error, "Ошибка в определении регистра");
 }
 
 ///Подфункция getType
@@ -227,11 +237,11 @@ LexemeTypes checkOthers(const int op[]){
     return Name;
 }
 
-LexemeTypes getType(const int op[]){
+LexemeTypes getType(const int op[], const unsigned *ptrLineNum){
     switch(op[0]){
-        case '$': return checkConst16(op);
-        case '!': return checkConst10(op);
-        case '%': return checkReg(op);
+        case '$': return checkConst16(op, ptrLineNum);
+        case '!': return checkConst10(op, ptrLineNum);
+        case '%': return checkReg(op, ptrLineNum);
         case '.': return Label;
         case '{': return BracketCurlyOpen;
         case '}': return BracketCurlyClose;
@@ -291,7 +301,7 @@ void getLex(FILE *input, unsigned *ptrLineNum, lexeme *ptrLex){
     }
     else {
         getOp(input, ptrLineNum, ptrLex->op, MAX_OP);
-        ptrLex->lexType = getType(ptrLex->op);
+        ptrLex->lexType = getType(ptrLex->op, ptrLineNum);
         return;
     }
 }
@@ -690,8 +700,96 @@ GetFrameStates processControlFrame(FILE* input, Stack *output, ControlFrameData 
     return frameState;
 }
 
-void pushIFtoStack(Stack *output, InsnFrameData *ptrIFData){
-    //todo
+void resetInsn(unsigned char insn[]){
+    for(unsigned i = 0; i < INSN_SIZE; i++)
+        insn[i] = 0;
+}
+
+void putOpCode(unsigned char insn[], InsnOpCodes opCode){
+    insn[0] |= ((unsigned char) opCode) << 4;
+}
+
+void putSrc0(unsigned char insn[], InsnReg src0){
+    insn[0] |= (((unsigned char) src0) << 4) >> 4;
+}
+
+void putSrc1(unsigned char insn[], InsnReg src1){
+    insn[1] |= ((unsigned char) src1) << 4;
+}
+
+void putSrc2Dst(unsigned char insn[], InsnReg src2dst){
+    insn[1] |= (((unsigned char) src2dst) << 4) >> 4;
+}
+
+void putConst(unsigned char insn[], unsigned char constData){
+    insn[0] |= ((unsigned char) constData) >> 4;
+    insn[1] |= ((unsigned char) constData) << 4;
+}
+
+void putTarget(unsigned char insn[], unsigned char target){
+    insn[1] |= ((unsigned char) target) << 4;
+}
+
+void pushSrc0Src1Src2Dst(unsigned char insn[], const insnData *ptrInsnData){
+    resetInsn(insn);
+    putOpCode(insn, ptrInsnData->opCode);
+    putSrc0(insn, ptrInsnData->src0);
+    putSrc1(insn, ptrInsnData->src1);
+    putSrc2Dst(insn, ptrInsnData->src2dst);
+}
+
+void pushSrc0Target(unsigned char insn[], const insnData *ptrInsnData){
+    resetInsn(insn);
+    putOpCode(insn, ptrInsnData->opCode);
+    putSrc0(insn, ptrInsnData->src0);
+    putTarget(insn, ptrInsnData->target);
+}
+
+void pushConstDst(unsigned char insn[], const insnData *ptrInsnData){
+    resetInsn(insn);
+    putOpCode(insn, ptrInsnData->opCode);
+    putConst(insn, ptrInsnData->constData);
+    putSrc2Dst(insn, ptrInsnData->src2dst);
+}
+
+void pushOpCode(unsigned char insn[], const insnData *ptrInsnData){
+    resetInsn(insn);
+    putOpCode(insn, ptrInsnData->opCode);
+}
+
+void pushIFtoStack(Stack *output, const InsnFrameData *ptrIFData){
+    unsigned char insn[INSN_SIZE];
+    for(unsigned i = 0; i < INSN_COUNT; i++){
+        switch (ptrIFData->ptrInsn[i].opCode) {
+            case Add_insn:
+            case Sub_insn:
+            case Mul_insn:
+            case Div_insn:
+            case Cmpge_insn:
+            case Rshift_insn:
+            case Lshift_insn:
+            case And_insn:
+            case Or_insn:
+            case Xor_insn:
+            case Ld_insn:
+            case St_insn:
+                pushSrc0Src1Src2Dst(insn, &ptrIFData->ptrInsn[i]);
+                break;
+            case Set_const_insn:
+                pushConstDst(insn, &ptrIFData->ptrInsn[i]);
+                break;
+            case Bnz_insn:
+                pushSrc0Target(insn, &ptrIFData->ptrInsn[i]);
+                break;
+            case Nop_insn:
+            case Ready_insn:
+                pushOpCode(insn, &ptrIFData->ptrInsn[i]);
+                break;
+            default:
+                assert(0);
+        }
+        push_dStack(output, insn);
+    }
 }
 
 GetFrameStates processInsnFrame(FILE* input, Stack *output, Defines *ptrDef, ControlFrameData *ptrCFData,

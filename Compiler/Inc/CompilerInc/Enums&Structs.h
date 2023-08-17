@@ -110,8 +110,8 @@ typedef struct insnData_{
     InsnReg src0;
     InsnReg src1;
     InsnReg src2dst;
-    uint8_t constData;
-    uint8_t target;
+    unsigned char constData;
+    unsigned char target;
 } insnData;
 
 typedef struct InsnFrameData_{
