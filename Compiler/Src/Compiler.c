@@ -195,7 +195,7 @@ LexemeTypes checkConst16(const int op[]){
 ///Подфункция getType
 LexemeTypes checkConst10(const int op[]){
     if(op[1] == '\0')
-        return Error;
+        return Error; //fixme ;error
     for(int i = 1; op[i] != '\0'; i++)
         if(!isdigit(op[i])) return Error;
     return Const10;
@@ -311,12 +311,12 @@ void skipComments(FILE *input, unsigned *ptrLineNum, lexeme *ptrLex) {
             if(c == '/') {
                 while ((c = getc(input)) != '\n' && c != EOF)
                     ;
-                ungetc(c, input);
             }
             else{
                 unGetLex(ptrLex);
                 commentEnd = 1;
             }
+            ungetc(c, input);
         }
         else{
             unGetLex(ptrLex);
@@ -334,6 +334,7 @@ ProcessStates processGetConst(uint8_t *dst, lexeme *ptrLex){
             *dst = getConst16D(ptrLex->op);
             return ProcessOK;
         default:
+            //fixme; errors
             return ProcessError;
     }
 }
@@ -465,21 +466,73 @@ void processInsnWithNoArgs(insnData *ptrInsn, LexemeTypes lexType){
     ptrInsn->opCode = translateLexTypeToInsnOpCode(lexType);
 }
 
+ProcessStates processReg(InsnReg *ptrInsnReg, LexemeTypes lexType){
+    switch(lexType){
+        case Reg_R0:
+            *ptrInsnReg = Reg_R0_insn;
+            return ProcessOK;
+        case Reg_R1:
+            *ptrInsnReg = Reg_R1_insn;
+            return ProcessOK;
+        case Reg_R2:
+            *ptrInsnReg = Reg_R2_insn;
+            return ProcessOK;
+        case Reg_R3:
+            *ptrInsnReg = Reg_R3_insn;
+            return ProcessOK;
+        case Reg_R4:
+            *ptrInsnReg = Reg_R4_insn;
+            return ProcessOK;
+        case Reg_R5:
+            *ptrInsnReg = Reg_R5_insn;
+            return ProcessOK;
+        case Reg_R6:
+            *ptrInsnReg = Reg_R6_insn;
+            return ProcessOK;
+        case Reg_R7:
+            *ptrInsnReg = Reg_R7_insn;
+            return ProcessOK;
+        case Reg_R8:
+            *ptrInsnReg = Reg_R8_insn;
+            return ProcessOK;
+        case Reg_R9:
+            *ptrInsnReg = Reg_R9_insn;
+            return ProcessOK;
+        case Reg_R10:
+            *ptrInsnReg = Reg_R10_insn;
+            return ProcessOK;
+        case Reg_R11:
+            *ptrInsnReg = Reg_R11_insn;
+            return ProcessOK;
+        case Reg_R12:
+            *ptrInsnReg = Reg_R12_insn;
+            return ProcessOK;
+        case Reg_R13:
+            *ptrInsnReg = Reg_R13_insn;
+            return ProcessOK;
+        case Reg_R14:
+            *ptrInsnReg = Reg_R14_insn;
+            return ProcessOK;
+        case Reg_R15:
+            *ptrInsnReg = Reg_R15_insn;
+            return ProcessOK;
+        default:
+            return ProcessError;
+    }
+}
+
 ProcessStates processInsnWithTwoRegs(FILE *input, insnData *ptrInsn, lexeme *ptrLex,
                                      unsigned *ptrLineNum){
     ptrInsn->opCode = translateLexTypeToInsnOpCode(ptrLex->lexType);
     getLexNoComments(input, ptrLineNum, ptrLex);
-    if(!isRegLex(ptrLex->lexType))
+    if(processReg(&ptrInsn->src0, ptrLex->lexType) == ProcessError)
         ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо регистр");
-    ptrInsn->src0 = translateLexTypeToInsnReg(ptrLex->lexType);
     getLexNoComments(input, ptrLineNum, ptrLex);
-    if(!isRegLex(ptrLex->lexType))
+    if(processReg(&ptrInsn->src1, ptrLex->lexType) == ProcessError)
         ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо регистр");
-    ptrInsn->src1 = translateLexTypeToInsnReg(ptrLex->lexType);
     getLexNoComments(input, ptrLineNum, ptrLex);
-    if(!isRegLex(ptrLex->lexType))
+    if(processReg(&ptrInsn->src2dst, ptrLex->lexType) == ProcessError)
         ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо регистр");
-    ptrInsn->src2dst = translateLexTypeToInsnReg(ptrLex->lexType);
     return ProcessOK;
 }
 
@@ -490,9 +543,8 @@ ProcessStates processInsnWithConstAndReg(FILE *input, insnData *ptrInsn, lexeme 
     if(processGetConst(&ptrInsn->constData, ptrLex) == ProcessError)
         ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо число");
     getLexNoComments(input, ptrLineNum, ptrLex);
-    if(!isRegLex(ptrLex->lexType))
+    if(processReg(&ptrInsn->src2dst, ptrLex->lexType) == ProcessError)
         ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо регистр");
-    ptrInsn->src2dst = translateLexTypeToInsnReg(ptrLex->lexType);
     return ProcessOK;
 }
 
@@ -513,9 +565,8 @@ ProcessStates processInsnWithLabel(FILE *input, Defines *ptrDef, insnData *ptrIn
                                    lexeme *ptrLex, unsigned insnNum, unsigned *ptrLineNum){
     ptrInsn->opCode = translateLexTypeToInsnOpCode(ptrLex->lexType);
     getLexNoComments(input, ptrLineNum, ptrLex);
-    if(!isRegLex(ptrLex->lexType))
+    if(processReg(&ptrInsn->src0, ptrLex->lexType) == ProcessError)
         ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо регистр");
-    ptrInsn->src0 = translateLexTypeToInsnReg(ptrLex->lexType);
     getLexNoComments(input, ptrLineNum, ptrLex);
     if(ptrLex->lexType != Label)
         ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо метку");
@@ -598,7 +649,9 @@ GetFrameStates getInsnFrame(FILE *input, Defines *ptrDef, InsnFrameData *ptrIFDa
                               "Чо это такое в IF?");
         }
     } while(insnNum < INSN_COUNT
-    && ptrLex->lexType != Nothing && ptrLex->lexType != Colon && ptrLex->lexType != BracketCurlyOpen);
+    && ptrLex->lexType != Nothing
+    && ptrLex->lexType != Colon
+    && ptrLex->lexType != BracketCurlyOpen);
     if(insnNum == INSN_COUNT
     && ptrLex->lexType != Nothing
     && ptrLex->lexType != Colon

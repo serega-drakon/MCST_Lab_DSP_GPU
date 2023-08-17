@@ -71,6 +71,16 @@ module TestCoresMemory;
         Start[0] <= 1;
         #10 Start[0] <= 0;
         init_R0_flag[0] <= 0;
+        #100;
+        init_R0_flag[0] <= 1;
+        init_R0_data[0] <= 4;
+        insn_data[1 * `INSN_SIZE - 1 : 0 * `INSN_SIZE] <= {{`SET_CONST }, {{8'h0}, {4'h1}}};
+        insn_data[2 * `INSN_SIZE - 1 : 1 * `INSN_SIZE] <= {{`SET_CONST }, {{8'h0}, {4'h8}}};
+        insn_data[3 * `INSN_SIZE - 1 : 2 * `INSN_SIZE] <= {{`ST }, {{4'h1}, {4'h8}, {4'h0}}};
+        insn_data[4 * `INSN_SIZE - 1 : 3 * `INSN_SIZE] <= {{`READY }, {(`INSN_SIZE - `INSN_OPC_SIZE){1'b0}}};
+        Start[0] <= 1;
+        #10 Start[0] <= 0;
+        init_R0_flag[0] <= 0;
     end
 
     //dump settings
