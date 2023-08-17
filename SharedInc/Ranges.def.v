@@ -62,7 +62,9 @@
 
 `define ADDR_BUS_RANGE (`ADDR_SIZE * `NUM_OF_CORES - 1) : (0)
 `define	REG_BUS_RANGE (`REG_SIZE * `NUM_OF_CORES - 1) : (0)
-`define	ENABLE_BUS_RANGE (2 * `NUM_OF_CORES - 1) : (0)
+`define ENABLE_SIZE 2
+`define	ENABLE_BUS_RANGE (`ENABLE_SIZE * `NUM_OF_CORES - 1) : (0)
+`define ENABLE_RANGE (`ENABLE_SIZE - 1) : (0)
 
 
 `define TASK_MEM_DEPTH	64
