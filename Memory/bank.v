@@ -1,4 +1,4 @@
-`include"../SharedInc/Ranges.def.v"
+`include"../SharedInc/IncAll.def.v"
 module bank
 (
 	input 				clk,

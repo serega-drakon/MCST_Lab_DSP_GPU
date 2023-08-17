@@ -1,7 +1,7 @@
 `include"../SharedInc/IncAll.def.v"
 `include"bank.v"
 
-module arbitrator
+module sh_mem
 (
 	input	wire 				clk,
 	input	wire				reset,
@@ -59,7 +59,7 @@ endgenerate
 
 generate for (id_core = 0; id_core < `NUM_OF_CORES; id_core = id_core + 1)
 begin: form_ready
-	assign	ready[id_core] = ((id_core == id_last_core) && (~skip));
+	assign	ready[id_core] = ((id_core == id_last_core) && ((~skip) || (last_request_rd)));
 end
 endgenerate
 
