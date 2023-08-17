@@ -603,7 +603,7 @@ ProcessStates processCheckAndPutLabels(Defines *ptrDef, InsnFrameData *ptrIFData
     int *buffOp = malloc(MAX_OP);
     Stack *ptrLabelUsedValues;
     for(unsigned i = 0; i < size; i++){
-        memcpy(buffOp, dStack_r(ptrDef->ptrLabelUsedNames, i), MAX_OP);
+        memcpy(buffOp, dStack_r(ptrDef->ptrLabelUsedNames, i), MAX_OP * sizeof(int));
         search = searchFor(ptrDef->ptrLabelDefinedNames, buffOp, MAX_OP);
         if(search == NONE)
             ERROR_MSG_OP_NL_FREE_OP(buffOp, ProcessError, "Использованная метка не определена");
@@ -663,12 +663,14 @@ GetFrameStates getInsnFrame(FILE *input, Defines *ptrDef, InsnFrameData *ptrIFDa
     && ptrLex->lexType != Nothing
     && ptrLex->lexType != Colon
     && ptrLex->lexType != BracketCurlyOpen);
+    getLexNoComments(input, ptrLineNum, ptrLex);
     if(insnNum == INSN_COUNT
     && ptrLex->lexType != Nothing
     && ptrLex->lexType != Colon
     && ptrLex->lexType != BracketCurlyOpen)
         ERROR_MSG_LEX(ptrLineNum, ptrLex, GetFrameCodeError,
                       "Уже наступил конец фрейма, всего комманд может быть - %d",, INSN_COUNT);
+    unGetLex(ptrLex);
     if(processCheckAndPutLabels(ptrDef, ptrIFData) == ProcessError)
         ERROR_MSG_NL(GetFrameCodeError, "Чот тут метки не сходятся");
     return GetFrameOK;
