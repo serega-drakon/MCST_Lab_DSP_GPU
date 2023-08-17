@@ -938,9 +938,12 @@ void printProgramFromStackToFile(Stack* input, FILE* output){
     unsigned i = 0;
     while(i < size){
         do {
-            ptrValue = dStack_r(input, i++);
-            fprintf(output, "%.2x%.2x ", ptrValue[0], ptrValue[1]);
-        } while(i % 4 != 0 && i < size);
+            do {
+                ptrValue = dStack_r(input, i++);
+                fprintf(output, "%.2x%.2x ", ptrValue[0], ptrValue[1]);
+            } while (i % 4 != 0 && i < size);
+            fprintf(output, "\n");
+        } while(i % (4 * 4) != 0 && i < size);
         fprintf(output, "\n");
     }
 }
