@@ -9,7 +9,6 @@ reg			clk   = 1'b0;
 reg			reset = 1'b1;
 reg	[`TM_RANGE]	data;
 reg	[`CORES_RANGE]	ready;
-
 wire	[`IF_NUM_RANGE] tpointer;	
 
 Task_Scheduler TS (

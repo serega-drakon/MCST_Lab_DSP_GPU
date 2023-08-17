@@ -52,14 +52,12 @@ endgenerate
 
 
 always @(posedge clk)									//Start
-	Start <= (~reset & Insn_Frame_Num)? Core_Active_Vect : 0;
+	Start <= (~reset & Insn_Frame_Num != 0)? Core_Active_Vect : 0;
 	
 
 always @(posedge clk)									//Insn Data
 begin
-	if (reset)
-		Insn_Data <= 0;
-	if (~reset & Insn_Frame_Num) 
+	if (~reset & Insn_Frame_Num != 0) 
 		Insn_Data <= Task_Memory_Frame;
 end
 
@@ -86,7 +84,7 @@ begin
 	if (reset)
 		Insn_Frame_Num 	<= 1;							//-> to beginning
 	else begin
-		if ( (EXEC_MASK & Core_Active_Vect) == 0 & Insn_Frame_Num ) 			
+		if ( (EXEC_MASK & Core_Active_Vect) == 0 & Insn_Frame_Num != 0 ) 			
 			Insn_Frame_Num <= Insn_Frame_Num - 1;	
 		
 
@@ -114,7 +112,7 @@ begin
 	if (reset)
 		Task_Pointer <= `TASK_MEM_DEPTH - 1;					//initially TM is empty or old
 	else begin
-		if (Insn_Frame_Num & (EXEC_MASK & Core_Active_Vect) == 0) 
+		if (Insn_Frame_Num != 0 & (EXEC_MASK & Core_Active_Vect) == 0) 
 			Task_Pointer	<= Task_Pointer   + 1;
 		
 
@@ -132,7 +130,7 @@ begin
 	if (reset)
 		fence <= `NO;
 	else if ( Insn_Frame_Num == 0 & (
-				(EXEC_MASK & (fence == `ACQ | FENCE_NEXT == `REL)) |
+				(EXEC_MASK != 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
 			     	((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO) ) )
 		fence <= Task_Memory_Frame[`TS_FENCE_RANGE];
 
