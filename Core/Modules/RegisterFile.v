@@ -53,7 +53,20 @@ module RegisterFile (
 
     // debug
     wire [`REG_RANGE] R0 = r[0];
-    wire [`REG_RANGE] R8 = r[8];
     wire [`REG_RANGE] R1 = r[1];
+    wire [`REG_RANGE] R2 = r[2];
+    wire [`REG_RANGE] R3 = r[3];
+    wire [`REG_RANGE] R4 = r[4];
+    wire [`REG_RANGE] R5 = r[5];
+    wire [`REG_RANGE] R6 = r[6];
+    wire [`REG_RANGE] R7 = r[7];
+    wire [`REG_RANGE] R8 = r[8];
+    wire [`REG_RANGE] R9 = r[9];
+    wire [`REG_RANGE] R10 = r[10];
+    wire [`REG_RANGE] R11 = r[11];
+    wire [`REG_RANGE] R12 = r[12];
+    wire [`REG_RANGE] R13 = r[13];
+    wire [`REG_RANGE] R14 = r[14];
+    wire [`REG_RANGE] R15 = r[15];
 
 endmodule

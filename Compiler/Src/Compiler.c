@@ -608,7 +608,7 @@ ProcessStates processCheckAndPutLabels(Defines *ptrDef, InsnFrameData *ptrIFData
         if(search == NONE)
             ERROR_MSG_OP_NL_FREE_OP(buffOp, ProcessError, "Использованная метка не определена");
         labelData = *(unsigned *)dStack_r(ptrDef->ptrLabelDefinedValues, search);
-        ptrLabelUsedValues = *(Stack**) dStack_r(ptrDef->ptrLabelUsedValuesPtr, search);
+        ptrLabelUsedValues = *(Stack**) dStack_r(ptrDef->ptrLabelUsedValuesPtr, i);
         insnNum = *(unsigned *) pop_dStack(ptrLabelUsedValues);
         ptrIFData->ptrInsn[insnNum].target = labelData;
     }

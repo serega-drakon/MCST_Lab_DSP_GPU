@@ -1,6 +1,6 @@
 `include "IncAllTest.def.v"
 `include "Core.v"
-`include "arbitrator.v"
+`include "sh_mem.v"
 
 module TestCoresMemory;
     reg clk = 1;
@@ -33,7 +33,7 @@ module TestCoresMemory;
     wire [`REG_BUS_RANGE] rd_data_arb;
     wire [`CORES_RANGE]	ready_arb;
 
-    arbitrator arb(clk, reset, enable_arb, addr_arb, wr_data_arb, rd_data_arb, ready_arb);
+    sh_mem sh_mem(clk, reset, enable_arb, addr_arb, wr_data_arb, rd_data_arb, ready_arb);
 
     generate
         for (i = 0; i < `NUM_OF_CORES; i = i + 1) begin : array_wire_arb

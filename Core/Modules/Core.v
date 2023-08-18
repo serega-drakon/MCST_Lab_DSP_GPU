@@ -109,7 +109,7 @@ module Core #(
     function insn_set_const_mode;
         input [`INSN_DST_RANGE] insn_dst;
         begin
-            insn_set_const_mode = (insn_dst > `SET_CONST_MODE_REG - 1);
+            insn_set_const_mode = (insn_dst < `SET_CONST_MODE_REG);
         end
     endfunction
 
@@ -284,7 +284,7 @@ module Core #(
         else
             insn_FD_r <= (stall | block_all_pipe) ? insn_FD_r :
                 (X_branch_cond) ? `NOP :
-                (FD_insn_ptr_r == `INSN_COUNT - 1) ? `READY :insn_curr;
+                (FD_insn_ptr_r == `INSN_COUNT - 1) ? {`READY, {(`INSN_SIZE - `INSN_OPC_SIZE){1'b0}}} :insn_curr;
 
     always @(posedge clk)
         if(reset | Start & Ready_r)
