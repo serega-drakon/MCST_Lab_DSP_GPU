@@ -1,6 +1,6 @@
 `include "IncAllTest.def.v"
 `include "Core.v"
-`include "sh_mem.v"
+`include "sh_mem_uns.v"
 
 module TestCoresMemory;
     reg clk = 1;
@@ -8,7 +8,7 @@ module TestCoresMemory;
     reg reset;
     reg init_R0_flag[`CORES_RANGE];
     reg [`REG_RANGE] init_R0_data [`CORES_RANGE];
-    reg [`INSN_BUS_RANGE] insn_data ;
+    wire [`INSN_BUS_RANGE] insn_data ;
     reg Start[`CORES_RANGE];
     wire Ready [`CORES_RANGE];
 
@@ -17,6 +17,13 @@ module TestCoresMemory;
     wire [`REG_RANGE] wr_data_M [`CORES_RANGE];
     wire [`ADDR_RANGE] addr_M [`CORES_RANGE];
     wire [1 : 0] enable_M [`CORES_RANGE];
+
+    reg [`INSN_RANGE] insn_data_array [`INSN_COUNT - 1 : 0];
+    generate
+        for(genvar j = 0; j < `INSN_COUNT; j = j + 1) begin : asddasd
+            assign insn_data[(j + 1) * `INSN_SIZE - 1 : j * `INSN_SIZE] = insn_data_array[j];
+        end
+    endgenerate
 
     genvar i;
     generate
@@ -32,8 +39,10 @@ module TestCoresMemory;
     wire [`REG_BUS_RANGE] wr_data_arb;
     wire [`REG_BUS_RANGE] rd_data_arb;
     wire [`CORES_RANGE]	ready_arb;
+    reg dump;
 
-    sh_mem sh_mem(clk, reset, enable_arb, addr_arb, wr_data_arb, rd_data_arb, ready_arb);
+    sh_mem_uns sh_mem_uns
+               (clk, reset, enable_arb, addr_arb, wr_data_arb, rd_data_arb, ready_arb, dump);
 
     generate
         for (i = 0; i < `NUM_OF_CORES; i = i + 1) begin : array_wire_arb
@@ -45,7 +54,6 @@ module TestCoresMemory;
         end
     endgenerate
 
-
     generate
         for(i = 0; i < `NUM_OF_CORES; i = i + 1) begin : zero_loop
             initial begin
@@ -56,31 +64,44 @@ module TestCoresMemory;
         end
     endgenerate
 
+    integer j;
+    integer infile;
+    integer c;
+    initial begin
+        infile = $fopen("code.txt", "r");
+        for(j = 0; j < `INSN_COUNT; j = j+ 1)
+            c = $fscanf(infile, "%x", insn_data_array[j]);
+        $display(c);
+        for(j = 0; j < `INSN_COUNT; j = j+ 1)
+            $display("%x", insn_data_array[j], " ");
+        $display("\n");
+        #300;
+        for(j = 0; j < `INSN_COUNT; j = j+ 1)
+            c = $fscanf(infile, "%x", insn_data_array[j]);
+        $display(c);
+        for(j = 0; j < `INSN_COUNT; j = j+ 1)
+            $display("%x", insn_data_array[j], " ");
+        $display("\n");
+        $fclose(infile);
+    end
 
+    integer k;
     initial begin
         reset <= 1;
-        insn_data <= 0;
         #10 reset <= 0;
-        init_R0_flag[0] <= 1;
-        init_R0_data[0] <= 3;
-        insn_data[1 * `INSN_SIZE - 1 : 0 * `INSN_SIZE] <= {{`SET_CONST }, {{8'h0}, {4'h1}}};
-        insn_data[2 * `INSN_SIZE - 1 : 1 * `INSN_SIZE] <= {{`SET_CONST }, {{8'h0}, {4'h8}}};
-        insn_data[3 * `INSN_SIZE - 1 : 2 * `INSN_SIZE] <= {{`ST }, {{4'h1}, {4'h8}, {4'h0}}};
-        insn_data[4 * `INSN_SIZE - 1 : 3 * `INSN_SIZE] <= {{`LD }, {{4'h1}, {4'h8}, {4'h0}}};
-        insn_data[5 * `INSN_SIZE - 1 : 4 * `INSN_SIZE] <= {{`READY }, {(`INSN_SIZE - `INSN_OPC_SIZE){1'b0}}};
-        Start[0] <= 1;
-        #10 Start[0] <= 0;
-        init_R0_flag[0] <= 0;
-        #100;
-        init_R0_flag[0] <= 1;
-        init_R0_data[0] <= 4;
-        insn_data[1 * `INSN_SIZE - 1 : 0 * `INSN_SIZE] <= {{`SET_CONST }, {{8'h0}, {4'h1}}};
-        insn_data[2 * `INSN_SIZE - 1 : 1 * `INSN_SIZE] <= {{`SET_CONST }, {{8'h0}, {4'h8}}};
-        insn_data[3 * `INSN_SIZE - 1 : 2 * `INSN_SIZE] <= {{`ST }, {{4'h1}, {4'h8}, {4'h0}}};
-        insn_data[4 * `INSN_SIZE - 1 : 3 * `INSN_SIZE] <= {{`READY }, {(`INSN_SIZE - `INSN_OPC_SIZE){1'b0}}};
-        Start[0] <= 1;
-        #10 Start[0] <= 0;
-        init_R0_flag[0] <= 0;
+        for(k = 0; k < `NUM_OF_CORES; k = k + 1)
+            Start[k] <= 1;
+        #10;
+        for(k = 0; k < `NUM_OF_CORES; k = k + 1)
+            Start[k] <= 0;
+        #400;
+        for(k = 0; k < `NUM_OF_CORES; k = k + 1)
+            Start[k] <= 1;
+        #10;
+        for(k = 0; k < `NUM_OF_CORES; k = k + 1)
+            Start[k] <= 0;
+        #90000 dump <= 1;
+        #10 dump <= 0;
     end
 
     //dump settings
@@ -94,6 +115,6 @@ module TestCoresMemory;
     end
 
     initial begin
-        #800 $finish();
+        #100000 $finish();
     end
 endmodule
