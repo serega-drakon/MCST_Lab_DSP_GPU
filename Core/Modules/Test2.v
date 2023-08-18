@@ -24,7 +24,7 @@ module Test2;
         end
     endgenerate
 
-    Core Core(clk, reset, init_R0_flag, init_R0_data, insn_data, Start, Ready,
+    Core #(.CORE_ID(15)) Core(clk, reset, init_R0_flag, init_R0_data, insn_data, Start, Ready,
         rd_data_M, ready_M, wr_data_M, addr_M, enable_M);
 
     integer i;

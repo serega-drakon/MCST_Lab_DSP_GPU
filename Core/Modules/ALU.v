@@ -13,7 +13,7 @@ module ALU (
 
     assign X_branch_cond_ALU = src_0_data_ALU != 0; //тут только bnz
 
-    wire core_id_extended = {{(`REG_SIZE - `CORE_ID_SIZE){1'b0}}, core_id};
+    wire [`REG_RANGE] core_id_extended = {{(`REG_SIZE - `CORE_ID_SIZE){1'b0}}, core_id};
 
     assign X_result_ALU = {`REG_SIZE {DX_insn_opc == `ADD}} & {src_0_data_ALU+src_1_data_ALU} //ld в Core
         |{`REG_SIZE {DX_insn_opc == `SUB}} & {src_0_data_ALU-src_1_data_ALU}
