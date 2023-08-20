@@ -1,6 +1,5 @@
-//`define Test1
-
-`define Test2
+`define Test1
+//`define Test2
 
 
 `timescale 100ns / 100ns
