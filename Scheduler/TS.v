@@ -28,6 +28,7 @@ reg 	[1:0]			fence;							//for Control Frame
 reg 	[`CORES_RANGE]		Core_Active_Vect;
 wire	[`CORES_RANGE]		CORE_ACTIVE_VECT_NEXT;
 wire	[1:0]			FENCE_NEXT;
+reg				FLAG_TIME_R;						//wait cores >1 cycle
 
 
 assign Task_Memory_Frame	= Task_Memory[Task_Pointer];
@@ -51,13 +52,23 @@ endgenerate
 
 
 
-always @(posedge clk)									//Start
-	Start <= (~reset & Insn_Frame_Num != 0)? Core_Active_Vect : 0;
-	
+always @(posedge clk)					//Start
+begin				
+	if (reset)
+		Start <= 0;
+	else begin			
+		Start <= (Insn_Frame_Num != 0)? Core_Active_Vect : 0;
+
+		if ( Insn_Frame_Num == 0 & 
+				( (EXEC_MASK == 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
+			     	((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO) ) )
+		Start <= CORE_ACTIVE_VECT_NEXT;
+	end
+end
 
 always @(posedge clk)									//Insn Data
 begin
-	if (~reset & Insn_Frame_Num != 0) 
+	if (~reset) 
 		Insn_Data <= Task_Memory_Frame;
 end
 
@@ -84,11 +95,15 @@ begin
 	if (reset)
 		Insn_Frame_Num 	<= 1;							//-> to beginning
 	else begin
-		if ( (EXEC_MASK & Core_Active_Vect) == 0 & Insn_Frame_Num != 0 ) 			
+		if (Insn_Frame_Num > 1 & FLAG_TIME_R &
+		   (EXEC_MASK & Core_Active_Vect) == 0) 			
 			Insn_Frame_Num <= Insn_Frame_Num - 1;	
 		
+		
+		if (Insn_Frame_Num == 1 & FLAG_TIME_R)
+			Insn_Frame_Num <= Insn_Frame_Num - 1;
 
-		if ( Insn_Frame_Num == 0 & 
+		if ( Insn_Frame_Num == 0 &
 			     ( (EXEC_MASK == 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
 			     ((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO) ) )
 			Insn_Frame_Num <= Task_Memory_Frame[`IF_NUM_RANGE];
@@ -110,16 +125,37 @@ end
 always @(posedge clk)									//Task Pointer
 begin
 	if (reset)
+		FLAG_TIME_R <= 1;
+	else
+		case (Insn_Frame_Num)
+			0: FLAG_TIME_R <= ((EXEC_MASK == 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
+    				((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO))? 0 : 1;
+
+
+			1: FLAG_TIME_R <= ~FLAG_TIME_R; 
+	
+
+			default: FLAG_TIME_R <= (FLAG_TIME_R & (EXEC_MASK & Core_Active_Vect) == 0)? 0 : 1;
+		endcase
+end
+
+
+always @(posedge clk)									//Task Pointer
+begin
+	if (reset)
 		Task_Pointer <= `TASK_MEM_DEPTH - 1;					//initially TM is empty or old
 	else begin
-		if (Insn_Frame_Num != 0 & (EXEC_MASK & Core_Active_Vect) == 0) 
-			Task_Pointer	<= Task_Pointer   + 1;
+		if (Insn_Frame_Num > 1 & FLAG_TIME_R &
+		   (EXEC_MASK & Core_Active_Vect) == 0) 
+			Task_Pointer <= Task_Pointer + 1;
 		
+		if (Insn_Frame_Num == 1 & FLAG_TIME_R)
+			Task_Pointer <= Task_Pointer + 1;
 
-		if ( Insn_Frame_Num == 0 & 
+		if (Insn_Frame_Num == 0 & 
 				( (EXEC_MASK == 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
 			     	((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO) ) )
-			Task_Pointer	<= Task_Pointer + 1;
+			Task_Pointer <= Task_Pointer + 1;
 		
 	end
 end
