@@ -57,7 +57,7 @@ begin
 	if (reset)
 		Start <= 0;
 	else begin			
-		Start <= (Insn_Frame_Num != 0 & (EXEC_MASK & Core_Active_Vect) == 0) ?
+		Start <= (Insn_Frame_Num != 0 & (EXEC_MASK & Core_Active_Vect) == 0 & ~Start) ?
 			Core_Active_Vect : 0;
 
 		if ( Insn_Frame_Num == 0 & 
