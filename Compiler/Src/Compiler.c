@@ -442,6 +442,7 @@ ProcessStates processIFNum(FILE* input, ControlFrameData *ptrCFData, lexeme *ptr
 
 GetFrameStates getControlFrame(FILE* input, ControlFrameData *ptrCFData, lexeme *ptrLex,
                                unsigned *ptrLineNum){
+    controlFrameDataReset(ptrCFData);
     do{
         getLexNoComments(input, ptrLineNum, ptrLex);
         switch(ptrLex->lexType){
@@ -749,7 +750,6 @@ GetFrameStates processControlFrame(FILE* input, Stack *output, ControlFrameData 
                                    lexeme *ptrLex, unsigned *ptrLineNum){
     if(ptrCFData->IF_Num_left > 0)
         WARNING(ptrLineNum, "Warning: There are IFs left - %d",, ptrCFData->IF_Num_left);
-    controlFrameDataReset(ptrCFData);
     GetFrameStates frameState = getControlFrame(input, ptrCFData, ptrLex, ptrLineNum);
     if(checkCFFlags(ptrCFData) == CheckCFFlagsWarning)
         WARNING(ptrLineNum, "Warning: InitR0 > CoreActive???");

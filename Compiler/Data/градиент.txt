@@ -1,0 +1,24 @@
+: name
+set_const $00 %r8 // core_id
+set_const $04 %r1 // 4 for mul
+mul %r1 %r8 %r2 // y_curr
+add %r1 %r2 %r3 // y_end
+set_const $01 %r4 // 1 for inc
+set_const $40 %r7 // x_end
+set_const $00 %r6 // addr_curr
+ready
+
+: loop
+.for_cycle_next_str
+set_const $00 %r5 // x_curr_start
+.for_cycle_next_char
+add %r5 %r2 %r0
+st %r6 %r8 %r0
+add %r6 %r4 %r6
+add %r5 %r4 %r5
+sub %r7 %r5 %r14
+bnz %r14 .for_cycle_next_char
+add %r2 %r4 %r2
+sub %r3 %r2 %r15
+bnz %r15 .for_cycle_next_str
+ready
