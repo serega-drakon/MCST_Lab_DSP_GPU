@@ -15,7 +15,6 @@
 `define ADDR_SIZE 12
 `define ADDR_RANGE (`ADDR_SIZE - 1) : (0)
 
-
 `define INSN_COUNT 16
 `define INSN_SIZE 16
 `define INSN_RANGE (`INSN_SIZE - 1) : (0)
@@ -52,7 +51,6 @@
 `define INSN_TARGET_OFFSET_RANGE (`INSN_TARGET_SIZE + `INSN_TARGET_OFFSET - 1) : (`INSN_TARGET_OFFSET)
 `define INSN_TARGET_RANGE (`INSN_TARGET_SIZE - 1) : (0)
 
-
 `define	BANK_DATA_SIZE 256
 `define	BANK_DATA_RANGE (`BANK_DATA_SIZE - 1) : (0)
 `define	NUM_OF_BANKS 16
@@ -66,15 +64,12 @@
 `define ENABLE_BUS_RANGE (`ENABLE_SIZE * `NUM_OF_CORES - 1) : (0)
 `define ENABLE_RANGE (`ENABLE_SIZE - 1) : (0)
 
-
-
 `define TASK_MEM_DEPTH	64
 `define TASK_MEM_WIDTH	256
 
 `define SIZE_IF_NUM	$clog2(`TASK_MEM_DEPTH)
 `define IF_NUM_RANGE	(`SIZE_IF_NUM - 1) : (0)
 `define TS_FENCE_RANGE	(`SIZE_IF_NUM + 1) : (`SIZE_IF_NUM)
-
 
 `define TM_DEPTH_RANGE (`TASK_MEM_DEPTH - 1) : (0)
 `define TM_WIDTH_RANGE (`TASK_MEM_WIDTH - 1) : (0)

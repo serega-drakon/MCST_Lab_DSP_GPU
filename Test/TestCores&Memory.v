@@ -1,16 +1,33 @@
 `include "IncAllTest.def.v"
 `include "Core.v"
 `include "sh_mem_uns.v"
+`include "TS.v"
 
 module TestCoresMemory;
     reg clk = 1;
     always #5 clk = ~clk;
     reg reset;
-    reg init_R0_flag[`CORES_RANGE];
-    reg [`REG_RANGE] init_R0_data [`CORES_RANGE];
+
+    reg [`INSN_RANGE] env_task_mem_array [`TM_DEPTH_RANGE][`INSN_COUNT - 1 : 0];
+    wire [`TM_RANGE] env_task_memory;
+
+    genvar k;
+    genvar i;
+    generate
+        for (i = 0; i < `TASK_MEM_DEPTH; i = i + 1) begin : env_mem_loop_1
+            for(k = 0; k < `INSN_COUNT; k = k + 1) begin : env_mem_loop_2
+                assign env_task_memory
+                    [(k + 1) * `INSN_SIZE + i * `TASK_MEM_WIDTH - 1 : k * `INSN_SIZE + i * `TASK_MEM_WIDTH] =
+                    env_task_mem_array[i][k];
+            end
+        end
+    endgenerate
+
+    wire [`CORES_RANGE] init_R0_flag;
+    wire [`REG_BUS_RANGE] init_R0_data;
     wire [`INSN_BUS_RANGE] insn_data ;
-    reg Start[`CORES_RANGE];
-    wire Ready [`CORES_RANGE];
+    wire [`CORES_RANGE] Start;
+    wire [`CORES_RANGE] Ready;
 
     wire [`REG_RANGE] rd_data_M [`CORES_RANGE ];
     wire ready_M [`CORES_RANGE]; // != Ready
@@ -18,19 +35,16 @@ module TestCoresMemory;
     wire [`ADDR_RANGE] addr_M [`CORES_RANGE];
     wire [1 : 0] enable_M [`CORES_RANGE];
 
-    reg [`INSN_RANGE] insn_data_array [`INSN_COUNT - 1 : 0];
-    generate
-        for(genvar j = 0; j < `INSN_COUNT; j = j + 1) begin : asddasd
-            assign insn_data[(j + 1) * `INSN_SIZE - 1 : j * `INSN_SIZE] = insn_data_array[j];
-        end
-    endgenerate
+    Task_Scheduler TS(clk, reset, env_task_memory, Ready, Start,
+                      insn_data, init_R0_flag, init_R0_data);
 
-    genvar i;
+
     generate
         for (i = 0; i < `NUM_OF_CORES; i = i + 1) begin : array_cores
             Core #(i) Core_i
-            (clk, reset, init_R0_flag[i], init_R0_data[i], insn_data, Start[i], Ready[i],
-                rd_data_M[i], ready_M[i], wr_data_M[i], addr_M[i], enable_M[i]);
+            (clk, reset, init_R0_flag[i], init_R0_data[(i + 1) * `REG_SIZE - 1 : i * `REG_SIZE],
+                insn_data, Start[i], Ready[i], rd_data_M[i], ready_M[i], wr_data_M[i],
+                addr_M[i], enable_M[i]);
         end
     endgenerate
 
@@ -55,51 +69,33 @@ module TestCoresMemory;
     endgenerate
 
     generate
-        for(i = 0; i < `NUM_OF_CORES; i = i + 1) begin : zero_loop
-            initial begin
-                Start[i] <= 0;
-                init_R0_flag[i] <= 0;
-                init_R0_data[i] <= 0;
+        for(i = 4; i < `TASK_MEM_DEPTH; i = i + 1) begin : initial_loop_1
+            for(k = 0; k < `INSN_COUNT; k = k + 1) begin : env_mem_loop_2
+                initial
+                    env_task_mem_array[i][k] <= 0;
             end
         end
     endgenerate
 
-    integer j;
     integer infile;
     integer c;
+    integer l, m;
+    integer value;
+
     initial begin
         infile = $fopen("code.txt", "r");
-        for(j = 0; j < `INSN_COUNT; j = j+ 1)
-            c = $fscanf(infile, "%x", insn_data_array[j]);
-        $display(c);
-        for(j = 0; j < `INSN_COUNT; j = j+ 1)
-            $display("%x", insn_data_array[j], " ");
-        $display("\n");
-        #300;
-        for(j = 0; j < `INSN_COUNT; j = j+ 1)
-            c = $fscanf(infile, "%x", insn_data_array[j]);
-        $display(c);
-        for(j = 0; j < `INSN_COUNT; j = j+ 1)
-            $display("%x", insn_data_array[j], " ");
-        $display("\n");
+        for(l = 0; l < 4; l = l + 1) begin
+            for(m = 0; m < `INSN_COUNT; m = m + 1) begin
+                c = $fscanf(infile, "%x", value);
+                env_task_mem_array[l][m] = value;
+            end
+        end
         $fclose(infile);
     end
 
-    integer k;
     initial begin
         reset <= 1;
         #10 reset <= 0;
-        for(k = 0; k < `NUM_OF_CORES; k = k + 1)
-            Start[k] <= 1;
-        #10;
-        for(k = 0; k < `NUM_OF_CORES; k = k + 1)
-            Start[k] <= 0;
-        #400;
-        for(k = 0; k < `NUM_OF_CORES; k = k + 1)
-            Start[k] <= 1;
-        #10;
-        for(k = 0; k < `NUM_OF_CORES; k = k + 1)
-            Start[k] <= 0;
         #90000 dump <= 1;
         #10 dump <= 0;
     end
@@ -115,6 +111,7 @@ module TestCoresMemory;
     end
 
     initial begin
-        #100000 $finish();
+        #100000;
+        $finish();
     end
 endmodule

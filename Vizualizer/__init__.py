@@ -8,7 +8,7 @@ files = ['bank 0.txt', 'bank 1.txt', 'bank 2.txt', 'bank 3.txt', 'bank 4.txt',
          'bank 5.txt', 'bank 6.txt', 'bank 7.txt', 'bank 8.txt', 'bank 9.txt',
          'bank10.txt', 'bank11.txt', 'bank12.txt', 'bank13.txt', 'bank14.txt',
          'bank15.txt']
-dir = '../Test/'
+dir = '../Test/test_data/'
 for fname in files:
     with open(dir + fname) as f:
         for line in f: # read rest of lines

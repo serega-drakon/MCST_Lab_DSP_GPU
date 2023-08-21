@@ -37,24 +37,18 @@ end
 
 integer f;
 integer i;
+integer j;
 
 always @(posedge dump)
 begin
 	if(~reset)
 	begin
-		f = $fopen($sformatf("bank%2d.txt", BANK_ID),"w");
-		for( i = 0; i < 64; i = i + 1)
-			$fwrite(f,"%h ", memory[i]);
-		$fwrite(f,"\n");
-		for( i = 64; i < 128; i = i + 1)
-			$fwrite(f,"%h ", memory[i]);
-		$fwrite(f,"\n");
-		for( i = 128; i < 192; i = i + 1)
-			$fwrite(f,"%h ", memory[i]);
-		$fwrite(f,"\n");
-		for( i = 192; i < 256; i = i + 1)
-			$fwrite(f,"%h ", memory[i]);
-		$fwrite(f,"\n");
+		f = $fopen($sformatf("test_data/bank%2d.txt", BANK_ID),"w");
+		for(j = 0; j < 4; j = j + 1) begin
+			for(i = 0; i < 64; i = i + 1)
+				$fwrite(f,"%h ", memory[i + j * 64]);
+			$fwrite(f,"\n");
+		end
 		$fclose(f);
 	end
 end

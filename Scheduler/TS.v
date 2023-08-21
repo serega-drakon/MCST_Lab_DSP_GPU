@@ -11,7 +11,7 @@ module Task_Scheduler
 	input		wire	[`CORES_RANGE]		Ready,				//TS <- Cores
 
 	output		reg	[`CORES_RANGE]		Start,				//TS -> Cores
-	output		reg	[`TM_WIDTH_RANGE]	Insn_Data,			//TS -> Cores
+	output		wire [`TM_WIDTH_RANGE]	Insn_Data,			//TS -> Cores
 	output		reg	[`CORES_RANGE]		Init_R0_Vect,			//TS -> Cores
 	output  	reg	[`REG_BUS_RANGE]	Init_R0				//TS -> Cores
 );
@@ -57,7 +57,8 @@ begin
 	if (reset)
 		Start <= 0;
 	else begin			
-		Start <= (Insn_Frame_Num != 0)? Core_Active_Vect : 0;
+		Start <= (Insn_Frame_Num != 0 & (EXEC_MASK & Core_Active_Vect) == 0) ?
+			Core_Active_Vect : 0;
 
 		if ( Insn_Frame_Num == 0 & 
 				( (EXEC_MASK == 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
@@ -66,11 +67,13 @@ begin
 	end
 end
 
-always @(posedge clk)									//Insn Data
-begin
-	if (~reset) 
-		Insn_Data <= Task_Memory_Frame;
-end
+	assign Insn_Data = Task_Memory_Frame;
+
+//always @(posedge clk)									//Insn Data
+//begin
+//	if (~reset)
+//		Insn_Data <= Task_Memory_Frame;
+//end
 
 always @(posedge clk)									//Init_R0_Vect
 begin
