@@ -11,7 +11,7 @@ module Task_Scheduler
 	input		wire	[`CORES_RANGE]		Ready,				//TS <- Cores
 
 	output		reg	[`CORES_RANGE]		Start,				//TS -> Cores
-	output		wire [`TM_WIDTH_RANGE]	Insn_Data,			//TS -> Cores
+	output		wire	[`TM_WIDTH_RANGE]	Insn_Data,			//TS -> Cores
 	output		reg	[`CORES_RANGE]		Init_R0_Vect,			//TS -> Cores
 	output  	reg	[`REG_BUS_RANGE]	Init_R0				//TS -> Cores
 );
@@ -36,6 +36,7 @@ assign Task_Memory_Frame	= Task_Memory[Task_Pointer];
 assign FENCE_NEXT 		= Task_Memory_Frame[`TS_FENCE_RANGE];
 assign CORE_ACTIVE_VECT_NEXT	= Task_Memory_Frame[`CORE_ACTIVE_VECT_RANGE];
 
+
 genvar ii;
 generate for (ii = 0; ii < `NUM_OF_CORES; ii = ii + 1) begin: exec_mask_loop
 	assign EXEC_MASK[ii] = ~Ready[ii];
@@ -50,45 +51,38 @@ generate for (ii = 0; ii < `TASK_MEM_DEPTH; ii = ii + 1) begin: init_TM_loop
 end
 endgenerate
 
+assign Insn_Data = Task_Memory_Frame;							//Insn Data
 
 
-always @(posedge clk)					//Start
+always @(posedge clk)									//Start
 begin				
 	if (reset)
 		Start <= 0;
-	else begin			
-		Start <= (Insn_Frame_Num != 0 & (EXEC_MASK & Core_Active_Vect) == 0 & ~Start) ?
-			Core_Active_Vect : 0;
-
+	else
 		if ( Insn_Frame_Num == 0 & 
 				( (EXEC_MASK == 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
 			     	((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO) ) )
-		Start <= CORE_ACTIVE_VECT_NEXT;
-	end
+			Start <= CORE_ACTIVE_VECT_NEXT;
+
+		else
+			Start <= (Insn_Frame_Num != 0 & (EXEC_MASK & Core_Active_Vect) == 0 & ~Start) ?
+				Core_Active_Vect : 0;
 end
 
-	assign Insn_Data = Task_Memory_Frame;
-
-//always @(posedge clk)									//Insn Data
-//begin
-//	if (~reset)
-//		Insn_Data <= Task_Memory_Frame;
-//end
 
 always @(posedge clk)									//Init_R0_Vect
 begin
 	if (reset)
 		{Init_R0, Init_R0_Vect} <= 0;
 
-	if (~reset & Insn_Frame_Num == 0)
+	else if (~reset & Insn_Frame_Num == 0)
 		Init_R0_Vect <= Task_Memory_Frame[`R0_VECT_RANGE]; 
 end
 
 generate for (ii = `NUM_OF_CORES - 1; ii >= 0; ii = ii - 1) begin: init_R0_loop		//Init_R0
 	always @(posedge clk)
-		if (~reset & Insn_Frame_Num == 0) begin
+		if (~reset & Insn_Frame_Num == 0)
 			Init_R0[`R0_RANGE(ii)] <= Task_Memory_Frame[`TM_R0_RANGE(ii)];
-		end
 end
 endgenerate
 
@@ -97,32 +91,32 @@ always @(posedge clk)									//Instruction Frame Num
 begin
 	if (reset)
 		Insn_Frame_Num 	<= 1;							//-> to beginning
-	else begin
-		if (Insn_Frame_Num > 1 & FLAG_TIME_R &
-		   (EXEC_MASK & Core_Active_Vect) == 0) 			
-			Insn_Frame_Num <= Insn_Frame_Num - 1;	
-		
-		
-		if (Insn_Frame_Num == 1 & FLAG_TIME_R)
-			Insn_Frame_Num <= Insn_Frame_Num - 1;
+	else
 
-		if ( Insn_Frame_Num == 0 &
-			     ( (EXEC_MASK == 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
-			     ((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO) ) )
-			Insn_Frame_Num <= Task_Memory_Frame[`IF_NUM_RANGE];
-		
-	end
+		if (Insn_Frame_Num > 1 & FLAG_TIME_R &  (EXEC_MASK & Core_Active_Vect) == 0) 			
+			Insn_Frame_Num <= Insn_Frame_Num - 1;	
+		else 
+
+			if (Insn_Frame_Num == 1 & FLAG_TIME_R)
+				Insn_Frame_Num <= Insn_Frame_Num - 1;
+			else
+
+				if ( Insn_Frame_Num == 0 &
+				  	  ( (EXEC_MASK == 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
+			   		  ((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO) ) )
+					Insn_Frame_Num <= Task_Memory_Frame[`IF_NUM_RANGE];
 end
 
-always @(posedge clk)
+
+always @(posedge clk)									//Core Active Vect
 begin
 	if (reset)
 		Core_Active_Vect <= 0;
-	else if ( Insn_Frame_Num == 0 & 
-			( (EXEC_MASK == 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
-			((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence  == `NO) ) ) begin
-		Core_Active_Vect <= CORE_ACTIVE_VECT_NEXT;
-	end
+	else 
+		if ( Insn_Frame_Num == 0 & 
+				( (EXEC_MASK == 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
+				((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence  == `NO) ) ) 
+			Core_Active_Vect <= CORE_ACTIVE_VECT_NEXT;
 end
 
 always @(posedge clk)									//Task Pointer
@@ -130,16 +124,15 @@ begin
 	if (reset)
 		FLAG_TIME_R <= 1;
 	else
-		case (Insn_Frame_Num)
-			0: FLAG_TIME_R <= ((EXEC_MASK == 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
-    				((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO))? 0 : 1;
-
-
-			1: FLAG_TIME_R <= ~FLAG_TIME_R; 
-	
-
-			default: FLAG_TIME_R <= (FLAG_TIME_R & (EXEC_MASK & Core_Active_Vect) == 0)? 0 : 1;
-		endcase
+		if (Insn_Frame_Num > 1)
+			FLAG_TIME_R <= (FLAG_TIME_R & (EXEC_MASK & Core_Active_Vect) == 0)? 0 : 1;
+		else
+			if (Insn_Frame_Num == 0)
+				FLAG_TIME_R <= ((EXEC_MASK == 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
+    					((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO))? 0 : 1;
+			else	
+				if (Insn_Frame_Num == 1)
+					FLAG_TIME_R <= ~FLAG_TIME_R; 
 end
 
 
@@ -147,20 +140,20 @@ always @(posedge clk)									//Task Pointer
 begin
 	if (reset)
 		Task_Pointer <= `TASK_MEM_DEPTH - 1;					//initially TM is empty or old
-	else begin
+	else
 		if (Insn_Frame_Num > 1 & FLAG_TIME_R &
 		   (EXEC_MASK & Core_Active_Vect) == 0) 
 			Task_Pointer <= Task_Pointer + 1;
 		
-		if (Insn_Frame_Num == 1 & FLAG_TIME_R)
-			Task_Pointer <= Task_Pointer + 1;
+		else	
+			if (Insn_Frame_Num == 1 & FLAG_TIME_R)
+				Task_Pointer <= Task_Pointer + 1;
 
-		if (Insn_Frame_Num == 0 & 
-				( (EXEC_MASK == 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
-			     	((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO) ) )
-			Task_Pointer <= Task_Pointer + 1;
-		
-	end
+			else
+				if (Insn_Frame_Num == 0 & 
+					( (EXEC_MASK == 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
+			     		((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO) ) )
+					Task_Pointer <= Task_Pointer + 1;
 end
 
 
@@ -168,11 +161,11 @@ always @(posedge clk)									//fence
 begin
 	if (reset)
 		fence <= `NO;
-	else if ( Insn_Frame_Num == 0 & (
+	else 
+		if ( Insn_Frame_Num == 0 & (
 				(EXEC_MASK != 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
 			     	((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO) ) )
-		fence <= Task_Memory_Frame[`TS_FENCE_RANGE];
-
+			fence <= Task_Memory_Frame[`TS_FENCE_RANGE];
 end
 
 endmodule
