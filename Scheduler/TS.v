@@ -75,7 +75,7 @@ begin
 	if (reset)
 		{Init_R0, Init_R0_Vect} <= 0;
 
-	else if (~reset & Insn_Frame_Num == 0)
+	else if (Insn_Frame_Num == 0)
 		Init_R0_Vect <= Task_Memory_Frame[`R0_VECT_RANGE]; 
 end
 
