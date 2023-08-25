@@ -18,7 +18,8 @@
 `define INSN_COUNT 16
 `define INSN_SIZE 16
 `define INSN_RANGE (`INSN_SIZE - 1) : (0)
-`define INSN_BUS_RANGE (`INSN_COUNT * `INSN_SIZE - 1) : (0)
+`define INSN_BUS_COUNT 4
+`define INSN_BUS_RANGE (`INSN_BUS_COUNT * `INSN_SIZE - 1) : (0)
 
 `define INSN_PTR_SIZE 4
 `define INSN_PTR_RANGE (`INSN_PTR_SIZE - 1) : (0)
@@ -74,8 +75,6 @@
 `define TM_DEPTH_RANGE (`TASK_MEM_DEPTH - 1) : (0)
 `define TM_WIDTH_RANGE (`TASK_MEM_WIDTH - 1) : (0)
 `define TM_RANGE       (`TASK_MEM_DEPTH * `TASK_MEM_WIDTH - 1) : (0)
-`define R0_VECT_RANGE (3 * 16 - 1) : (2 * 16)
-`define CORE_ACTIVE_VECT_RANGE (2 * 16 - 1) : (1 * 16)
 
 `define R0_RANGE(jj)	(jj * `REG_SIZE + `REG_SIZE - 1) : (jj * `REG_SIZE)
 `define TM_R0_RANGE(jj)									\
