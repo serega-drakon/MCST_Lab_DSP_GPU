@@ -12,6 +12,7 @@ module Core #(
     input wire init_R0_flag,
     input wire [`REG_RANGE] init_R0_data,
     input wire [`INSN_BUS_RANGE] insn_data,
+    input wire [`INSN_LOAD_COUNTER_RANGE] insn_load_counter,
     input wire Start,
     output wire Ready,
 
@@ -173,11 +174,13 @@ module Core #(
         .MW_insn_is_F1(insn_MW_is_F1), .MW_insn_is_F2(insn_MW_is_F2), .D_src_0_data(D_src_0_data),
         .D_src_1_data(D_src_1_data), .D_src_2_data(D_src_2_data));
 
-    wire init_insn_mem = Start & Ready_r;
+    reg insn_load_flag_r;
+    wire init_insn_mem = (Start & Ready_r) | insn_load_flag_r;
     wire [`INSN_RANGE] insn_curr;
 
-    InsnMemory InsnMemory(.clk(clk), .reset(reset), .init_insn_mem(init_insn_mem), .insn_data(insn_data),
-        .insn_ptr(insn_ptr_r), .insn_curr(insn_curr));
+    InsnMemory InsnMemory(.clk(clk), .reset(reset), .init_insn_mem(init_insn_mem),
+        .insn_data(insn_data), .insn_ptr(insn_ptr_r), .insn_load_counter(insn_load_counter),
+        .insn_curr(insn_curr));
 
     //это байпасы пошли
     wire [`REG_RANGE] X_src_0_data =  //случай с ld вырезан с помошью stall
@@ -245,7 +248,7 @@ module Core #(
 
     assign wr_data_M = M_C_data;
 
-    wire block_all_pipe = M_block | Ready_r;
+    wire block_all_pipe = M_block | Ready_r | insn_load_flag_r;
 
     assign W_result = (insn_MW_opc == `LD) ? MW_D_data_r : MW_O_data_r;
 
@@ -255,8 +258,14 @@ module Core #(
                 (insn_XM_opc == `READY) ? 1 : Ready_r;
 
     always @(posedge clk)
-        insn_ptr_r <= (reset | Start & Ready) ? 0 :
-            (stall | block_all_pipe) ? insn_ptr_r :
+        insn_load_flag_r <= (reset) ? 0 :
+            (Start & Ready) ? 1 :
+            (insn_load_flag_r & insn_load_counter == `INSN_LOAD_TIME - 1) ? 0 :
+                insn_load_flag_r;
+
+    always @(posedge clk)
+        insn_ptr_r <= (reset | Start & Ready) ? 0 : //сразу читает инструкции, не дожидаясь
+            (stall | block_all_pipe) ? insn_ptr_r : //конца получения
             (X_branch_cond) ? insn_DX_target : insn_ptr_r + 1;
 
     always @(posedge clk)
