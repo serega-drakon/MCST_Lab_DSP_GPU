@@ -20,6 +20,7 @@
 `define INSN_RANGE (`INSN_SIZE - 1) : (0)
 `define INSN_BUS_COUNT 4
 `define INSN_BUS_RANGE (`INSN_BUS_COUNT * `INSN_SIZE - 1) : (0)
+`define INSN_LOAD_TIME 4
 
 `define INSN_PTR_SIZE 4
 `define INSN_PTR_RANGE (`INSN_PTR_SIZE - 1) : (0)
