@@ -252,7 +252,7 @@ module Core #(
 
     always @(posedge clk)
             Ready_r <= (reset) ? 1 :
-                (Start & Ready & insn_load_counter == `INSN_LOAD_TIME - 1) ? 0 :
+                (Start & Ready_r & insn_load_counter == `INSN_LOAD_TIME - 1) ? 0 :
                 (insn_XM_opc == `READY) ? 1 : Ready_r;
 
     always @(posedge clk)
@@ -265,14 +265,14 @@ module Core #(
             (insn_ptr_r == `INSN_COUNT - 1 & ~stall & ~block_all_pipe) ? 1 : insn_FD_is_last_r;
 
     always @(posedge clk)
-        insn_FD_r <= (reset | Start & Ready_r) ? `NOP :
+        insn_FD_r <= (reset | Start & Ready) ? `NOP :
             (stall | block_all_pipe) ? insn_FD_r :
             (X_branch_cond) ? `NOP :
             (insn_FD_is_last_r) ? {`READY, {(`INSN_SIZE - `INSN_OPC_SIZE){1'b0}}} :
             insn_curr;
 
     always @(posedge clk)
-        insn_DX_r <= (reset | Start & Ready_r) ? `NOP :
+        insn_DX_r <= (reset | Start & Ready) ? `NOP :
             (block_all_pipe) ? insn_DX_r:
             (stall | X_branch_cond) ? `NOP : insn_FD_r;
 
