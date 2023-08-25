@@ -35,14 +35,13 @@ module Test3;
         insn_data[3 * `INSN_SIZE - 1 : 2 * `INSN_SIZE] <= {{`ADD }, {(`INSN_SIZE - `INSN_OPC_SIZE){1'b0}}};
         Start <= 1;
         insn_load_counter <= 0;
-        #10 Start <= 0;
-        insn_data <= 0;
+        #10 insn_data <= 0;
         insn_load_counter <= 1;
         #10 insn_load_counter <= 2;
         insn_data <= 0;
         #10 insn_load_counter <= 3;
         insn_data[3 * `INSN_SIZE - 1 : 2 * `INSN_SIZE] <= {{`SET_CONST }, {(`INSN_SIZE - `INSN_OPC_SIZE){1'b0}}};
-        insn_data[4 * `INSN_SIZE - 1 : 3 * `INSN_SIZE] <= {{`READY }, {(`INSN_SIZE - `INSN_OPC_SIZE){1'b0}}};
+        insn_data[4 * `INSN_SIZE - 1 : 3 * `INSN_SIZE] <= {{`NOP }, {(`INSN_SIZE - `INSN_OPC_SIZE){1'b0}}};
     end
 
     always @(posedge (enable_M[1])  or posedge(enable_M[0])) begin
