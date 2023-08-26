@@ -145,7 +145,7 @@ module Core #(
     wire insn_MW_set_const_mode = insn_set_const_mode(insn_MW_dst);
 
     reg [`INSN_PTR_RANGE] insn_ptr_r;
-    reg [`INSN_PTR_RANGE] insn_FD_is_last_r;
+    reg insn_FD_is_last_r;
 
     reg Ready_r;
     assign Ready = Ready_r;
