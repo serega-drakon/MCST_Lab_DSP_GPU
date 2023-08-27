@@ -207,6 +207,9 @@ begin
 				(EXEC_MASK != 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
 			     	((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO) ) )
 			fence <= Task_Memory_Frame[`TS_FENCE_RANGE];
+		else
+			if (Insn_Frame_Num == 1 & STOP_R)
+				fence <= `REL;
 end
 
 endmodule
