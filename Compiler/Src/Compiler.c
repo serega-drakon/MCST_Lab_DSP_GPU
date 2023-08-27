@@ -38,10 +38,10 @@ do { printf("Line %d: ", *(ptrLineNum) + 1);                        \
      printf("\n -> %ls\n", (ptrLex)->op);                           \
      return errorCode; } while(0)
 
-#define ERROR_MSG_OP(ptrLineNum, ptrOp, errorCode, errorMsg, ...) \
+#define ERROR_MSG_OP(ptrLineNum, ptrOp, errorCode, errorMsg, ...)   \
 do { printf("Line %d: ", *(ptrLineNum) + 1);                        \
      printf(errorMsg __VA_ARGS__);                                  \
-     printf("\n -> %ls\n", (ptrOp));                           \
+     printf("\n -> %ls\n", (ptrOp));                                \
      return errorCode; } while(0)
 
 #define ERROR_MSG_OP_NL_FREE_OP(ptrOp, errorCode, errorMsg, ...)\
