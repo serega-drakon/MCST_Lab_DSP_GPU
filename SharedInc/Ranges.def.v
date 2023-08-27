@@ -91,4 +91,7 @@
 `define ENV_TASK_MEMORY_RANGE(jj)							\
 	(jj * `TASK_MEM_WIDTH + `TASK_MEM_WIDTH - 1) : (jj * `TASK_MEM_WIDTH)
 
+`define STOP_BIT_ADDR 14
+`define STOP_BIT_RANGE (13) : (8)
+
 `endif //CONSTANTS
