@@ -34,6 +34,9 @@ wire	[`FENCE_RANGE]		FENCE_NEXT;
 reg				FLAG_TIME_R;						//wait cores [CF -> 1 cycle, IF ->(INSN LOAD TIME) cycles]
 reg	[`INSN_LOAD_COUNTER_RANGE] INSN_LOAD_CNT;					//wait cores >(INSN LOAD TIME) cycles
 
+reg				STOP_R;
+reg	[`IF_NUM_RANGE]		STOP_ADDR;
+
 
 assign Task_Memory_Frame	= Task_Memory[Task_Pointer];
 
@@ -72,6 +75,15 @@ begin
 			  ~FLAG_TIME_R) ? Core_Active_Vect : 0;
 end
 
+always @(posedge clk)
+begin
+	if (reset)
+		STOP_R <= 0;
+	else if (Insn_Frame_Num == 0) begin
+		STOP_R <= Task_Memory_Frame[`STOP_BIT_ADDR];
+		STOP_ADDR <= Task_Memory_Frame[`STOP_BIT_RANGE];
+	end
+end
 
 always @(posedge clk)									//Init_R0_Vect
 begin
@@ -173,9 +185,10 @@ begin
 		   (EXEC_MASK & Core_Active_Vect) == 0) 
 			Task_Pointer <= Task_Pointer + 1;
 		
-		else	
+		else
 			if (Insn_Frame_Num == 1 & FLAG_TIME_R)
-				Task_Pointer <= Task_Pointer + 1;
+				if (FLAG_TIME_R)
+					Task_Pointer <= (STOP_R)? STOP_ADDR :  Task_Pointer + 1;
 
 			else
 				if (Insn_Frame_Num == 0 & 
