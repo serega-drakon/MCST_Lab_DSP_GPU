@@ -1,4 +1,5 @@
 `define Test1
+
 //`define Test2
 
 
@@ -17,7 +18,7 @@ wire	[`IF_NUM_RANGE] IF_num;
 wire	[`CORES_RANGE]	CAV;
 wire	[`IF_NUM_RANGE]	TP;
 
-reg	[1:0] 		task_len;
+reg	[2:0] 		task_len;
 
 reg	[14:0]		i;
 
@@ -28,6 +29,7 @@ Task_Scheduler TS (
 	.env_task_memory	( data  ),
 	.Ready			( ready	),
 
+	.Insn_Load_Counter	(	),
 	.Start			(	),
 	.Insn_Data		(	),
 	.Init_R0_Vect		(	),
@@ -44,14 +46,14 @@ assign TP     = TS.Task_Pointer;
 always  #1    clk <= ~clk;
 
 always @(ready)
-	task_len = 2'b00;
+	task_len = 3'b000;
 
 
 initial 
 begin
 	reset 	 <= 1'b1;
 	clk   	 <= 1'b0;
-	task_len <= 2'b00;
+	task_len <= 3'b000;
 
 	#3 reset <= 1'b0;
 	   ready <= 16'hFFFF;
@@ -72,19 +74,28 @@ initial begin
 	
 end
 
-always @(posedge clk)
+always @(posedge clk)							//as cores
 begin
 	task_len <= task_len + 1;
 
-	if (IF_num != 0 & TP != 6'b111111)				
+	/*if (IF_num != 0 & TP != 6'b111111)				
 		ready <= ~CAV;
 
-	if (TP != 6'b111111 & task_len == 2'b10)			//1 IF = 3 tacts
-		ready <= ready | CAV;
+	if (TP != 6'b111111 & task_len == 3'b010)			//1 IF = 2 tacts
+		ready <= ready | CAV;*/
+end
+
+always @(TS.Start) 
+begin
+	if (TS.Start != 0) begin
+		#8 ready <= ~CAV;
+		#4 ready <= ready | CAV;
+	end
+
 end
 
 initial
-	#250 finish;
+	#500 $finish;
 
 `elsif Test2								//NO+ACQ
 initial begin						
