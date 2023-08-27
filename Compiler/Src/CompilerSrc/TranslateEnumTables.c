@@ -55,6 +55,8 @@ LexemeTypes translateCFParamNamesFromStrToLex(CFParamNames_str_enum strEnum){
         case CoreActive_str: return CoreActive;
         case Fence_str: return Fence;
         case IFNum_str: return IFNum;
+        case CFLabel_str: return CFLabel;
+        case NextCF_str: return NextCF;
         default: assert(0);
     }
 }

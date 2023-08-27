@@ -1,3 +1,8 @@
+{
+CoreActive = !0,!1,!2,!3,!4,!5,!6,!7,!8,!9,!10,!11,
+!12,!13,!14,!15;
+IFNum = !2;
+}
 : name
 set_const $00 %r8 // core_id
 set_const $04 %r1 // 4 for mul
@@ -22,3 +27,5 @@ add %r2 %r4 %r2
 sub %r3 %r2 %r15
 bnz %r15 .for_cycle_next_str
 ready
+
+{}

@@ -1,7 +1,7 @@
 {
 CoreActive = !0,!1,!2,!3,!4,!5,!6,!7,!8,!9,!10,!11,
 !12,!13,!14,!15;
-IFNum = !2;
+IFNum = !1;
 }
 : name
 set_const $00 %r8 // core_id
@@ -12,7 +12,12 @@ set_const $01 %r4 // 1 for inc
 set_const $40 %r7 // x_end
 set_const $00 %r6 // addr_curr
 ready
-
+{
+CFLabel = helloWorld;
+CoreActive = !0,!1,!2,!3,!4,!5,!6,!7,!8,!9,!10,!11,
+!12,!13,!14,!15;
+IFNum = !1;
+}
 : loop
 .for_cycle_next_str
 set_const $00 %r5 // x_curr_start
@@ -27,5 +32,4 @@ add %r2 %r4 %r2
 sub %r3 %r2 %r15
 bnz %r15 .for_cycle_next_str
 ready
-
-{}
+{ NextCF = helloWorld; }

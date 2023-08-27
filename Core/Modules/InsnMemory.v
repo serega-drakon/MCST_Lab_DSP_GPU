@@ -8,9 +8,9 @@ module InsnMemory (
     input wire [`INSN_BUS_RANGE] insn_data,
     input wire [`INSN_PTR_RANGE] insn_ptr,
     input wire [`INSN_LOAD_COUNTER_RANGE] insn_load_counter,
-    output wire [`INSN_SIZE - 1 : 0] insn_curr
+    output wire [`INSN_RANGE] insn_curr
 );
-    reg [`INSN_SIZE - 1 : 0] insn_mem_r[`INSN_COUNT - 1 : 0];
+    reg [`INSN_RANGE] insn_mem_r[`INSN_COUNT - 1 : 0];
 
     assign insn_curr = insn_mem_r[insn_ptr];
 

@@ -60,6 +60,8 @@ typedef enum LexemeTypes_ {
     CoreActive,
     Fence,
     IFNum,
+    CFLabel,
+    NextCF,
     Colon,
     FenceNo,
     FenceAcq,
@@ -75,8 +77,8 @@ typedef struct Defines_{
 } Defines;
 
 typedef enum VectorStates_{
-    VectorNoActive = 0,
-    VectorActive
+    VectorFalse = 0,
+    VectorTrue
 } VectorStates;
 
 typedef enum FenceModes_{
@@ -86,7 +88,7 @@ typedef enum FenceModes_{
 } FenceModes;
 
 ///Вспомогательные данные для поиска ошибок
-typedef struct FrameData_{
+typedef struct ControlFrameData_{
     unsigned IF_Num_left;
     VectorStates *coreActiveVector;
     VectorStates *initR0Vector;

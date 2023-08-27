@@ -58,6 +58,8 @@ typedef enum CFParamNames_str_enum_{
     CoreActive_str,
     Fence_str,
     IFNum_str,
+    CFLabel_str,
+    NextCF_str,
     CFParamNames_str_enum_MAX
 } CFParamNames_str_enum;
 

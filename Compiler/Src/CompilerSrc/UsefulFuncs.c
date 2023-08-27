@@ -60,7 +60,7 @@ int compareStrStack(const int a[], unsigned size, Stack* ptrStack, u_int32_t ind
 }
 
 ///Смотрит по массиву есть ли данная "op" в списке и возвращает ее индекс, иначе возвращает NONE
-int searchFor(Stack *ptrNames, int op[], unsigned size){
+int searchFor(Stack *ptrNames, const int op[], const unsigned size){
     unsigned dStackSize = getsize_dStack(ptrNames);
     for(int i = 0; i < dStackSize; i++)
         if(compareStrStack(op, size, ptrNames, i)) return i;

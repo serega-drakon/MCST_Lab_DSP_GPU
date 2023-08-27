@@ -171,9 +171,10 @@ void insnFrameDataFree(InsnFrameData *ptrIFData){
         free(ptrIFData->ptrInsn);
 }
 
-InitStates allInit(Defines *ptrDefs, lexeme *ptrLex, ControlFrameData *ptrCFData,
-                   InsnFrameData *ptrIFData){
-    if(definesInit(ptrDefs) == InitError
+InitStates allInit(Defines *ptrIFDef, Defines *ptrCFDef, lexeme *ptrLex,
+                   ControlFrameData *ptrCFData, InsnFrameData *ptrIFData){
+    if(definesInit(ptrIFDef) == InitError
+       || definesInit(ptrCFDef) == InitError
        || lexInit(ptrLex) == InitError
        || controlFrameDataInit(ptrCFData) == InitError
        || insnFrameDataInit(ptrIFData) == InitError)
@@ -181,9 +182,10 @@ InitStates allInit(Defines *ptrDefs, lexeme *ptrLex, ControlFrameData *ptrCFData
     return InitOK;
 }
 
-void allFree(Defines *ptrDef, lexeme *ptrLex, ControlFrameData *ptrCFData,
-             InsnFrameData *ptrIFData){
-    definesFree(ptrDef);
+void allFree(Defines *ptrIFDef, Defines *ptrCFDef, lexeme *ptrLex,
+             ControlFrameData *ptrCFData, InsnFrameData *ptrIFData){
+    definesFree(ptrIFDef);
+    definesFree(ptrCFDef);
     lexFree(ptrLex);
     controlFrameDataFree(ptrCFData);
     insnFrameDataFree(ptrIFData);
@@ -377,7 +379,7 @@ ProcessStates processInitR0(FILE* input, ControlFrameData *ptrCFData, lexeme *pt
     if(ptrLex->lexType != Semicolon)
         ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут точку с запятой");
     ptrCFData->initR0data[index] = data;
-    ptrCFData->initR0Vector[index] = VectorActive;
+    ptrCFData->initR0Vector[index] = VectorTrue;
     return ProcessOK;
 }
 
@@ -391,7 +393,7 @@ ProcessStates processCoreActive(FILE* input, ControlFrameData *ptrCFData, lexeme
         uint8_t index;
         if (processGetConst(&index, ptrLex) == ProcessError)
             ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "А тут надо значение");
-        ptrCFData->coreActiveVector[index] = VectorActive;
+        ptrCFData->coreActiveVector[index] = VectorTrue;
         getLexNoComments(input, ptrLineNum, ptrLex);
         if (ptrLex->lexType != Comma && ptrLex->lexType != Semicolon)
             ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "А тут надо запятую или точку с запятой");
@@ -440,8 +442,54 @@ ProcessStates processIFNum(FILE* input, ControlFrameData *ptrCFData, lexeme *ptr
     return ProcessOK;
 }
 
-GetFrameStates getControlFrame(FILE* input, ControlFrameData *ptrCFData, lexeme *ptrLex,
-                               unsigned *ptrLineNum){
+ProcessStates processCFLabelDefinition(FILE *input, Defines *ptrCFDef, lexeme *ptrLex, const unsigned frameNum,
+                                       unsigned *ptrLineNum){
+    getLexNoComments(input, ptrLineNum, ptrLex);
+    if(ptrLex->lexType != Equal)
+        ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо знак равно");
+    getLexNoComments(input, ptrLineNum, ptrLex);
+    if(ptrLex->lexType != Name)
+        ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо имя метки");
+    if(searchFor(ptrCFDef->ptrLabelDefinedNames, ptrLex->op, MAX_OP) != NONE)
+        ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Метка переопределена");
+    push_dStack(ptrCFDef->ptrLabelDefinedNames, ptrLex->op);
+    push_dStack(ptrCFDef->ptrLabelDefinedValues, &frameNum);
+    getLexNoComments(input, ptrLineNum, ptrLex);
+    if(ptrLex->lexType != Semicolon)
+        ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут точку с запятой");
+    return ProcessOK;
+}
+
+void processLabelUsage(Defines *ptrDef, const unsigned num, const int *labelLexOp){
+    int search = searchFor(ptrDef->ptrLabelUsedNames, labelLexOp, MAX_OP);
+    Stack* ptrStack;
+    if(search == NONE){
+        push_dStack(ptrDef->ptrLabelUsedNames, labelLexOp);
+        ptrStack = dStackInit(sizeof(unsigned));
+        push_dStack(ptrDef->ptrLabelUsedValuesPtr, &ptrStack);
+    }
+    else
+        ptrStack = *(Stack **) dStack_r(ptrDef->ptrLabelUsedValuesPtr, search);
+    push_dStack(ptrStack, &num);
+}
+
+ProcessStates processCFLabelUsage(FILE *input, Defines *ptrCFDef, lexeme *ptrLex, const unsigned frameNum,
+                                       unsigned *ptrLineNum){
+    getLexNoComments(input, ptrLineNum, ptrLex);
+    if(ptrLex->lexType != Equal)
+        ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо знак равно");
+    getLexNoComments(input, ptrLineNum, ptrLex);
+    if(ptrLex->lexType != Name)
+        ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо имя метки");
+    processLabelUsage(ptrCFDef, frameNum, ptrLex->op);
+    getLexNoComments(input, ptrLineNum, ptrLex);
+    if(ptrLex->lexType != Semicolon)
+        ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут точку с запятой");
+    return ProcessOK;
+}
+
+GetFrameStates getControlFrame(FILE* input, Defines *ptrCFDef, ControlFrameData *ptrCFData, lexeme *ptrLex,
+                                const unsigned frameNum, unsigned *ptrLineNum){
     controlFrameDataReset(ptrCFData);
     do{
         getLexNoComments(input, ptrLineNum, ptrLex);
@@ -461,6 +509,14 @@ GetFrameStates getControlFrame(FILE* input, ControlFrameData *ptrCFData, lexeme 
             case IFNum:
                 if(processIFNum(input, ptrCFData, ptrLex, ptrLineNum) == ProcessError)
                     ERROR_MSG(ptrLineNum, GetFrameCodeError, "Error: IFNum error");
+                break;
+            case CFLabel:
+                if(processCFLabelDefinition(input, ptrCFDef, ptrLex, frameNum, ptrLineNum) == ProcessError)
+                    ERROR_MSG(ptrLineNum, GetFrameCodeError, "Error: CFLabel error");
+                break;
+            case NextCF:
+                if(processCFLabelUsage(input, ptrCFDef, ptrLex, frameNum, ptrLineNum) == ProcessError)
+                    ERROR_MSG(ptrLineNum, GetFrameCodeError, "Error: NextCF error");
                 break;
             case BracketCurlyClose:
                 break;
@@ -560,20 +616,11 @@ ProcessStates processInsnWithConstAndReg(FILE *input, insnData *ptrInsn, lexeme 
     return ProcessOK;
 }
 
-void processLabelUsage(Defines *ptrDef, unsigned insnNum, int *labelLexOp){
-    int search = searchFor(ptrDef->ptrLabelUsedNames, labelLexOp, MAX_OP);
-    Stack* ptrStack;
-    if(search == NONE){
-        push_dStack(ptrDef->ptrLabelUsedNames, labelLexOp);
-        ptrStack = dStackInit(sizeof(unsigned));
-        push_dStack(ptrDef->ptrLabelUsedValuesPtr, &ptrStack);
-    }
-    else
-        ptrStack = *(Stack**) dStack_r(ptrDef->ptrLabelUsedValuesPtr, search);
-    push_dStack(ptrStack, &insnNum);
+void processIFLabelUsage(Defines *ptrIFDef, const unsigned insnNum, const int *labelLexOp){
+    processLabelUsage(ptrIFDef, insnNum, labelLexOp);
 }
 
-ProcessStates processInsnWithLabel(FILE *input, Defines *ptrDef, insnData *ptrInsn,
+ProcessStates processInsnWithLabel(FILE *input, Defines *ptrIFDef, insnData *ptrInsn,
                                    lexeme *ptrLex, unsigned insnNum, unsigned *ptrLineNum){
     ptrInsn->opCode = translateLexTypeToInsnOpCode(ptrLex->lexType);
     getLexNoComments(input, ptrLineNum, ptrLex);
@@ -582,34 +629,34 @@ ProcessStates processInsnWithLabel(FILE *input, Defines *ptrDef, insnData *ptrIn
     getLexNoComments(input, ptrLineNum, ptrLex);
     if(ptrLex->lexType != Label)
         ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Тут надо метку");
-    processLabelUsage(ptrDef, insnNum, ptrLex->op);
+    processIFLabelUsage(ptrIFDef, insnNum, ptrLex->op);
     ptrInsn->target = 0;
     return ProcessOK;
 }
 
-ProcessStates processLabelDefinition(Defines *ptrDef, lexeme *ptrLex, unsigned insnNum,
-                                     const unsigned *ptrLineNum){
-    if(searchFor(ptrDef->ptrLabelDefinedNames, ptrLex->op, MAX_OP) != NONE)
+ProcessStates processIFLabelDefinition(Defines *ptrIFDef, lexeme *ptrLex, unsigned insnNum,
+                                       const unsigned *ptrLineNum){
+    if(searchFor(ptrIFDef->ptrLabelDefinedNames, ptrLex->op, MAX_OP) != NONE)
         ERROR_MSG_LEX(ptrLineNum, ptrLex, ProcessError, "Метка переопределена");
-    push_dStack(ptrDef->ptrLabelDefinedNames, ptrLex->op);
-    push_dStack(ptrDef->ptrLabelDefinedValues, &insnNum);
+    push_dStack(ptrIFDef->ptrLabelDefinedNames, ptrLex->op);
+    push_dStack(ptrIFDef->ptrLabelDefinedValues, &insnNum);
     return ProcessOK;
 }
 
-ProcessStates processCheckAndPutLabels(Defines *ptrDef, InsnFrameData *ptrIFData){
-    unsigned size = getsize_dStack(ptrDef->ptrLabelUsedNames);
+ProcessStates processCheckAndPutIFLabels(Defines *ptrIFDef, InsnFrameData *ptrIFData){
+    unsigned size = getsize_dStack(ptrIFDef->ptrLabelUsedNames);
     int search;
     unsigned labelData;
     unsigned insnNum;
     int *buffOp = malloc(MAX_OP);
     Stack *ptrLabelUsedValues;
     for(unsigned i = 0; i < size; i++){
-        memcpy(buffOp, dStack_r(ptrDef->ptrLabelUsedNames, i), MAX_OP * sizeof(int));
-        search = searchFor(ptrDef->ptrLabelDefinedNames, buffOp, MAX_OP);
+        memcpy(buffOp, dStack_r(ptrIFDef->ptrLabelUsedNames, i), MAX_OP * sizeof(int));
+        search = searchFor(ptrIFDef->ptrLabelDefinedNames, buffOp, MAX_OP);
         if(search == NONE)
-            ERROR_MSG_OP_NL_FREE_OP(buffOp, ProcessError, "Использованная метка не определена");
-        labelData = *(unsigned *)dStack_r(ptrDef->ptrLabelDefinedValues, search);
-        ptrLabelUsedValues = *(Stack**) dStack_r(ptrDef->ptrLabelUsedValuesPtr, i);
+            ERROR_MSG_OP_NL_FREE_OP(buffOp, ProcessError, "Использованная метка в IF не определена");
+        labelData = *(unsigned *)dStack_r(ptrIFDef->ptrLabelDefinedValues, search);
+        ptrLabelUsedValues = *(Stack **) dStack_r(ptrIFDef->ptrLabelUsedValuesPtr, i);
         insnNum = *(unsigned *) pop_dStack(ptrLabelUsedValues);
         ptrIFData->ptrInsn[insnNum].target = labelData;
     }
@@ -617,7 +664,7 @@ ProcessStates processCheckAndPutLabels(Defines *ptrDef, InsnFrameData *ptrIFData
     return ProcessOK;
 }
 
-GetFrameStates getInsnFrame(FILE *input, Defines *ptrDef, InsnFrameData *ptrIFData,
+GetFrameStates getInsnFrame(FILE *input, Defines *ptrIFDef, InsnFrameData *ptrIFData,
                             lexeme *ptrLex, unsigned *ptrLineNum){
     unsigned insnNum = 0;
     do{
@@ -642,14 +689,14 @@ GetFrameStates getInsnFrame(FILE *input, Defines *ptrDef, InsnFrameData *ptrIFDa
                 insnNum++;
                 break;
             case Bnz:
-                if(processInsnWithLabel(input, ptrDef, &ptrIFData->ptrInsn[insnNum],
+                if(processInsnWithLabel(input, ptrIFDef, &ptrIFData->ptrInsn[insnNum],
                                         ptrLex, insnNum, ptrLineNum) == ProcessError)
                     ERROR_MSG(ptrLineNum, GetFrameCodeError,
                               "Error: Insn with reg and Const error");
                 insnNum++;
                 break;
             case Label:
-                if(processLabelDefinition(ptrDef, ptrLex, insnNum, ptrLineNum) == ProcessError)
+                if(processIFLabelDefinition(ptrIFDef, ptrLex, insnNum, ptrLineNum) == ProcessError)
                     ERROR_MSG(ptrLineNum, GetFrameCodeError,
                               "Error: Label definition error");
                 break;
@@ -672,8 +719,8 @@ GetFrameStates getInsnFrame(FILE *input, Defines *ptrDef, InsnFrameData *ptrIFDa
         ERROR_MSG_LEX(ptrLineNum, ptrLex, GetFrameCodeError,
                       "Уже наступил конец фрейма, всего комманд может быть - %d",, INSN_COUNT);
     unGetLex(ptrLex);
-    if(processCheckAndPutLabels(ptrDef, ptrIFData) == ProcessError)
-        ERROR_MSG_NL(GetFrameCodeError, "Чот тут метки не сходятся");
+    if(processCheckAndPutIFLabels(ptrIFDef, ptrIFData) == ProcessError)
+        ERROR_MSG_NL(GetFrameCodeError, "Чот тут метки в IF не сходятся");
     return GetFrameOK;
 }
 
@@ -681,8 +728,8 @@ CheckCFFlags checkCFFlags(ControlFrameData *ptrCFData){
     assert(ptrCFData != NULL && ptrCFData->initR0Vector != NULL
            && ptrCFData->coreActiveVector != NULL);
     for(unsigned i = 0; i < CORES_COUNT; i++){
-        if(ptrCFData->initR0Vector[i] == VectorActive
-        && ptrCFData->coreActiveVector[i] == VectorNoActive)
+        if(ptrCFData->initR0Vector[i] == VectorTrue
+        && ptrCFData->coreActiveVector[i] == VectorFalse)
             return CheckCFFlagsWarning;
     }
     return CheckCFFlagsSuccess;
@@ -706,20 +753,20 @@ void putHeader(unsigned char data[], const ControlFrameData *ptrCFData){
 void putCoreActive(unsigned char data[], const ControlFrameData *ptrCFData){
     resetData(data);
     for(unsigned i = 0; i < 8; i++)
-        if(ptrCFData->coreActiveVector[i] == VectorActive)
+        if(ptrCFData->coreActiveVector[i] == VectorTrue)
             data[1] |= 1 << i;
     for(unsigned i = 8; i < CORES_COUNT; i++)
-        if(ptrCFData->coreActiveVector[i] == VectorActive)
+        if(ptrCFData->coreActiveVector[i] == VectorTrue)
             data[0] |= 1 << (i - 8);
 }
 
 void putInitR0Vect(unsigned char data[], const ControlFrameData *ptrCFData){
     resetData(data);
     for(unsigned i = 0; i < 8; i++)
-        if(ptrCFData->initR0Vector[i] == VectorActive)
+        if(ptrCFData->initR0Vector[i] == VectorTrue)
             data[1] |= 1 << i;
     for(unsigned i = 8; i < CORES_COUNT; i++)
-        if(ptrCFData->initR0Vector[i] == VectorActive)
+        if(ptrCFData->initR0Vector[i] == VectorTrue)
             data[0] |= 1 << (i - 8);
 }
 
@@ -746,11 +793,11 @@ void pushCFtoStack(Stack *output, const ControlFrameData *ptrCFData){
     }
 }
 
-GetFrameStates processControlFrame(FILE* input, Stack *output, ControlFrameData *ptrCFData,
-                                   lexeme *ptrLex, unsigned *ptrLineNum){
+GetFrameStates processControlFrame(FILE *input, Stack *output, Defines *ptrCFDef, ControlFrameData *ptrCFData,
+                                   lexeme *ptrLex, const unsigned frameNum, unsigned *ptrLineNum) {
     if(ptrCFData->IF_Num_left > 0)
         WARNING(ptrLineNum, "Warning: There are IFs left - %d",, ptrCFData->IF_Num_left);
-    GetFrameStates frameState = getControlFrame(input, ptrCFData, ptrLex, ptrLineNum);
+    GetFrameStates frameState = getControlFrame(input, ptrCFDef, ptrCFData, ptrLex, frameNum, ptrLineNum);
     if(checkCFFlags(ptrCFData) == CheckCFFlagsWarning)
         WARNING(ptrLineNum, "Warning: InitR0 > CoreActive???");
     pushCFtoStack(output, ptrCFData);
@@ -845,7 +892,7 @@ void pushIFtoStack(Stack *output, const InsnFrameData *ptrIFData){
     }
 }
 
-GetFrameStates processInsnFrame(FILE* input, Stack *output, Defines *ptrDef, ControlFrameData *ptrCFData,
+GetFrameStates processInsnFrame(FILE* input, Stack *output, Defines *ptrIFDef, ControlFrameData *ptrCFData,
                                 InsnFrameData *ptrIFData, lexeme *ptrLex, unsigned *ptrLineNum){
     getLexNoComments(input, ptrLineNum, ptrLex);
     if(ptrLex->lexType != Name)
@@ -859,26 +906,59 @@ GetFrameStates processInsnFrame(FILE* input, Stack *output, Defines *ptrDef, Con
         else
             WARNING(ptrLineNum, "Warning: There are CF needed before");
     }
-    GetFrameStates frameState = getInsnFrame(input, ptrDef, ptrIFData, ptrLex, ptrLineNum);
+    GetFrameStates frameState = getInsnFrame(input, ptrIFDef, ptrIFData, ptrLex, ptrLineNum);
     pushIFtoStack(output, ptrIFData);
-    definesReset(ptrDef);
+    definesReset(ptrIFDef);
     insnFrameDataReset(ptrIFData);
     return frameState;
 }
 
-GetFrameStates getFrame(FILE *input, Stack *output, Defines *ptrDef, ControlFrameData *ptrCFData,
-                        InsnFrameData *ptrIFData, lexeme *ptrLex, unsigned *ptrLineNum){
+GetFrameStates getFrame(FILE *input, Stack *output, Defines *ptrIFDef, Defines *ptrCFDef, ControlFrameData *ptrCFData,
+                        InsnFrameData *ptrIFData, lexeme *ptrLex, const unsigned frameNum, unsigned *ptrLineNum){
     getLexNoComments(input, ptrLineNum, ptrLex);
     switch(ptrLex->lexType){
         case BracketCurlyOpen:
-            return processControlFrame(input, output, ptrCFData, ptrLex, ptrLineNum);
+            return processControlFrame(input, output, ptrCFDef, ptrCFData, ptrLex, frameNum, ptrLineNum);
         case Colon:
-            return processInsnFrame(input, output, ptrDef, ptrCFData, ptrIFData, ptrLex, ptrLineNum);
+            return processInsnFrame(input, output, ptrIFDef, ptrCFData, ptrIFData, ptrLex, ptrLineNum);
         case Nothing:
             return GetFrameEnd;
         default:
             ERROR_MSG_LEX(ptrLineNum, ptrLex, GetFrameCodeError, "Чо это такое, где символ начала фрейма?");
     }
+}
+
+void putCFLabel(Stack *output, const unsigned frameNum, const unsigned labelData){
+    const unsigned frameOffset = frameNum * INSN_COUNT;
+    const unsigned headerOffset = 0;
+    const unsigned offset = frameOffset + headerOffset;
+    unsigned char data[INSN_SIZE];
+    void *ptrValue = dStack_r(output, offset);
+    memcpy(data, ptrValue, INSN_SIZE);
+    data[0] |= (((unsigned char) labelData) << 2) >> 2;
+    data[0] |= 1 << 6;
+    dStack_w(output, offset, data);
+}
+
+ProcessStates processCheckAndPutCFLabels(Stack *output, Defines *ptrCFDef){
+    unsigned size = getsize_dStack(ptrCFDef->ptrLabelUsedNames);
+    int search;
+    unsigned labelData;
+    unsigned frameNum;
+    int *buffOp = malloc(MAX_OP);
+    Stack *ptrLabelUsedValues;
+    for(unsigned i = 0; i < size; i++){
+        memcpy(buffOp, dStack_r(ptrCFDef->ptrLabelUsedNames, i), MAX_OP * sizeof(int));
+        search = searchFor(ptrCFDef->ptrLabelDefinedNames, buffOp, MAX_OP);
+        if(search == NONE)
+            ERROR_MSG_OP_NL_FREE_OP(buffOp, ProcessError, "Использованная метка в CF не определена");
+        labelData = *(unsigned *)dStack_r(ptrCFDef->ptrLabelDefinedValues, search);
+        ptrLabelUsedValues = *(Stack **) dStack_r(ptrCFDef->ptrLabelUsedValuesPtr, i);
+        frameNum = *(unsigned *) pop_dStack(ptrLabelUsedValues);
+        putCFLabel(output, frameNum, labelData);
+    }
+    free(buffOp);
+    return ProcessOK;
 }
 
 CheckEndStates checkEnd(FILE *input, lexeme *ptrLex, unsigned *ptrLineNum){
@@ -892,31 +972,35 @@ CheckEndStates checkEnd(FILE *input, lexeme *ptrLex, unsigned *ptrLineNum){
 CompilerStates compileFileToStack(FILE* input, Stack* output){
     MEM_CHECK(input, CompilerErrorNullInput, "Error: input file is NULL");
     MEM_CHECK(output, CompilerErrorNullStack, "Error: output stack is NULL");
-    Defines def;
+    Defines IFDef;
+    Defines CFDef;
     lexeme lex;
     ControlFrameData CFData;
     InsnFrameData IFData;
-    if(allInit(&def, &lex, &CFData, &IFData) == InitError){
-        allFree(&def, &lex, &CFData, &IFData);
+    if(allInit(&IFDef, &CFDef, &lex, &CFData, &IFData) == InitError){
+        allFree(&IFDef, &CFDef, &lex, &CFData, &IFData);
         ERROR_MSG_NL(CompilerErrorMemAlloc, "Error: mem alloc error");
     }
     GetFrameStates frameState;
     unsigned int lineNum = 0; ///< номер строки минус 1
-    unsigned int i = 0;
+    unsigned int frameNum = 0;
     do {
-        frameState = getFrame(input, output, &def,
-                              &CFData, &IFData, &lex, &lineNum);
-    } while(++i < FRAMES_COUNT && frameState == GetFrameOK);
+        frameState = getFrame(input, output, &IFDef, &CFDef,
+                              &CFData, &IFData, &lex, frameNum, &lineNum);
+    } while(++frameNum < FRAMES_COUNT && frameState == GetFrameOK);
 
-    if(i == FRAMES_COUNT && frameState == GetFrameOK
-    && checkEnd(input, &lex, &lineNum) == CheckEndNotReached)
+    if(frameNum == FRAMES_COUNT && frameState == GetFrameOK
+       && checkEnd(input, &lex, &lineNum) == CheckEndNotReached)
         WARNING_LEX(&lineNum, &lex,
                       "Warning: Out of range, max count of frames has reached - %d",, FRAMES_COUNT);
+
+    if(processCheckAndPutCFLabels(output, &CFDef) == ProcessError)
+        ERROR_MSG_NL(CompilerErrorUserCode, "Чот тут метки в CF не сходятся");
 
     if(CFData.IF_Num_left > 0)
         WARNING(&lineNum, "Warning: There are IF needed - %d",, CFData.IF_Num_left);
 
-    allFree(&def, &lex, &CFData, &IFData);
+    allFree(&IFDef, &CFDef, &lex, &CFData, &IFData);
     switch(frameState){
     case GetFrameOK: case GetFrameEnd:
         return CompilerOK;

@@ -45,7 +45,9 @@ const char *CFParamNames_str_[] = {
         "InitR0",
         "CoreActive",
         "Fence",
-        "IFNum"
+        "IFNum",
+        "CFLabel",
+        "NextCF"
 };
 
 const char *FenceModes_str_[] = {

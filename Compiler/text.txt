@@ -1,4 +1,5 @@
 {
+CFLabel = abcd123;
 InitR0[!0] = $12;
 InitR0[!2] = $F1;
 
@@ -22,3 +23,7 @@ add %r0 %r1 %r2
 set_const $FF %r3
 nop
 ready
+
+{
+NextCF = abcd123;
+}
