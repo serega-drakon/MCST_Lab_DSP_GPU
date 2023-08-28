@@ -190,7 +190,7 @@ begin
 	else if (Insn_Frame_Num > 1 & FLAG_TIME &
 		   (EXEC_MASK & Core_Active_Vect) == 0) 
 		Task_Pointer <= Task_Pointer + 1;
-	else if (Insn_Frame_Num == 1 & FLAG_TIME) //FIXME: insn num 0
+	else if (Insn_Frame_Num == 1 & FLAG_TIME)
 		Task_Pointer <= (STOP_R) ? STOP_ADDR : Task_Pointer + 1;
 	else if(Insn_Frame_Num == 0 & INSN_FRAME_NUM_NEXT == 0 & STOP_NEXT)
 		Task_Pointer <= STOP_ADDR_NEXT;
