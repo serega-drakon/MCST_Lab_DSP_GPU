@@ -261,7 +261,7 @@ module Core #(
             (X_branch_cond) ? insn_DX_target : insn_ptr_r + 1;
 
     always @(posedge clk)
-        insn_FD_is_last_r <= (reset | Start & Ready) ? 0 :
+        insn_FD_is_last_r <= (reset | Start & Ready | X_branch_cond) ? 0 :
             (insn_ptr_r == `INSN_COUNT - 1 & ~stall & ~block_all_pipe) ? 1 : insn_FD_is_last_r;
 
     always @(posedge clk)
