@@ -73,42 +73,51 @@ sh_mem my_arbitrator
 
 initial
 begin
-	#6;
+	#5;
 	core_request[2] = 2'b10; // write
-	core_addr[2] = {4'd5, 8'd123};
-	core_wr_data[2] = 8'd45;
+	core_addr[2] = {4'd0, 8'd0};
+	core_wr_data[2] = 8'd1;
+	core_request[3] = 2'b10; // write
+	core_addr[3] = {4'd1, 8'd1};
+	core_wr_data[3] = 8'd2;
 	#2;
 	$write("%b \n", (core_ready[2] == 1));
+	$write("%b \n", (core_ready[3] == 1));
+	#2;
 	core_request[2] = 2'b01; // read
-	core_addr[2] = {4'd5, 8'd123};
+	core_addr[2] = {4'd0, 8'd0};
+	core_request[3] = 2'b01; // read
+	core_addr[3] = {4'd1, 8'd1};
 	#2;
-	$write("%b, %b \n", (core_ready[2] == 1), (core_rd_data[2] == 8'd45));
-	core_request[2] = 2'b10;
-	core_addr[2] = {4'd5, 8'd123};
-	core_wr_data[2] = 8'd76;
+	$write("%b, %b \n", (core_ready[2] == 1),(core_rd_data[2] == 1));
+	$write("%b, %b \n", (core_ready[3] == 1),(core_rd_data[3] == 2));
+	core_request[2] = 0;
+	core_request[3] = 0;
 	#2;
-	$write("%b \n", (core_ready[2] == 1));
-	core_request[2] = 2'b01;
-	core_addr[2] = {4'd5, 8'd123};
-	#2;
-	$write("%b, %b \n", (core_ready[2] == 1), (core_rd_data[2] == 8'd76));
-	core_request[2] = 2'b00;
-	core_request[4] = 2'b10;
-	core_addr[4] = {4'd8, 8'd23};
-	core_wr_data[4] = 8'd67;
-	$write("%b \n", (core_ready[4] == 0));
-	#2;
-	$write("%b \n", (core_ready[4] == 1));
-	core_request[4] = 2'b00;
-	#2;
-	$write("%b \n", (core_ready[4] == 0));
-	#2;
-	core_request[4] = 2'b01;
-	core_addr[4] = {4'd8, 8'd23};
-	#2;
-	$write("%b, %b \n", (core_ready[4] == 1), (core_rd_data[4] == 8'd67));
-	core_request[4] = 2'b00;
-	//$monitor("%b \n", my_arbitrator/connection_banks[0]/bank_0/memory);
+	core_request[1] = 2'b10;
+	core_request[3] = 2'b10;
+	core_request[5] = 2'b10;
+	core_request[7] = 2'b10;
+	core_request[9] = 2'b10;
+	core_request[11] = 2'b10;
+	core_request[13] = 2'b10;
+	core_request[15] = 2'b10;
+	core_addr[1] = {4'd0, 8'd0};
+	core_addr[3] = {4'd0, 8'd1};
+	core_addr[5] = {4'd0, 8'd2};
+	core_addr[7] = {4'd0, 8'd3};
+	core_addr[9] = {4'd0, 8'd4};
+	core_addr[11] = {4'd0, 8'd5};
+	core_addr[13] = {4'd0, 8'd6};
+	core_addr[15] = {4'd0, 8'd7};
+	core_wr_data[1] = 8'd0;
+	core_wr_data[3] = 8'd1;
+	core_wr_data[5] = 8'd2;
+	core_wr_data[7] = 8'd3;
+	core_wr_data[9] = 8'd4;
+	core_wr_data[11] = 8'd5;
+	core_wr_data[13] = 8'd6;
+	core_wr_data[15] = 8'd7;
 end
 
 initial
