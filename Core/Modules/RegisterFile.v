@@ -20,14 +20,9 @@ module RegisterFile (
 );
     reg [`REG_RANGE] r [`REG_COUNT - 1 : 0];
 
-    //Register File bypass
-    assign D_src_0_data =
-        ((MW_insn_is_F1 | MW_insn_is_F2) & MW_insn_dst == FD_insn_src_0) ?
-            W_result : r[FD_insn_src_0];
-    assign D_src_1_data = ((MW_insn_is_F1 | MW_insn_is_F2) & MW_insn_dst == FD_insn_src_1) ?
-        W_result : r[FD_insn_src_1];
-    assign D_src_2_data = ((MW_insn_is_F1 | MW_insn_is_F2) & MW_insn_dst == FD_insn_src_2) ?
-        W_result : r[FD_insn_src_2];
+    assign D_src_0_data = r[FD_insn_src_0];
+    assign D_src_1_data = r[FD_insn_src_1];
+    assign D_src_2_data = r[FD_insn_src_2];
 
     wire get_result_flag [`REG_COUNT - 1 : 0];
 
