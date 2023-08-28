@@ -85,7 +85,7 @@ module TestCoresMemory;
     initial begin
         #1;
         infile = $fopen("code.txt", "r");
-        for(l = 0; l < 7; l = l + 1) begin
+        for(l = 0; l < 5; l = l + 1) begin
             for(m = 0; m < `INSN_COUNT; m = m + 1) begin
                 c <= $fscanf(infile, "%x", value);
                 env_task_mem_array[l][m] <= value;
@@ -99,7 +99,7 @@ module TestCoresMemory;
     initial begin
         reset <= 1;
         #10 reset <= 0;
-        #200000 dump <= 1;
+        #90000 dump <= 1;
         #10 dump <= 0;
     end
 
@@ -114,7 +114,7 @@ module TestCoresMemory;
     end
 
     initial begin
-        #250000;
+        #100000;
         $finish();
     end
 endmodule
