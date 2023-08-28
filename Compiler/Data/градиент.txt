@@ -28,4 +28,7 @@ sub %r3 %r2 %r15
 bnz %r15 .for_cycle_next_str
 ready
 
-{}
+{
+CFLabel = EndlessLoop;
+NextCF = EndlessLoop;
+}

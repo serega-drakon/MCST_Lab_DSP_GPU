@@ -24,7 +24,7 @@ module ALU (
         |{`REG_SIZE {DX_insn_opc == `LSHIFT}} & {src_0_data_ALU << src_1_data_ALU}
         |{`REG_SIZE {DX_insn_opc == `AND}} & {src_0_data_ALU & src_1_data_ALU}
         |{`REG_SIZE {DX_insn_opc == `OR}} & {src_0_data_ALU | src_1_data_ALU}
-        |{`REG_SIZE {DX_insn_opc == `XOR}} & {src_0_data_ALU ^ src_1_data_ALU} //FIXME: telegram
+        |{`REG_SIZE {DX_insn_opc == `XOR}} & {src_0_data_ALU ^ src_1_data_ALU}
         |{`REG_SIZE {DX_insn_opc == `SET_CONST}} & {(insn_set_const_mode) ? insn_F2_const_ALU : core_id_extended}
         |{`REG_SIZE {DX_insn_opc == `LD | DX_insn_opc == `ST}} & {src_0_data_ALU};
 
