@@ -28,6 +28,7 @@ module TestCoresMemory;
     wire [`INSN_BUS_RANGE] insn_data ;
     wire [`CORES_RANGE] Start;
     wire [`CORES_RANGE] Ready;
+    wire [`INSN_LOAD_COUNTER_RANGE] insn_load_counter;
 
     wire [`REG_RANGE] rd_data_M [`CORES_RANGE ];
     wire ready_M [`CORES_RANGE]; // != Ready
@@ -35,16 +36,15 @@ module TestCoresMemory;
     wire [`ADDR_RANGE] addr_M [`CORES_RANGE];
     wire [1 : 0] enable_M [`CORES_RANGE];
 
-    Task_Scheduler TS(clk, reset, env_task_memory, Ready, Start,
+    Task_Scheduler TS(clk, reset, env_task_memory, Ready, Start, insn_load_counter,
                       insn_data, init_R0_flag, init_R0_data);
-
 
     generate
         for (i = 0; i < `NUM_OF_CORES; i = i + 1) begin : array_cores
             Core #(i) Core_i
             (clk, reset, init_R0_flag[i], init_R0_data[(i + 1) * `REG_SIZE - 1 : i * `REG_SIZE],
-                insn_data, Start[i], Ready[i], rd_data_M[i], ready_M[i], wr_data_M[i],
-                addr_M[i], enable_M[i]);
+                insn_data, insn_load_counter, Start[i], Ready[i], rd_data_M[i], ready_M[i],
+                wr_data_M[i], addr_M[i], enable_M[i]);
         end
     endgenerate
 
@@ -83,12 +83,15 @@ module TestCoresMemory;
     integer value;
 
     initial begin
+        #1;
         infile = $fopen("code.txt", "r");
-        for(l = 0; l < 4; l = l + 1) begin
+        for(l = 0; l < 7; l = l + 1) begin
             for(m = 0; m < `INSN_COUNT; m = m + 1) begin
-                c = $fscanf(infile, "%x", value);
-                env_task_mem_array[l][m] = value;
+                c <= $fscanf(infile, "%x", value);
+                env_task_mem_array[l][m] <= value;
+                $display("%x ", env_task_mem_array[l][m]);
             end
+            $display("\n");
         end
         $fclose(infile);
     end
@@ -96,7 +99,7 @@ module TestCoresMemory;
     initial begin
         reset <= 1;
         #10 reset <= 0;
-        #90000 dump <= 1;
+        #200000 dump <= 1;
         #10 dump <= 0;
     end
 
@@ -111,7 +114,7 @@ module TestCoresMemory;
     end
 
     initial begin
-        #100000;
+        #250000;
         $finish();
     end
 endmodule

@@ -76,7 +76,8 @@
 
 `define SIZE_IF_NUM	$clog2(`TASK_MEM_DEPTH)
 `define IF_NUM_RANGE	(`SIZE_IF_NUM - 1) : (0)
-`define TM_INSN_RANGE(jj)	(jj * `INSN_SIZE + `INSN_SIZE - 1) : (jj * `INSN_SIZE) 
+`define TM_INSN_RANGE(jj)	((jj + 1) * `INSN_SIZE - 1) : (jj * `INSN_SIZE)
+`define TM_PART_RANGE(jj) ((jj + 1) * `INSN_BUS_COUNT * `INSN_SIZE - 1) : (jj * `INSN_BUS_COUNT * `INSN_SIZE)
 `define TS_FENCE_RANGE	(`SIZE_IF_NUM + 1) : (`SIZE_IF_NUM)
 
 `define TM_DEPTH_RANGE (`TASK_MEM_DEPTH - 1) : (0)
@@ -91,7 +92,7 @@
 `define ENV_TASK_MEMORY_RANGE(jj)							\
 	(jj * `TASK_MEM_WIDTH + `TASK_MEM_WIDTH - 1) : (jj * `TASK_MEM_WIDTH)
 
-`define STOP_BIT_ADDR 14
-`define STOP_BIT_RANGE (13) : (8)
+`define STOP_BIT_RANGE (14) : (14)
+`define STOP_ADDR_RANGE (13) : (8)
 
 `endif //CONSTANTS
