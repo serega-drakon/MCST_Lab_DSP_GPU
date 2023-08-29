@@ -8,7 +8,7 @@ module find_id_core
 );
 
 wire	[`CORE_ID_RANGE]	value	[`NUM_OF_CORES:0];
-
+ну
 assign result[`CORE_ID_SIZE] = (mask == `NUM_OF_CORES'h0);
 assign result[`CORE_ID_RANGE] = (result[`CORE_ID_SIZE]) ? start_search : value[0];
 
