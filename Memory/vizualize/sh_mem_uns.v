@@ -36,6 +36,8 @@ wire	[`BANKS_RANGE]		read_request_bank;
 wire	[`BANKS_RANGE]		write_request_bank;
 wire	[`REG_RANGE]		rd_data_bank	[`BANKS_RANGE];
 
+wire core_is_curr [`CORES_RANGE];
+
 genvar id_core;
 generate for (id_core = 0; id_core < `NUM_OF_CORES; id_core = id_core + 1)
 begin: form_request
@@ -63,7 +65,7 @@ endgenerate
 
 generate for (id_core = 0; id_core < `NUM_OF_CORES; id_core = id_core + 1)
 begin: form_ready
-	assign	ready[id_core] = ((last_request_rd[id_core]) || (last_request_wr[id_core]));
+	assign	ready[id_core] = ((last_request_rd[id_core]) || ((request_core[id_core] == 2'b10) && (core_is_curr[id_core])));//?
 end
 endgenerate
 
@@ -96,7 +98,6 @@ begin: form_core_queue
 end
 endgenerate
 
-//fixme: тут добавил [id_bank]
 generate for(id_bank = 0; id_bank < `NUM_OF_BANKS; id_bank = id_bank + 1)
 	begin:connection_wires
 		assign	data_addr_bank[id_bank] =
@@ -142,15 +143,14 @@ generate for(id_core = 0; id_core < `NUM_OF_CORES; id_core = id_core + 1)
 	end
 endgenerate
 
-wire core_is_curr [`CORES_RANGE];
 wire mid_core_is_curr [`CORES_RANGE][`BANKS_RANGE];
 
 generate
 	for(id_core = 0; id_core < `NUM_OF_CORES; id_core = id_core + 1) begin : curr_core_loop
-		assign mid_core_is_curr[id_core][0] = (id_current_core[0] == id_core);
+		assign mid_core_is_curr[id_core][0] = ((id_current_core[0] == id_core) && (~skip[0]));
 		for(id_bank = 1; id_bank < `NUM_OF_BANKS; id_bank = id_bank + 1) begin : curr_core_loop_
-			assign mid_core_is_curr[id_core][id_bank] = (id_current_core[id_bank] == id_core)
-				| mid_core_is_curr[id_core][id_bank - 1];
+			assign mid_core_is_curr[id_core][id_bank] = ((id_current_core[id_bank] == id_core) && (~skip[id_bank]))
+				|| mid_core_is_curr[id_core][id_bank - 1];
 		end
 		assign core_is_curr[id_core] =  mid_core_is_curr[id_core][`NUM_OF_BANKS - 1];
 	end
@@ -164,8 +164,8 @@ generate for(id_core = 0; id_core < `NUM_OF_CORES; id_core = id_core + 1)
 				last_request_rd[id_core] <= 1'b0;
 			else
 				last_request_rd[id_core] <=
-					((~skip[bank_addr[id_core]]) && (read_request_bank[bank_addr[id_core]] != 1'b0)
-						& core_is_curr[id_core]);
+					((~skip[id_last_bank[id_core]]) && (read_request_bank[id_last_bank[id_core]] != 1'b0)
+						&& core_is_curr[id_core]);
 		end		//fixme
 	end
 endgenerate
@@ -179,13 +179,13 @@ generate for(id_core = 0; id_core < `NUM_OF_CORES; id_core = id_core + 1)
 			else
 				last_request_wr[id_core] <=
 					((~skip[bank_addr[id_core]])
-						& (write_request_bank[bank_addr[id_core]] != 1'b0)
-						& core_is_curr[id_core]);
+						&& (write_request_bank[bank_addr[id_core]] != 1'b0)
+						&& core_is_curr[id_core]);
 
 
 				//last_request_wr[id_core] <=
 				//	((~skip[bank_addr[id_core]]) & (write_request_bank[bank_addr[id_core]] != 1'b0)
-				//		& (last_request_wr[id_core] == 1'b0)); //fixme
+				//		& (last_request_wr[id_core] == 1'b0)); //fixme imposible
 		end
 	end
 endgenerate

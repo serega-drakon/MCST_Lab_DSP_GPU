@@ -78,44 +78,28 @@ integer f;
 
 initial
 begin
-	#6;
-	core_request[2] = 2'b10; // write
-	core_addr[2] = {4'd5, 8'd123};
-	core_wr_data[2] = 8'd45;
+	#7;
+	for(f = 0; f < `NUM_OF_CORES; f = f + 1)
+	begin
+		core_request[f[3:0]] <= 2'b10; // write
+		core_addr[f[3:0]] <= {4'b0, f[7:0]};
+		core_wr_data[f[3:0]] <= f[7:0];
+	end
+	#100;
+	dump <= 1;
 	#2;
-	$write("%b \n", (core_ready[2] == 1));
-	core_request[2] = 2'b01; // read
-	core_addr[2] = {4'd5, 8'd123};
-	#2;
-	$write("%b, %b \n", (core_ready[2] == 1), (core_rd_data[2] == 8'd45));
-	core_request[2] = 2'b10;
-	core_addr[2] = {4'd5, 8'd123};
-	core_wr_data[2] = 8'd76;
-	#2;
-	$write("%b \n", (core_ready[2] == 1));
-	core_request[2] = 2'b01;
-	core_addr[2] = {4'd5, 8'd123};
-	#2;
-	$write("%b, %b \n", (core_ready[2] == 1), (core_rd_data[2] == 8'd76));
-	core_request[2] = 2'b00;
-	core_request[4] = 2'b10;
-	core_addr[4] = {4'd8, 8'd23};
-	core_wr_data[4] = 8'd67;
-	$write("%b \n", (core_ready[4] == 0));
-	#2;
-	$write("%b \n", (core_ready[4] == 1));
-	core_request[4] = 2'b00;
-	#2;
-	$write("%b \n", (core_ready[4] == 0));
-	#2;
-	core_request[4] = 2'b01;
-	core_addr[4] = {4'd8, 8'd23};
-	#2;
-	$write("%b, %b \n", (core_ready[4] == 1), (core_rd_data[4] == 8'd67));
-	core_request[4] = 2'b00;
-	f = $fopen(`FILE, "w");
-	$fclose(f);
-	dump = 1;
+	dump <= 0;
+end
+
+always @(posedge clk)
+begin
+	for(f = 0; f < `NUM_OF_CORES; f = f + 1)
+	begin
+		if(core_ready[f[3:0]])
+		begin
+			core_request[f[3:0]] <= 2'b00;
+		end
+	end
 end
 
 initial
