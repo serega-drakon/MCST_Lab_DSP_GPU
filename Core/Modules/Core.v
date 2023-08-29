@@ -20,7 +20,7 @@ module Core #(
     input wire ready_M, // != Ready
     output wire [`REG_RANGE] wr_data_M,
     output wire [`ADDR_RANGE] addr_M,
-    output wire [1 : 0] enable_M
+    output wire [`ENABLE_RANGE] enable_M
     );
 
     reg [`INSN_RANGE] insn_FD_r;
