@@ -28,8 +28,7 @@ bank my_bank
 	.data_in(data_in),
 	.read_enable(r_en),
 	.write_enable(w_en),
-	.data_out(d_o),
-	.valid_out(v_o)
+	.data_out(d_o)
 );
 
 initial

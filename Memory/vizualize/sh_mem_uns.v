@@ -1,5 +1,6 @@
 `include"../SharedInc/IncAll.def.v"
 `include"bank_uns.v"
+`include"find_id_core.v"
 
 module sh_mem_uns
 (
@@ -73,27 +74,6 @@ end
 endgenerate
 
 
-function [`CORE_ID_SIZE:0]		find_id_core;
-	input [`CORE_ID_RANGE]		start_search;	
-	input [`CORES_RANGE]		mask;
-	integer i;
-begin
-	if(mask == `NUM_OF_CORES'h0)
-	begin
-		find_id_core = {1, start_search};
-	end
-	else
-	begin
-		for(i = `NUM_OF_CORES - 1; i >= 0; i = i - 1)
-		begin
-			if((i < `NUM_OF_CORES - start_search - 1) ? (mask[start_search + 1 + i]) : (mask[i - `NUM_OF_CORES + start_search + 1]))
-				find_id_core = {0,(start_search + i + 1 < `NUM_OF_CORES) ? (start_search + i + 1) : (start_search - `NUM_OF_CORES + i + 1)};
-		end
-	end
-end
-endfunction
-
-
 /*?*/
 genvar id_bank;
 generate for (id_bank = 0; id_bank < `NUM_OF_BANKS; id_bank = id_bank + 1)
@@ -107,7 +87,12 @@ endgenerate
 
 generate for(id_bank = 0; id_bank < `NUM_OF_BANKS; id_bank = id_bank + 1)
 begin: form_core_queue 
-	assign	{skip[id_bank], id_current_core[id_bank]} = find_id_core(id_last_core[id_bank], request_core_mask[id_bank]);
+	find_id_core find_id_core_0
+	(
+		.mask(request_core_mask[id_bank]),
+		.start_search(id_last_core[id_bank]),
+		.result({skip[id_bank], id_current_core[id_bank]})
+	);
 end
 endgenerate
 
