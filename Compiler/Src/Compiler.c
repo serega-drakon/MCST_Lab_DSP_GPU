@@ -1059,3 +1059,37 @@ CompilerStates compileTextToBin(FILE *input, FILE *output){
     dStackFree(ptrProgram);
     return state;
 }
+
+void printProgramFromStackToVerilog(Stack* input, FILE* output){
+    unsigned size = getsize_dStack(input);
+    unsigned char *ptrValue;
+    unsigned i = 0;
+    const char str[] = "assign env_task_memory";
+    for(i = 0; i < size; i++) {
+        ptrValue = dStack_r(input, i);
+        fprintf(output, "%s[%d][%d] = 16'h%.2x%.2x;\n",
+                str, i / 16, i % 16, ptrValue[0], ptrValue[1]);
+    }
+}
+
+CompilerStates compileTextToVerilog(FILE* input, FILE* output){
+    CompilerStates state;
+    Stack* ptrProgram = dStackInit(INSN_SIZE);
+    state = compileFileToStack(input, ptrProgram);
+    printCompilerState(state);
+    if(state == CompilerOK)
+        printProgramFromStackToVerilog(ptrProgram, output);
+    dStackFree(ptrProgram);
+    return state;
+}
+
+CompilerStates compileTextTo(FILE* input, FILE* output, void func(Stack*, FILE*)){
+    CompilerStates state;
+    Stack* ptrProgram = dStackInit(INSN_SIZE);
+    state = compileFileToStack(input, ptrProgram);
+    printCompilerState(state);
+    if(state == CompilerOK)
+        func(ptrProgram, output);
+    dStackFree(ptrProgram);
+    return state;
+}

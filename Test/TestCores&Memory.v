@@ -36,8 +36,18 @@ module TestCoresMemory;
     wire [`ADDR_RANGE] addr_M [`CORES_RANGE];
     wire [1 : 0] enable_M [`CORES_RANGE];
 
+    wire vga;
+    reg vga_en;
+
+    always @(negedge vga) begin
+        if(~reset) begin
+            vga_en <= 1;
+            #30 vga_en <= 0;
+        end
+    end
+
     Task_Scheduler TS(clk, reset, env_task_memory, Ready, Start, insn_load_counter,
-                      insn_data, init_R0_flag, init_R0_data);
+                      insn_data, init_R0_flag, init_R0_data, vga, vga_en);
 
     generate
         for (i = 0; i < `NUM_OF_CORES; i = i + 1) begin : array_cores

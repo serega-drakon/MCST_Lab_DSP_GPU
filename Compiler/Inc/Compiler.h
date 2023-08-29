@@ -6,10 +6,11 @@
 #define DSP_GPU_COMPILER_COMPILER_H
 
 #include <stdio.h>
+#include "dStack.h"
 
 #define INSN_SIZE (2 * sizeof(char))
 #define INSN_COUNT 16
-#define FRAMES_COUNT 16
+#define FRAMES_COUNT 64
 #define CORES_COUNT 16
 #define REG_COUNT 16
 #define REG_SIZE (1 * sizeof(char))
@@ -26,8 +27,14 @@ typedef enum CompilerStates_ {
     CompilerErrorUserCode
 } CompilerStates;
 
+CompilerStates compileFileToStack(FILE* input, Stack* output);
 CompilerStates compileTextToText(FILE* input, FILE* output);
 CompilerStates compileTextToBin(FILE *input, FILE *output);
+CompilerStates compileTextToVerilog(FILE* input, FILE* output);
+CompilerStates compileTextTo(FILE* input, FILE* output, void func(Stack*, FILE*));
+void printProgramFromStackToFile(Stack* input, FILE* output);
+void printProgramFromStackToBin(Stack* input, FILE* output);
+void printProgramFromStackToVerilog(Stack* input, FILE* output);
 void printCompilerState(CompilerStates state);
 
 #endif //DSP_GPU_COMPILER_COMPILER_H

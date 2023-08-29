@@ -10,7 +10,8 @@ int main(){
     FILE* output = fopen("../Data/output.txt", "w");
 
     CompilerStates state;
-    state = compileTextToText(input, output);
+    //state = compileTextToText(input, output);
+    state = compileTextTo(input, output, printProgramFromStackToVerilog);
 
     fclose(input);
     fclose(output);
