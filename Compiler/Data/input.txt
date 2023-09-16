@@ -1,28 +1,46 @@
 {
 CoreActive = !0,!1,!2,!3,!4,!5,!6,!7,!8,!9,!10,!11,
 !12,!13,!14,!15;
-IFNum = !1;
+IFNum = !3;
 }
-: init
+: init0
 set_const $00 %r8 // core_id
 set_const $04 %r1 // 4 for mul
 mul %r1 %r8 %r2 // y_curr
 add %r1 %r2 %r3 // y_end
 set_const $01 %r4 // 1 for inc
-set_const $40 %r7 // const = 64
+set_const $20 %r7 // x_end //fixme
+set_const $40 %r0
+sub %r14 %r14 %r14
+add %r0 %r14 %r14 // str_size
+sub %r0 %r0 %r0
+ready
+
+//сюда CF
+
+:init1
 set_const $00 %r6 // addr_curr
 ready
 
-{
-CoreActive = !0,!1,!2,!3,!4,!5,!6,!7,!8,!9,!10,!11,
-!12,!13,!14,!15;
-IFNum = !1;
-}
-
-: init_loop
-
 : loop
-
+.for_cycle_next_str
+sub %r5 %r5 %r5
+add %r7 %r5 %r5 // x_curr_start
+.for_cycle_next_char
+add %r5 %r2 %r0
+st %r6 %r8 %r0
+add %r5 %r4 %r5
+sub %r14 %r5 %r15
+bnz %r15 .if_not_overflow_x
+sub %r5 %r5 %r5
+.if_not_overflow_x
+add %r6 %r4 %r6
+sub %r7 %r5 %r15
+bnz %r15 .for_cycle_next_char
+add %r2 %r4 %r2
+sub %r3 %r2 %r15
+bnz %r15 .for_cycle_next_str
+ready
 {
 CFLabel = EndlessLoop;
 NextCF = EndlessLoop;

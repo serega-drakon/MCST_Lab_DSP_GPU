@@ -1,6 +1,7 @@
 `include "Core.v"
 `include "TS.v"
 `include "sh_mem.v"
+`include "EnvMem.v"
 `include "IncAllTest.def.v"
 
 module GPU(
@@ -10,30 +11,11 @@ module GPU(
     output wire red_vga [`REG_RANGE],
     output wire green_vga [`REG_RANGE],
     output wire blue_vga [`REG_RANGE],
-    output          vga_clk,
-    output          h_sync,
-    output          v_sync,
-    output          blank_n,
-    output          sync_n,
-    output  [9:0]   point_pos_x,
-    output  [9:0]   point_pos_y
+    output wire h_sync,
+    output wire v_sync
 );
 
-    reg [`INSN_RANGE] env_task_mem_array [`TM_DEPTH_RANGE][`INSN_COUNT - 1 : 0];
     wire [`TM_RANGE] env_task_memory;
-
-    genvar k;
-    genvar i;
-    generate
-        for (i = 0; i < `TASK_MEM_DEPTH; i = i + 1) begin : env_mem_loop_1
-            for(k = 0; k < `INSN_COUNT; k = k + 1) begin : env_mem_loop_2
-                assign env_task_memory
-                    [(k + 1) * `INSN_SIZE + i * `TASK_MEM_WIDTH - 1 : k * `INSN_SIZE + i * `TASK_MEM_WIDTH] =
-                    env_task_mem_array[i][k];
-            end
-        end
-    endgenerate
-
     wire [`CORES_RANGE] init_R0_flag;
     wire [`REG_BUS_RANGE] init_R0_data;
     wire [`INSN_BUS_RANGE] insn_data ;
