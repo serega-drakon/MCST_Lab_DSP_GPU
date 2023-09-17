@@ -29,7 +29,7 @@ module Core #(
     reg [`INSN_RANGE] insn_MW_r;
 
     wire [`INSN_OPC_RANGE] insn_curr_opc = insn_curr[`INSN_OPC_OFFSET_RANGE];
-    wire [`INSN_OPC_RANGE] insn_FD_opc = insn_FD_r[`INSN_OPC_OFFSET_RANGE];  //для удобства
+    wire [`INSN_OPC_RANGE] insn_FD_opc = insn_FD_r[`INSN_OPC_OFFSET_RANGE];  //for a convenience
     wire [`INSN_OPC_RANGE] insn_DX_opc = insn_DX_r[`INSN_OPC_OFFSET_RANGE];
     wire [`INSN_OPC_RANGE] insn_XM_opc = insn_XM_r[`INSN_OPC_OFFSET_RANGE];
     wire [`INSN_OPC_RANGE] insn_MW_opc = insn_MW_r[`INSN_OPC_OFFSET_RANGE];
@@ -70,7 +70,7 @@ module Core #(
     wire [`INSN_TARGET_RANGE] insn_XM_target = insn_XM_r[`INSN_TARGET_OFFSET_RANGE];
     wire [`INSN_TARGET_RANGE] insn_MW_target = insn_MW_r[`INSN_TARGET_OFFSET_RANGE];
 
-    function insn_is_F0; // а это - инструкции без аргументов
+    function insn_is_F0; // insn-s without arguments
         input [`INSN_OPC_RANGE] insn_opc;
         begin
             insn_is_F0 = (insn_opc == `NOP | insn_opc == `READY);
@@ -150,7 +150,7 @@ module Core #(
     reg Ready_r;
     assign Ready = Ready_r;
 
-    //случай с st/ld учтен под байпасом
+    // st/ld case taken by bypass
     wire stall = (insn_DX_opc == `READY)
         | (insn_DX_opc == `LD) & (((insn_FD_is_F1 | insn_FD_is_F4) & insn_DX_dst == insn_FD_src_0) |
         insn_FD_is_F1 & insn_DX_dst == insn_FD_src_1);
@@ -180,8 +180,8 @@ module Core #(
         .insn_data(insn_data), .insn_ptr(insn_ptr_r), .insn_load_counter(insn_load_counter),
         .insn_curr(insn_curr));
 
-    //это байпасы пошли
-    wire [`REG_RANGE] X_src_0_data =  //случай с ld вырезан с помошью stall
+    // bypasses
+    wire [`REG_RANGE] X_src_0_data =  // ld case taken by stall
         ((insn_XM_is_F1 | insn_XM_is_F2) & insn_XM_dst == insn_DX_src_0) ?
         M_O_data :
         ((insn_MW_is_F1 | insn_MW_is_F2) & insn_MW_dst == insn_DX_src_0) ?
@@ -207,7 +207,7 @@ module Core #(
         .insn_set_const_mode(insn_DX_set_const_mode), .DX_insn_opc(insn_DX_opc),
         .X_result_ALU(X_result_ALU), .X_branch_cond_ALU(X_branch_cond_ALU));
 
-    wire X_branch_cond = X_branch_cond_ALU & insn_DX_is_F4; //под F4 только переходы
+    wire X_branch_cond = X_branch_cond_ALU & insn_DX_is_F4; // F4 - cond branches
 
     reg [`REG_RANGE] XM_O_data_r;
     reg [`REG_RANGE] XM_B_data_r;
@@ -227,7 +227,7 @@ module Core #(
     wire [`REG_RANGE] M_C_data;
 
     //bypass:
-    // если ld в W а st/ld в M
+    // if ld is at W and st/ld is at M
     assign M_O_data = (insn_MW_opc == `LD & (insn_XM_opc == `ST | insn_XM_opc == `LD) & insn_MW_dst == insn_XM_src_0) ?
         MW_D_data_r : XM_O_data_r;
     assign M_B_data = (insn_MW_opc == `LD & (insn_XM_opc == `ST | insn_XM_opc == `LD) & insn_MW_dst == insn_XM_src_1) ?
@@ -241,14 +241,14 @@ module Core #(
 
     wire M_block = (insn_XM_opc == `LD | insn_XM_opc == `ST) & ~ready_M;
 
-    assign enable_M = {2 {insn_XM_opc == `LD}} & {2'b01}
-                    | {2 {insn_XM_opc == `ST}} & {2'b10};
+    assign enable_M = {`ENABLE_SIZE {insn_XM_opc == `LD}} & {`ENABLE_READ}
+                    | {`ENABLE_SIZE {insn_XM_opc == `ST}} & {`ENABLE_WRITE};
 
     assign wr_data_M = M_C_data;
 
-    wire block_all_pipe = M_block | Ready_r;
-
     assign W_result = (insn_MW_opc == `LD) ? MW_D_data_r : MW_O_data_r;
+
+    wire block_all_pipe = M_block | Ready_r;
 
     always @(posedge clk)
             Ready_r <= (reset) ? 1 :

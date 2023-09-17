@@ -33,8 +33,8 @@ module Task_Scheduler
 	wire FLAG_TIME;						//wait cores [CF -> 1 cycle, IF ->(INSN LOAD TIME) cycles]
 	reg	[`INSN_LOAD_COUNTER_RANGE] INSN_LOAD_CNT;					//wait cores >(INSN LOAD TIME) cycles
 
-	reg				STOP_R;
-	reg	[`IF_NUM_RANGE]		STOP_ADDR;
+	reg stop_r;
+	reg	[`IF_NUM_RANGE] stop_addr_r;
 
 	assign Task_Memory_Frame	= Task_Memory[Task_Pointer];
 
@@ -75,81 +75,62 @@ module Task_Scheduler
 	reg vga_wait;
 	wire vga_stop;
 
-	assign vga_stop = vga_wait; //fixme
+	assign vga_stop = vga_wait; //todo
 
 	always @(posedge clk)
 		vga_wait <= (reset) ? 0 :
-			(Insn_Frame_Num == 0 & STOP_R & EXEC_MASK == 0 & ~vga_wait) ? 1 :
-			(~vga_en & ~vga) ? 0 : vga_wait; // не добавил функционал зацикливания на себе
+			(Insn_Frame_Num == 0 & stop_r & EXEC_MASK == 0 & ~vga_wait) ? 1 :
+			(~vga_en & ~vga) ? 0 : vga_wait; //todo: не добавил функционал зацикливания на себе
 
 	always @(posedge clk)
 		vga <= (reset) ? 0 :
-			(Insn_Frame_Num == 0 & STOP_R & EXEC_MASK == 0 & ~vga_wait) ? 1 : 0;
+			(Insn_Frame_Num == 0 & stop_r & EXEC_MASK == 0 & ~vga_wait) ? 1 : 0;
 
 	always @(posedge clk)
-		begin
-			if (reset)
-				STOP_R <= 0;
-			else if (Insn_Frame_Num == 0) begin
-				STOP_R <= STOP_NEXT;
-				STOP_ADDR <= STOP_ADDR_NEXT;
-			end
-		end
+		stop_r <= (reset) ? 0 :
+			(Insn_Frame_Num == 0) ? STOP_NEXT : stop_r;
 
-	always @(posedge clk)									//Init_R0_Vect
-		begin
-			if (reset)
-				{Init_R0, Init_R0_Vect} <= 0;
-			else if (Insn_Frame_Num == 0)
-				Init_R0_Vect <= Task_Memory_Frame[`TM_INSN_RANGE(2)];
-		end
+	always @(posedge clk)
+		stop_addr_r <= (Insn_Frame_Num == 0) ? STOP_ADDR_NEXT : stop_addr_r;
+
+	always @(posedge clk)
+		Init_R0_Vect <= (reset) ? 0 :
+			(Insn_Frame_Num == 0) ? Task_Memory_Frame[`TM_INSN_RANGE(2)] : Init_R0_Vect; //fixme: const
 
 	generate for (ii = `NUM_OF_CORES - 1; ii >= 0; ii = ii - 1) begin: init_R0_loop		//Init_R0
 		always @(posedge clk)
-			if (~reset & Insn_Frame_Num == 0)
-				Init_R0[`R0_RANGE(ii)] <= Task_Memory_Frame[`TM_R0_RANGE(ii)];
+			Init_R0[`R0_RANGE(ii)] <= (reset) ? 0 :
+				(Insn_Frame_Num == 0) ? Task_Memory_Frame[`TM_R0_RANGE(ii)] : Init_R0[`R0_RANGE(ii)];
 	end
 	endgenerate
 
 	wire [`IF_NUM_RANGE] INSN_FRAME_NUM_NEXT = Task_Memory_Frame[`IF_NUM_RANGE];
 
-	always @(posedge clk)									//Instruction Frame Num
-		begin
-			if (reset)
-				Insn_Frame_Num 	<= 0;							//-> to beginning
-			if(vga_stop) begin
-			end
-			else if (FLAG_TIME & (Insn_Frame_Num > 1 & (EXEC_MASK & Core_Active_Vect) == 0
-				| Insn_Frame_Num == 1))
-				Insn_Frame_Num <= Insn_Frame_Num - 1;
-			else if ( Insn_Frame_Num == 0 &
-					( (EXEC_MASK == 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
-					((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO) ) )
-				Insn_Frame_Num <= INSN_FRAME_NUM_NEXT;
+	always @(posedge clk)
+		Insn_Frame_Num <= (reset) ? 0 :
+			(vga_stop) ? Insn_Frame_Num :
+			(FLAG_TIME & (Insn_Frame_Num > 1 & (EXEC_MASK & Core_Active_Vect) == 0
+				| Insn_Frame_Num == 1)) ? Insn_Frame_Num - 1 :
+				( Insn_Frame_Num == 0 & ((EXEC_MASK == 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
+					((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO) ) ) ?
+					INSN_FRAME_NUM_NEXT : Insn_Frame_Num;
 
-		end
+	always @(posedge clk)
+		Core_Active_Vect <= (reset) ? 0 :
+			(vga_stop) ? Core_Active_Vect :
+			(Insn_Frame_Num == 0 &
+			((EXEC_MASK == 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
+				((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence  == `NO))) ?
+				CORE_ACTIVE_VECT_NEXT : Core_Active_Vect;
 
-	always @(posedge clk)									//Core Active Vect
-		begin
-			if (reset)
-				Core_Active_Vect <= 0;
-			if(vga_stop) begin
-			end
-			else
-				if ( Insn_Frame_Num == 0 &
-				( (EXEC_MASK == 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
-					((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence  == `NO) ) )
-				Core_Active_Vect <= CORE_ACTIVE_VECT_NEXT;
-		end
-
-
+	//todo
 	always @(posedge clk)									//Instruction load counter
 		begin
 			if (reset)
 				INSN_LOAD_CNT <= 0;
-			else if ( (Insn_Frame_Num > 0 & FLAG_TIME & (EXEC_MASK & Core_Active_Vect) == 0) |
+			else if ((Insn_Frame_Num > 0 & FLAG_TIME & (EXEC_MASK & Core_Active_Vect) == 0) |
 				(Insn_Frame_Num == 0 & ( (EXEC_MASK == 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
-					((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO) ) ) )
+					((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO))))
 				INSN_LOAD_CNT <= 0;
 			else if(Insn_Frame_Num != 0  & (EXEC_MASK & Core_Active_Vect) == 0)
 				INSN_LOAD_CNT <= INSN_LOAD_CNT + 1;
@@ -159,13 +140,13 @@ module Task_Scheduler
 		begin
 			if (reset)
 				Task_Pointer <= 0;					//initially TM is empty or old
-			if(vga_stop) begin
-			end
+			if(vga_stop)
+				Task_Pointer <= Task_Pointer;
 			else if (Insn_Frame_Num > 1 & FLAG_TIME &
 				(EXEC_MASK & Core_Active_Vect) == 0)
 				Task_Pointer <= Task_Pointer + 1;
 			else if (Insn_Frame_Num == 1 & FLAG_TIME)
-				Task_Pointer <= (STOP_R) ? STOP_ADDR : Task_Pointer + 1;
+				Task_Pointer <= (stop_r) ? stop_addr_r: Task_Pointer + 1;
 			else if(Insn_Frame_Num == 0 & INSN_FRAME_NUM_NEXT == 0 & STOP_NEXT)
 				Task_Pointer <= STOP_ADDR_NEXT;
 			else if (Insn_Frame_Num == 0 &
@@ -183,7 +164,7 @@ module Task_Scheduler
 				(EXEC_MASK != 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
 					((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO) ) )
 				fence <= Task_Memory_Frame[`TS_FENCE_RANGE];
-			else if (Insn_Frame_Num == 1 & STOP_R)
+			else if (Insn_Frame_Num == 1 & stop_r)
 				fence <= `ACQ;
 		end
 
