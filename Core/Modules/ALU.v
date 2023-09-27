@@ -7,11 +7,8 @@ module ALU (
     input wire [`CORE_ID_RANGE] core_id,
     input wire insn_set_const_mode,
     input wire [`INSN_OPC_RANGE] DX_insn_opc,
-    output wire [`REG_RANGE] X_result_ALU,
-    output wire X_branch_cond_ALU
+    output wire [`REG_RANGE] X_result_ALU
 );
-
-    assign X_branch_cond_ALU = src_0_data_ALU != 0; //тут только bnz
 
     wire [`REG_RANGE] core_id_extended = {{(`REG_SIZE - `CORE_ID_SIZE){1'b0}}, core_id};
 

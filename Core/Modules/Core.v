@@ -150,16 +150,11 @@ module Core #(
     reg Ready_r;
     assign Ready = Ready_r;
 
-    // st/ld case taken by bypass
-    wire stall = (insn_DX_opc == `READY)
-        | (insn_DX_opc == `LD) & (((insn_FD_is_F1 | insn_FD_is_F4) & insn_DX_dst == insn_FD_src_0) |
-        insn_FD_is_F1 & insn_DX_dst == insn_FD_src_1);
-
     wire [`REG_RANGE] W_result;
     wire init_R0 = Start & Ready_r & init_R0_flag;
-    wire [`REG_RANGE] D_src_0_data;
-    wire [`REG_RANGE] D_src_1_data;
-    wire [`REG_RANGE] D_src_2_data;
+    wire [`REG_RANGE] D_src_0_data_RF;
+    wire [`REG_RANGE] D_src_1_data_RF;
+    wire [`REG_RANGE] D_src_2_data_RF;
 
     reg [`REG_RANGE] DX_src_0_data_r;
     reg [`REG_RANGE] DX_src_1_data_r;
@@ -170,8 +165,33 @@ module Core #(
     RegisterFile RegisterFile(.reset_RF(reset_RF), .clk(clk), .init_R0(init_R0),
         .init_R0_data(init_R0_data), .W_result(W_result), .FD_insn_src_0(insn_FD_src_0),
         .FD_insn_src_1(insn_FD_src_1), .FD_insn_src_2(insn_FD_src_2), .MW_insn_dst(insn_MW_dst),
-        .MW_insn_is_F1(insn_MW_is_F1), .MW_insn_is_F2(insn_MW_is_F2), .D_src_0_data(D_src_0_data),
-        .D_src_1_data(D_src_1_data), .D_src_2_data(D_src_2_data));
+        .MW_insn_is_F1(insn_MW_is_F1), .MW_insn_is_F2(insn_MW_is_F2), .D_src_0_data_RF(D_src_0_data_RF),
+        .D_src_1_data_RF(D_src_1_data_RF), .D_src_2_data_RF(D_src_2_data_RF));
+
+    // Register File bypasses
+    wire [`REG_RANGE] D_src_0_data =
+        ((insn_DX_is_F1 | insn_DX_is_F2) & insn_DX_dst == insn_FD_src_0) ?
+            X_O_data :
+        ((insn_XM_is_F1 | insn_XM_is_F2) & insn_XM_dst == insn_FD_src_0) ?
+            M_O_data :
+        ((insn_MW_is_F1 | insn_MW_is_F2) & insn_MW_dst == insn_FD_src_0) ?
+            W_result : D_src_0_data_RF;
+    wire [`REG_RANGE] D_src_1_data =
+        ((insn_DX_is_F1 | insn_DX_is_F2) & insn_DX_dst == insn_FD_src_1) ?
+            X_O_data :
+        ((insn_XM_is_F1 | insn_XM_is_F2) & insn_XM_dst == insn_FD_src_1) ?
+            M_O_data :
+        ((insn_MW_is_F1 | insn_MW_is_F2) & insn_MW_dst == insn_FD_src_1) ?
+            W_result : D_src_1_data_RF;
+    wire [`REG_RANGE] D_src_2_data =
+        ((insn_DX_is_F1 | insn_DX_is_F2) & insn_DX_dst == insn_FD_src_2) ?
+            X_O_data :
+        ((insn_XM_is_F1 | insn_XM_is_F2) & insn_XM_dst == insn_FD_src_2) ?
+            M_O_data :
+        ((insn_MW_is_F1 | insn_MW_is_F2) & insn_MW_dst == insn_FD_src_2) ?
+            W_result : D_src_2_data_RF;
+
+    wire D_fast_branch_cond = D_src_0_data != 0 & insn_FD_is_F4;
 
     wire init_insn_mem = Start & Ready_r;
     wire [`INSN_RANGE] insn_curr;
@@ -182,32 +202,23 @@ module Core #(
 
     // bypasses
     wire [`REG_RANGE] X_src_0_data =  // ld case taken by stall
-        ((insn_XM_is_F1 | insn_XM_is_F2) & insn_XM_dst == insn_DX_src_0) ?
-        M_O_data :
         ((insn_MW_is_F1 | insn_MW_is_F2) & insn_MW_dst == insn_DX_src_0) ?
         W_result : DX_src_0_data_r;
     wire [`REG_RANGE] X_src_1_data =
-        ((insn_XM_is_F1 | insn_XM_is_F2) & insn_XM_dst == insn_DX_src_1) ?
-        M_O_data :
         ((insn_MW_is_F1 | insn_MW_is_F2) & insn_MW_dst == insn_DX_src_1) ?
         W_result : DX_src_1_data_r;
     wire [`REG_RANGE] X_src_2_data =
-        ((insn_XM_is_F1 | insn_XM_is_F2) & insn_XM_dst == insn_DX_src_2) ?
-        M_O_data :
         ((insn_MW_is_F1 | insn_MW_is_F2) & insn_MW_dst == insn_DX_src_2) ?
         W_result : DX_src_2_data_r;
 
     wire [`REG_RANGE] src_0_data_ALU = X_src_0_data;
     wire [`REG_RANGE] src_1_data_ALU = X_src_1_data;
     wire [`REG_RANGE] X_result_ALU;
-    wire X_branch_cond_ALU;
 
     ALU ALU(.src_0_data_ALU(src_0_data_ALU), .src_1_data_ALU(src_1_data_ALU),
         .insn_F2_const_ALU(insn_DX_const), .core_id(CORE_ID[`CORE_ID_RANGE]),
         .insn_set_const_mode(insn_DX_set_const_mode), .DX_insn_opc(insn_DX_opc),
-        .X_result_ALU(X_result_ALU), .X_branch_cond_ALU(X_branch_cond_ALU));
-
-    wire X_branch_cond = X_branch_cond_ALU & insn_DX_is_F4; // F4 - cond branches
+        .X_result_ALU(X_result_ALU));
 
     reg [`REG_RANGE] XM_O_data_r;
     reg [`REG_RANGE] XM_B_data_r;
@@ -239,8 +250,6 @@ module Core #(
     assign addr_M [`ADDR_RANGE] =
         {M_B_data[`CORE_ID_RANGE], M_O_data [`REG_RANGE]};
 
-    wire M_block = (insn_XM_opc == `LD | insn_XM_opc == `ST) & ~ready_M;
-
     assign enable_M = {`ENABLE_SIZE {insn_XM_opc == `LD}} & {`ENABLE_READ}
                     | {`ENABLE_SIZE {insn_XM_opc == `ST}} & {`ENABLE_WRITE};
 
@@ -248,7 +257,15 @@ module Core #(
 
     assign W_result = (insn_MW_opc == `LD) ? MW_D_data_r : MW_O_data_r;
 
+    wire M_block = (insn_XM_opc == `LD | insn_XM_opc == `ST) & ~ready_M;
     wire block_all_pipe = M_block | Ready_r;
+
+    wire stall_Ready = insn_DX_opc == `READY;
+    wire stall_data = (insn_DX_opc == `LD) & (((insn_FD_is_F1 | insn_FD_is_F4) & insn_DX_dst == insn_FD_src_0) |
+        insn_FD_is_F1 & insn_DX_dst == insn_FD_src_1);
+    wire stall_D_branch = insn_FD_is_F4 & insn_MW_opc == `LD;
+    // st/ld case taken by bypass
+    wire stall = stall_Ready | stall_data | stall_D_branch;
 
     always @(posedge clk)
             Ready_r <= (reset) ? 1 :
@@ -258,23 +275,24 @@ module Core #(
     always @(posedge clk)
         insn_ptr_r <= (reset | Start & Ready) ? 0 :
             (stall | block_all_pipe) ? insn_ptr_r :
-            (X_branch_cond) ? insn_DX_target : insn_ptr_r + 1;
+            (D_fast_branch_cond) ? insn_FD_target : insn_ptr_r + 1;
 
     always @(posedge clk)
-        insn_FD_is_last_r <= (reset | Start & Ready | X_branch_cond) ? 0 :
+        insn_FD_is_last_r <= (reset | Start & Ready | D_fast_branch_cond) ? 0 :
             (insn_ptr_r == `INSN_COUNT - 1 & ~stall & ~block_all_pipe) ? 1 : insn_FD_is_last_r;
+
+    wire [`INSN_RANGE] insn_Ready = {`READY, {(`INSN_SIZE - `INSN_OPC_SIZE){1'b0}}};
 
     always @(posedge clk)
         insn_FD_r <= (reset | Start & Ready) ? `NOP :
             (stall | block_all_pipe) ? insn_FD_r :
-            (X_branch_cond) ? `NOP :
-            (insn_FD_is_last_r) ? {`READY, {(`INSN_SIZE - `INSN_OPC_SIZE){1'b0}}} :
-            insn_curr;
+            (D_fast_branch_cond) ? `NOP :
+            (insn_FD_is_last_r) ? insn_Ready : insn_curr;
 
     always @(posedge clk)
         insn_DX_r <= (reset | Start & Ready) ? `NOP :
             (block_all_pipe) ? insn_DX_r:
-            (stall | X_branch_cond) ? `NOP : insn_FD_r;
+            (stall) ? `NOP : insn_FD_r;
 
     always @(posedge clk)
         insn_XM_r <= (reset) ? `NOP :
@@ -285,13 +303,13 @@ module Core #(
             (block_all_pipe) ? insn_MW_r : insn_XM_r;
 
     always @(posedge clk)
-        DX_src_0_data_r <= (block_all_pipe) ? DX_src_0_data_r : D_src_0_data;
+        DX_src_0_data_r <= (block_all_pipe) ? DX_src_0_data_r :D_src_0_data;
 
     always @(posedge clk)
-        DX_src_1_data_r <= (block_all_pipe) ? DX_src_1_data_r : D_src_1_data;
+        DX_src_1_data_r <= (block_all_pipe) ? DX_src_1_data_r :D_src_1_data;
 
     always @(posedge clk)
-        DX_src_2_data_r <= (block_all_pipe) ? DX_src_2_data_r : D_src_2_data;
+        DX_src_2_data_r <= (block_all_pipe) ? DX_src_2_data_r :D_src_2_data;
 
     always @(posedge clk)
         XM_O_data_r <= (block_all_pipe) ? XM_O_data_r : X_O_data;
