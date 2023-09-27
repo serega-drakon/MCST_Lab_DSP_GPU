@@ -81,8 +81,9 @@ module Core #(
         input [`INSN_OPC_RANGE] insn_opc;
         begin
             insn_is_F1 = (insn_opc == `ADD | insn_opc == `SUB | insn_opc == `MUL
-                | insn_opc == `DIV | insn_opc == `CMPGE | insn_opc == `RSHIFT | insn_opc == `LSHIFT
-                | insn_opc == `AND | insn_opc == `OR | insn_opc == `XOR | insn_opc == `LD);
+                | insn_opc == `DIV | insn_opc == `CMPGE | insn_opc == `RSHIFT
+                | insn_opc == `LSHIFT | insn_opc == `AND | insn_opc == `OR
+                | insn_opc == `XOR | insn_opc == `LD);
         end
     endfunction
 

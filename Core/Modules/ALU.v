@@ -11,11 +11,12 @@ module ALU (
 );
 
     wire [`REG_RANGE] core_id_extended = {{(`REG_SIZE - `CORE_ID_SIZE){1'b0}}, core_id};
-
-    assign X_result_ALU = {`REG_SIZE {DX_insn_opc == `ADD}} & {src_0_data_ALU+src_1_data_ALU} //ld в Core
-        |{`REG_SIZE {DX_insn_opc == `SUB}} & {src_0_data_ALU-src_1_data_ALU}
-        |{`REG_SIZE {DX_insn_opc == `MUL}} & {src_0_data_ALU*src_1_data_ALU}
-        |{`REG_SIZE {DX_insn_opc == `DIV}} & {src_0_data_ALU/src_1_data_ALU}
+    //fixme: энергоэффективность
+    assign X_result_ALU =
+         {`REG_SIZE {DX_insn_opc == `ADD}} & {src_0_data_ALU + src_1_data_ALU} //ld в Core
+        |{`REG_SIZE {DX_insn_opc == `SUB}} & {src_0_data_ALU - src_1_data_ALU}
+        |{`REG_SIZE {DX_insn_opc == `MUL}} & {src_0_data_ALU * src_1_data_ALU}
+        |{`REG_SIZE {DX_insn_opc == `DIV}} & {src_0_data_ALU / src_1_data_ALU}
         |{`REG_SIZE {DX_insn_opc == `CMPGE}} & {{(`REG_SIZE - 1){1'b0}}, {src_0_data_ALU >= src_1_data_ALU}}
         |{`REG_SIZE {DX_insn_opc == `RSHIFT}} & {src_0_data_ALU >> src_1_data_ALU}
         |{`REG_SIZE {DX_insn_opc == `LSHIFT}} & {src_0_data_ALU << src_1_data_ALU}
