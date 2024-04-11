@@ -80,10 +80,10 @@ module Task_Scheduler
 	always @(posedge clk)
 		vga_wait <= (reset) ? 0 :
 			(Insn_Frame_Num == 0 & stop_r & EXEC_MASK == 0 & ~vga_wait) ? 1 :
-			(~vga_en & ~vga) ? 0 : vga_wait; //todo: не добавил функционал зацикливания на себе
+			(vga_end & ~vga_en) ? 0 : vga_wait; //todo: не добавил функционал зацикливания на себе
 
 	always @(posedge clk)
-		vga <= (reset) ? 0 :
+		vga_en <= (reset) ? 0 :
 			(Insn_Frame_Num == 0 & stop_r & EXEC_MASK == 0 & ~vga_wait) ? 1 : 0;
 
 	always @(posedge clk)
