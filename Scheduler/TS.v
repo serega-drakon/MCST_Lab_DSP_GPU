@@ -106,21 +106,24 @@ module Task_Scheduler
 
 	wire [`IF_NUM_RANGE] INSN_FRAME_NUM_NEXT = Task_Memory_Frame[`IF_NUM_RANGE];
 
+	wire exec_block_cond = fence == `ACQ | FENCE_NEXT == `REL;
+
 	always @(posedge clk)
 		Insn_Frame_Num <= (reset) ? 0 :
 			(vga_stop) ? Insn_Frame_Num :
 			(FLAG_TIME & (Insn_Frame_Num > 1 & (EXEC_MASK & Core_Active_Vect) == 0
 				| Insn_Frame_Num == 1)) ? Insn_Frame_Num - 1 :
-				( Insn_Frame_Num == 0 & ((EXEC_MASK == 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
+				( Insn_Frame_Num == 0 & ((EXEC_MASK == 0 & exec_block_cond) |
 					((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO) ) ) ?
 					INSN_FRAME_NUM_NEXT : Insn_Frame_Num;
 
 	always @(posedge clk)
-		Core_Active_Vect <= (reset) ? 0 :
-			(vga_stop) ? Core_Active_Vect :
-			(Insn_Frame_Num == 0 &
-			((EXEC_MASK == 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
-				((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence  == `NO))) ?
+		Core_Active_Vect <= (reset) ? 0 				:
+			(vga_stop) ? Core_Active_Vect 				:
+			(Insn_Frame_Num == 0 						&
+			((EXEC_MASK == 0 & exec_block_cond) 		|
+			((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 	&
+			fence  == `NO))) 							?
 				CORE_ACTIVE_VECT_NEXT : Core_Active_Vect;
 
 	//todo
@@ -129,7 +132,7 @@ module Task_Scheduler
 			if (reset)
 				INSN_LOAD_CNT <= 0;
 			else if ((Insn_Frame_Num > 0 & FLAG_TIME & (EXEC_MASK & Core_Active_Vect) == 0) |
-				(Insn_Frame_Num == 0 & ( (EXEC_MASK == 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
+				(Insn_Frame_Num == 0 & ( (EXEC_MASK == 0 & exec_block_cond) |
 					((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO))))
 				INSN_LOAD_CNT <= 0;
 			else if(Insn_Frame_Num != 0  & (EXEC_MASK & Core_Active_Vect) == 0)
@@ -140,7 +143,7 @@ module Task_Scheduler
 		begin
 			if (reset)
 				Task_Pointer <= 0;					//initially TM is empty or old
-			if(vga_stop)
+			else if(vga_stop) //fixme: добавил else
 				Task_Pointer <= Task_Pointer;
 			else if (Insn_Frame_Num > 1 & FLAG_TIME &
 				(EXEC_MASK & Core_Active_Vect) == 0)
@@ -150,7 +153,7 @@ module Task_Scheduler
 			else if(Insn_Frame_Num == 0 & INSN_FRAME_NUM_NEXT == 0 & STOP_NEXT)
 				Task_Pointer <= STOP_ADDR_NEXT;
 			else if (Insn_Frame_Num == 0 &
-				(EXEC_MASK == 0 & (fence == `ACQ | FENCE_NEXT == `REL) |
+				(EXEC_MASK == 0 & exec_block_cond |
 					((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO)))
 				Task_Pointer <= Task_Pointer + 1;
 		end
@@ -161,7 +164,7 @@ module Task_Scheduler
 			if (reset)
 				fence <= `NO;
 			else if ( Insn_Frame_Num == 0 & (
-				(EXEC_MASK != 0 & (fence == `ACQ | FENCE_NEXT == `REL)) |
+				(EXEC_MASK != 0 & exec_block_cond) |
 					((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO) ) )
 				fence <= Task_Memory_Frame[`TS_FENCE_RANGE];
 			else if (Insn_Frame_Num == 1 & stop_r)
