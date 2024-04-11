@@ -41,8 +41,8 @@ module TestCoresMemory;
 
     always @(negedge vga) begin
         if(~reset) begin
-            vga_en <= 1;
-            #30 vga_en <= 0;
+            #30 vga_en <= 1;
+            #20 vga_en <= 0;
         end
     end
 
