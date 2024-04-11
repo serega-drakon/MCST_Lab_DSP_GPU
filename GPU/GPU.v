@@ -68,11 +68,11 @@ module GPU( //todo
         end
     endgenerate
 
-    wire [`ENABLE_BUS_RANGE] enable_arb;
-    wire [`ADDR_BUS_RANGE] addr_arb;
-    wire [`REG_BUS_RANGE] wr_data_arb;
-    wire [`REG_BUS_RANGE] rd_data_arb;
-    wire [`CORES_RANGE]	ready_arb;
+    wire [`ENABLE_BUS_RANGE]    enable_arb;
+    wire [`ADDR_BUS_RANGE]      addr_arb;
+    wire [`REG_BUS_RANGE]       wr_data_arb;
+    wire [`REG_BUS_RANGE]       rd_data_arb;
+    wire [`CORES_RANGE]	        ready_arb;
 
     sh_mem
         sh_mem (
@@ -87,17 +87,19 @@ module GPU( //todo
 
     generate
         for (i = 0; i < `NUM_OF_CORES; i = i + 1) begin : array_wire_arb
-            assign enable_arb[`ENABLE_SIZE * (i + 1) - 1 : `ENABLE_SIZE * i] =
+            assign enable_arb   [`ENABLE_SIZE * (i + 1) - 1 : `ENABLE_SIZE * i] =
                 enable_M[i];
-            assign addr_arb[`ADDR_SIZE * (i + 1) - 1 : `ADDR_SIZE * i] =
+            assign addr_arb     [`ADDR_SIZE * (i + 1) - 1 : `ADDR_SIZE * i] =
                 addr_M[i];
-            assign wr_data_arb[`REG_SIZE * (i + 1) - 1 : `REG_SIZE  * i] =
+            assign wr_data_arb  [`REG_SIZE * (i + 1) - 1 : `REG_SIZE  * i] =
                 wr_data_M[i];
             assign rd_data_M[i] =
-                rd_data_arb[`REG_SIZE * (i + 1) - 1 : `REG_SIZE * i];
+                rd_data_arb     [`REG_SIZE * (i + 1) - 1 : `REG_SIZE * i];
             assign ready_M[i] =
                 ready_arb[i];
         end
     endgenerate
+
+
 
 endmodule
