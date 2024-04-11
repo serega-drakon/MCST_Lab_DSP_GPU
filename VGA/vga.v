@@ -1,3 +1,6 @@
+`include "vga_sync.v"
+`include "clk_div2.v"
+
 module vga (
     input           clk,
     input           rst,

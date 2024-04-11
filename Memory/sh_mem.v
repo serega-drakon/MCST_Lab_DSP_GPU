@@ -4,36 +4,63 @@
 
 module sh_mem
 (
-	input	wire 						clk,
-	input	wire						reset,
+	input	wire 				clk,
+	input	wire				reset,
 	input	wire	[`ENABLE_BUS_RANGE]	enable,
 	input	wire	[`ADDR_BUS_RANGE]	addr,
 	input	wire	[`REG_BUS_RANGE]	wr_data,
 	output	wire	[`REG_BUS_RANGE]	rd_data,
-	output	wire	[`CORES_RANGE]		ready
+	output	wire	[`CORES_RANGE]		ready,
+
+	input	wire				vga_en,  //signal from scheduler for vga print
+	input	wire	[`ADDR_RANGE]		vga_addr,
+	output	wire	[`REG_RANGE]		vga_data,
+	output	wire				vga_end
 );
 
-reg		[`CORE_ID_RANGE] 	id_last_core		[`BANKS_RANGE];
-reg		[`BANK_ID_RANGE]	id_last_bank		[`CORES_RANGE];
-reg		[`CORES_RANGE]		last_request_rd					  ;
-reg		[`CORES_RANGE]		last_request_wr					  ;
+reg				vga_stop;
+reg	[`REG_RANGE]		vga_count;
 
-wire	[`ENABLE_RANGE]		request_core		[`CORES_RANGE];
-wire	[`REG_RANGE]		wr_data_core		[`CORES_RANGE];
-wire	[`ADDR_RANGE]		addr_core			[`CORES_RANGE];
-wire	[`REG_RANGE]		rd_data_core		[`CORES_RANGE];
+always @(posedge clk)
+begin
+	vga_stop <= (vga_en | (vga_count == `ADDR_SIZE'b1)) ? ~vga_stop : vga_stop;
+end
+
+always @(posedge clk)
+begin
+	vga_count <= (vga_stop) ? vga_count + 1 : `REG_SIZE'b0;
+end
+
+wire	[`BANKS_RANGE]	vga_addr_bank;
+wire	[`REG_RANGE]	vga_addr_reg;
+
+assign	vga_end = (vga_count == 'ADDR_SIZEb1);
+assign	{vga_addr_bank, vga_addr_reg} = vga_addr;
+assign	vga_data = vga_rd_data_bank[vga_addr_bank];
+
+reg	[`CORE_ID_RANGE] 	id_last_core	[`BANKS_RANGE];
+reg	[`BANK_ID_RANGE]	id_last_bank	[`CORES_RANGE];
+reg	[`CORES_RANGE]		last_request_rd;
+reg	[`CORES_RANGE]		last_request_wr;
+
+wire	[`ENABLE_RANGE]		request_core	[`CORES_RANGE];
+wire	[`REG_RANGE]		wr_data_core	[`CORES_RANGE];
+wire	[`ADDR_RANGE]		addr_core	[`CORES_RANGE];
+wire	[`REG_RANGE]		rd_data_core	[`CORES_RANGE];
 
 wire	[`BANKS_RANGE]		skip;
 wire	[`CORE_ID_RANGE]	id_current_core		[`BANKS_RANGE];
-wire	[`BANK_ID_RANGE]	bank_addr			[`CORES_RANGE];
+wire	[`BANK_ID_RANGE]	bank_addr		[`CORES_RANGE];
 wire	[`REG_RANGE]		data_addr_core		[`CORES_RANGE];
 wire	[`CORES_RANGE]		request_core_mask	[`BANKS_RANGE];
 
 wire	[`REG_RANGE]		data_addr_bank		[`BANKS_RANGE];
 wire	[`REG_RANGE]		wr_data_bank		[`BANKS_RANGE];
-wire	[`BANKS_RANGE]		read_request_bank			      ;
-wire	[`BANKS_RANGE]		write_request_bank			  	  ;
+wire	[`BANKS_RANGE]		read_request_bank;
+wire	[`BANKS_RANGE]		write_request_bank;
 wire	[`REG_RANGE]		rd_data_bank		[`BANKS_RANGE];
+
+wire	[`REG_RANGE]		vga_rd_data_bank		[`BANKS_RANGE];
 
 wire core_is_curr [`CORES_RANGE];
 
@@ -100,10 +127,12 @@ endgenerate
 generate for(id_bank = 0; id_bank < `NUM_OF_BANKS; id_bank = id_bank + 1)
 	begin:connection_wires
 		assign	data_addr_bank[id_bank] =
+			(vga_stop) ? (vga_count) :
 			(~skip[id_bank]) ? (data_addr_core[id_current_core[id_bank]]) : (`REG_SIZE'h0);
 		assign	wr_data_bank[id_bank] =
 			(~skip[id_bank]) ? (wr_data_core[id_current_core[id_bank]]) : (`REG_SIZE'h0);
 		assign	{write_request_bank[id_bank], read_request_bank[id_bank]} =
+			(vga_stop) ? (2'b01) :
 			(~skip[id_bank]) ? (request_core[id_current_core[id_bank]]) : (2'b00);
 	end
 endgenerate
@@ -119,6 +148,17 @@ generate for(id_bank = 0; id_bank < `NUM_OF_BANKS; id_bank = id_bank + 1)
 		.read_enable(read_request_bank[id_bank]),
 		.write_enable(write_request_bank[id_bank]),
 		.data_out(rd_data_bank[id_bank])
+	);
+
+		bank bank_copy
+	(
+		.clk(clk),
+		.reset(reset),
+		.addr((en_stop) ? vga_count : vga_addr_reg),
+		.data_in(rd_data_bank[id_bank]),
+		.read_enable((en_stop) ? 1'b0 : 1'b1),
+		.write_enable((en_stop) ? 1'b1 : 1'b0),
+		.data_out(vga_rd_data_bank[id_bank])
 	);
 	end
 endgenerate
