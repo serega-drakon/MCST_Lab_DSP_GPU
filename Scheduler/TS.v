@@ -112,24 +112,26 @@ module Task_Scheduler
 	wire [`IF_NUM_RANGE] INSN_FRAME_NUM_NEXT = Task_Memory_Frame[`IF_NUM_RANGE];
 
 	always @(posedge clk)
-		Insn_Frame_Num <= (reset) ? 0                        :
+		Insn_Frame_Num <= (reset) ? 0   :
 			(vga_stop) ? Insn_Frame_Num :
 			(FLAG_TIME & (Insn_Frame_Num > 1 & insn_finish
-				| Insn_Frame_Num == 1)) ? Insn_Frame_Num - 1 :
-				( Insn_Frame_Num == 0 & ((EXEC_MASK == 0 & exec_block_cond) |
-					(insn_freeee & fence == `NO) ) ) ?
-					INSN_FRAME_NUM_NEXT : Insn_Frame_Num;
+				| Insn_Frame_Num == 1)) 
+				       ? Insn_Frame_Num - 1 :
+				( Insn_Frame_Num == 0 & 
+				((EXEC_MASK == 0 & exec_block_cond) |
+				 (insn_freeee & fence == `NO) )     ) ?
+				INSN_FRAME_NUM_NEXT : Insn_Frame_Num;
 
 	always @(posedge clk)
-		Core_Active_Vect <= (reset) ? 0 				 :
-			(vga_stop) ? Core_Active_Vect 				 :
-			(Insn_Frame_Num == 0 						 &
-			((EXEC_MASK == 0 & exec_block_cond) 		 |
-			(insn_freeee 	 &
-			fence  == `NO))) 							 ?
+		Core_Active_Vect <= (reset) ? 0   :
+			(vga_stop) ? Core_Active_Vect :
+			(Insn_Frame_Num == 0 &
+			    ((EXEC_MASK == 0 & exec_block_cond) |
+			   (insn_freeee      &
+			fence  == `NO))) ?
 				CORE_ACTIVE_VECT_NEXT : Core_Active_Vect ;
 
-	//todo
+	
 	always @(posedge clk)									//Instruction load counter
 		begin
 			if (reset)
