@@ -3,16 +3,20 @@
 `include "sh_mem.v"
 `include "EnvMem.v"
 `include "IncAllTest.def.v"
+`include "vga_machine.v"
 
 module GPU( //todo
     input wire clk,
     input wire reset,
 
+    output wire vga_clk,
     output wire red_vga [`REG_RANGE],
     output wire green_vga [`REG_RANGE],
     output wire blue_vga [`REG_RANGE],
     output wire h_sync,
-    output wire v_sync
+    output wire v_sync,
+    output wire blank_n,
+    output wire sync_n
 );
 
     wire [`TM_RANGE]                env_task_memory;
@@ -31,6 +35,8 @@ module GPU( //todo
 
     wire vga;
     wire vga_en;
+    wire vga_data;
+    wire vga_addr;
 
     Task_Scheduler TS(
         .clk(clk),
@@ -82,8 +88,29 @@ module GPU( //todo
             .addr       (addr_arb),
             .wr_data    (wr_data_arb),
             .rd_data    (rd_data_arb),
-            .ready      (ready_arb)
+            .ready      (ready_arb),
+            
+            .vga_en(vga),
+            .vga_addr(vga_addr),
+            .vga_data(vga_data),
+            .vga_end(vga_en)
         );
+        
+    vga_machine
+	vga_machine (
+		.clk(clk),
+		.rst(reset),
+		.vga_clk(vga_clk),
+		.h_sync(h_sync),
+		.v_sync(v_sync),
+		.blank_n(blank_n),
+		.sync_n(sync_n),
+		.red_vga(red_vga),
+		.green_vga(green_vga),
+		.blue_vga(blue_vga),
+		.vga_addr(vga_addr),
+		.vga_data(vga_data)
+	);
 
     generate
         for (i = 0; i < `NUM_OF_CORES; i = i + 1) begin : array_wire_arb
