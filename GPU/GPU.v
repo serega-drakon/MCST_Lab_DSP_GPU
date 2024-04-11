@@ -35,8 +35,8 @@ module GPU( //todo
 
     wire vga;
     wire vga_en;
-    wire vga_data;
-    wire vga_addr;
+    wire [`REG_RANGE] vga_data;
+    wire [`ADDR_RANGE] vga_addr;
 
     Task_Scheduler TS(
         .clk(clk),

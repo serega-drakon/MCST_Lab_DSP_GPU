@@ -23,7 +23,7 @@ reg	[`REG_RANGE]		vga_count;
 
 always @(posedge clk)
 begin
-	vga_stop <= (vga_en | (vga_count == `ADDR_SIZE'b1)) ? ~vga_stop : vga_stop;
+	vga_stop <= (vga_en | (vga_count == `REG_SIZE'b1)) ? ~vga_stop : vga_stop;
 end
 
 always @(posedge clk)
