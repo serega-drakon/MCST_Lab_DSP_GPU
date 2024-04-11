@@ -3,45 +3,45 @@
 
 module Task_Scheduler
 	(
-		input		wire				clk,				//TS <- Env
-		input		wire				reset,				//TS <- Env
-		input		wire	[`TM_RANGE]		env_task_memory,		//TS <- Env
-		input		wire	[`CORES_RANGE]		Ready,				//TS <- Cores
-		output		wire	[`CORES_RANGE]		Start,				//TS -> Cores
-		output		wire	[`INSN_LOAD_COUNTER_RANGE] Insn_Load_Counter,		//TS -> Cores
-		output		wire	[`INSN_BUS_RANGE]	Insn_Data,			//TS -> Cores
-		output		reg	[`CORES_RANGE]		Init_R0_Vect,			//TS -> Cores
-		output  	reg	[`REG_BUS_RANGE]	Init_R0,				//TS -> Cores
+		input		wire                               clk,               //TS <- Env
+		input		wire                               reset,             //TS <- Env
+		input		wire    [`TM_RANGE]                env_task_memory,   //TS <- Env
+		input		wire    [`CORES_RANGE]             Ready,             //TS <- Cores
+		output		wire    [`CORES_RANGE]             Start,             //TS -> Cores
+		output		wire    [`INSN_LOAD_COUNTER_RANGE] Insn_Load_Counter, //TS -> Cores
+		output		wire    [`INSN_BUS_RANGE]          Insn_Data,         //TS -> Cores
+		output		reg	    [`CORES_RANGE]             Init_R0_Vect,      //TS -> Cores
+		output  	reg     [`REG_BUS_RANGE]           Init_R0,           //TS -> Cores
 
-		output reg vga_en,
-		input wire vga_end
+		output reg vga_en,                                                //TS -> VGA
+		input wire vga_end                                                //TS <- VGA
 	);
 
  	wire	[`TM_WIDTH_RANGE]	Task_Memory [`TM_DEPTH_RANGE];
 	wire 	[`TM_WIDTH_RANGE]	Task_Memory_Frame;
 
-	reg	[`IF_NUM_RANGE]		Task_Pointer;
-	reg	[`IF_NUM_RANGE]		Insn_Frame_Num;
+	reg     [`IF_NUM_RANGE]		Task_Pointer;
+	reg	    [`IF_NUM_RANGE]		Insn_Frame_Num;
 	wire	[`CORES_RANGE]		EXEC_MASK;
 
-	reg 	[`FENCE_RANGE]		fence;							//for Control Frame
+	reg 	[`FENCE_RANGE]		fence;                                     //for Control Frame
 
 	reg 	[`CORES_RANGE]		Core_Active_Vect;
 	wire	[`CORES_RANGE]		CORE_ACTIVE_VECT_NEXT;
 	wire	[`FENCE_RANGE]		FENCE_NEXT;
 
-	wire FLAG_TIME;						//wait cores [CF -> 1 cycle, IF ->(INSN LOAD TIME) cycles]
-	reg	[`INSN_LOAD_COUNTER_RANGE] INSN_LOAD_CNT;					//wait cores >(INSN LOAD TIME) cycles
+	wire FLAG_TIME;                                                        //wait cores [CF -> 1 cycle, IF ->(INSN LOAD TIME) cycles]
+	reg	[`INSN_LOAD_COUNTER_RANGE] INSN_LOAD_CNT;                          //wait cores >(INSN LOAD TIME) cycles
 
 	reg stop_r;
 	reg	[`IF_NUM_RANGE] stop_addr_r;
 
-	assign Task_Memory_Frame	= Task_Memory[Task_Pointer];
+	assign Task_Memory_Frame	 = Task_Memory[Task_Pointer];
 
-	assign FENCE_NEXT 		= Task_Memory_Frame[`TS_FENCE_RANGE];
-	assign CORE_ACTIVE_VECT_NEXT	= Task_Memory_Frame[`TM_INSN_RANGE(1)];
+	assign FENCE_NEXT 		     = Task_Memory_Frame[`TS_FENCE_RANGE];
+	assign CORE_ACTIVE_VECT_NEXT = Task_Memory_Frame[`TM_INSN_RANGE(1)];
 
-	assign Insn_Load_Counter 	= INSN_LOAD_CNT;
+	assign Insn_Load_Counter 	 = INSN_LOAD_CNT;
 
 	genvar ii;
 	generate for (ii = 0; ii < `NUM_OF_CORES; ii = ii + 1) begin: exec_mask_loop
@@ -64,7 +64,7 @@ module Task_Scheduler
 	assign Insn_Data = Task_Memory_Frame_Part[INSN_LOAD_CNT];
 
 	assign Start =
-		(Insn_Frame_Num != 0 & (EXEC_MASK & Core_Active_Vect) == 0) ?
+		(Insn_Frame_Num != 0 & INSN_FINISH) ?
 			Core_Active_Vect : 0;
 
 	wire STOP_NEXT = Task_Memory_Frame[`STOP_BIT_RANGE];
@@ -106,23 +106,25 @@ module Task_Scheduler
 
 	wire [`IF_NUM_RANGE] INSN_FRAME_NUM_NEXT = Task_Memory_Frame[`IF_NUM_RANGE];
 
-	wire exec_block_cond = fence == `ACQ | FENCE_NEXT == `REL;
+	wire EXEC_BLOCK_COND = fence == `ACQ | FENCE_NEXT == `REL;
+	wire INSN_FINISH = EXEC_MASK & Core_Active_Vect == 0;
+	wire INSN_FREEEE = EXEC_MASK & CORE_ACTIVE_VECT_NEXT == 0;
 
 	always @(posedge clk)
 		Insn_Frame_Num <= (reset) ? 0 :
 			(vga_stop) ? Insn_Frame_Num :
-			(FLAG_TIME & (Insn_Frame_Num > 1 & (EXEC_MASK & Core_Active_Vect) == 0
+			(FLAG_TIME & (Insn_Frame_Num > 1 & INSN_FINISH
 				| Insn_Frame_Num == 1)) ? Insn_Frame_Num - 1 :
-				( Insn_Frame_Num == 0 & ((EXEC_MASK == 0 & exec_block_cond) |
-					((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO) ) ) ?
+				( Insn_Frame_Num == 0 & ((EXEC_MASK == 0 & EXEC_BLOCK_COND) |
+					(INSN_FREEEE & fence == `NO) ) ) ?
 					INSN_FRAME_NUM_NEXT : Insn_Frame_Num;
 
 	always @(posedge clk)
 		Core_Active_Vect <= (reset) ? 0 				:
 			(vga_stop) ? Core_Active_Vect 				:
 			(Insn_Frame_Num == 0 						&
-			((EXEC_MASK == 0 & exec_block_cond) 		|
-			((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 	&
+			((EXEC_MASK == 0 & EXEC_BLOCK_COND) 		|
+			(INSN_FREEEE                                &
 			fence  == `NO))) 							?
 				CORE_ACTIVE_VECT_NEXT : Core_Active_Vect;
 
@@ -131,31 +133,34 @@ module Task_Scheduler
 		begin
 			if (reset)
 				INSN_LOAD_CNT <= 0;
-			else if ((Insn_Frame_Num > 0 & FLAG_TIME & (EXEC_MASK & Core_Active_Vect) == 0) |
-				(Insn_Frame_Num == 0 & ( (EXEC_MASK == 0 & exec_block_cond) |
-					((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO))))
+			else if ((Insn_Frame_Num > 0 & FLAG_TIME & INSN_FINISH) |
+				(Insn_Frame_Num == 0 & ( (EXEC_MASK == 0 & EXEC_BLOCK_COND) |
+					(INSN_FREEEE & fence == `NO))))
 				INSN_LOAD_CNT <= 0;
-			else if(Insn_Frame_Num != 0  & (EXEC_MASK & Core_Active_Vect) == 0)
+			else if(Insn_Frame_Num != 0  & INSN_FINISH)
 				INSN_LOAD_CNT <= INSN_LOAD_CNT + 1;
 		end
 
 	always @(posedge clk)									//Task Pointer
 		begin
 			if (reset)
-				Task_Pointer <= 0;					//initially TM is empty or old
-			else if(vga_stop) //fixme: добавил else
+				Task_Pointer <= 0;                          //initially TM is empty or old
+			else if(vga_stop)                               
 				Task_Pointer <= Task_Pointer;
 			else if (Insn_Frame_Num > 1 & FLAG_TIME &
-				(EXEC_MASK & Core_Active_Vect) == 0)
+				INSN_FINISH)
 				Task_Pointer <= Task_Pointer + 1;
 			else if (Insn_Frame_Num == 1 & FLAG_TIME)
-				Task_Pointer <= (stop_r) ? stop_addr_r: Task_Pointer + 1;
+				Task_Pointer <= (stop_r) ? stop_addr_r : Task_Pointer + 1;
+				
 			else if(Insn_Frame_Num == 0 & INSN_FRAME_NUM_NEXT == 0 & STOP_NEXT)
 				Task_Pointer <= STOP_ADDR_NEXT;
 			else if (Insn_Frame_Num == 0 &
-				(EXEC_MASK == 0 & exec_block_cond |
-					((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO)))
+				(EXEC_MASK == 0 & EXEC_BLOCK_COND |
+					(INSN_FREEEE & fence == `NO)))
 				Task_Pointer <= Task_Pointer + 1;
+			else 
+			    Task_Pointer <= Task_Pointer;
 		end
 
 
@@ -163,9 +168,9 @@ module Task_Scheduler
 		begin
 			if (reset)
 				fence <= `NO;
-			else if ( Insn_Frame_Num == 0 & (
-				(EXEC_MASK != 0 & exec_block_cond) |
-					((EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0 & fence == `NO) ) )
+			else if (Insn_Frame_Num == 0 & 
+			        ((EXEC_MASK != 0 & EXEC_BLOCK_COND) |
+					 (INSN_FREEEE & fence == `NO) ) )
 				fence <= Task_Memory_Frame[`TS_FENCE_RANGE];
 			else if (Insn_Frame_Num == 1 & stop_r)
 				fence <= `ACQ;
