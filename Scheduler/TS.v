@@ -62,8 +62,8 @@ module Task_Scheduler
 	endgenerate
 
 	wire exec_block_cond = fence == `ACQ | FENCE_NEXT == `REL;
-	wire insn_finish     = EXEC_MASK & Core_Active_Vect == 0;
-	wire insn_freeee     = EXEC_MASK & CORE_ACTIVE_VECT_NEXT == 0;
+	wire insn_finish     = (EXEC_MASK & Core_Active_Vect) == 0;
+	wire insn_freeee     = (EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0;
 
 	assign Insn_Data = Task_Memory_Frame_Part[INSN_LOAD_CNT];
 
@@ -149,7 +149,7 @@ module Task_Scheduler
 			if (reset)
 				Task_Pointer <= 0;					       //initially TM is empty or old
 			else if(vga_stop)
-				Task_Pointer <= 0;                         //maybe Task_Pointer;
+				Task_Pointer <= 0;          //maybe Task_Pointer;
 			else if(Insn_Frame_Num > 1 & FLAG_TIME & insn_finish)
 				Task_Pointer <= Task_Pointer + 1;
 			else if(Insn_Frame_Num == 1 & FLAG_TIME)
