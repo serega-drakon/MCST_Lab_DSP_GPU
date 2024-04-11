@@ -13,8 +13,8 @@ module Task_Scheduler
 		output		reg	[`CORES_RANGE]		Init_R0_Vect,			//TS -> Cores
 		output  	reg	[`REG_BUS_RANGE]	Init_R0,				//TS -> Cores
 
-		output reg vga,
-		input wire vga_en
+		output reg vga_en,
+		input wire vga_end
 	);
 
  	wire	[`TM_WIDTH_RANGE]	Task_Memory [`TM_DEPTH_RANGE];
