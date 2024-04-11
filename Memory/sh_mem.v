@@ -4,8 +4,8 @@
 
 module sh_mem
 (
-	input	wire 				clk,
-	input	wire				reset,
+	input	wire 						clk,
+	input	wire						reset,
 	input	wire	[`ENABLE_BUS_RANGE]	enable,
 	input	wire	[`ADDR_BUS_RANGE]	addr,
 	input	wire	[`REG_BUS_RANGE]	wr_data,
@@ -13,27 +13,27 @@ module sh_mem
 	output	wire	[`CORES_RANGE]		ready
 );
 
-reg	[`CORE_ID_RANGE] 	id_last_core	[`BANKS_RANGE];
-reg	[`BANK_ID_RANGE]	id_last_bank	[`CORES_RANGE];
-reg	[`CORES_RANGE]		last_request_rd;
-reg	[`CORES_RANGE]		last_request_wr;
+reg		[`CORE_ID_RANGE] 	id_last_core		[`BANKS_RANGE];
+reg		[`BANK_ID_RANGE]	id_last_bank		[`CORES_RANGE];
+reg		[`CORES_RANGE]		last_request_rd					  ;
+reg		[`CORES_RANGE]		last_request_wr					  ;
 
-wire	[`ENABLE_RANGE]		request_core	[`CORES_RANGE];
-wire	[`REG_RANGE]	wr_data_core	[`CORES_RANGE];
-wire	[`ADDR_RANGE]	addr_core	[`CORES_RANGE];
-wire	[`REG_RANGE]	rd_data_core	[`CORES_RANGE];
+wire	[`ENABLE_RANGE]		request_core		[`CORES_RANGE];
+wire	[`REG_RANGE]		wr_data_core		[`CORES_RANGE];
+wire	[`ADDR_RANGE]		addr_core			[`CORES_RANGE];
+wire	[`REG_RANGE]		rd_data_core		[`CORES_RANGE];
 
 wire	[`BANKS_RANGE]		skip;
 wire	[`CORE_ID_RANGE]	id_current_core		[`BANKS_RANGE];
-wire	[`BANK_ID_RANGE]	bank_addr		[`CORES_RANGE];
+wire	[`BANK_ID_RANGE]	bank_addr			[`CORES_RANGE];
 wire	[`REG_RANGE]		data_addr_core		[`CORES_RANGE];
 wire	[`CORES_RANGE]		request_core_mask	[`BANKS_RANGE];
 
-wire	[`REG_RANGE]		data_addr_bank	[`BANKS_RANGE];
-wire	[`REG_RANGE]		wr_data_bank	[`BANKS_RANGE];
-wire	[`BANKS_RANGE]		read_request_bank;
-wire	[`BANKS_RANGE]		write_request_bank;
-wire	[`REG_RANGE]		rd_data_bank	[`BANKS_RANGE];
+wire	[`REG_RANGE]		data_addr_bank		[`BANKS_RANGE];
+wire	[`REG_RANGE]		wr_data_bank		[`BANKS_RANGE];
+wire	[`BANKS_RANGE]		read_request_bank			      ;
+wire	[`BANKS_RANGE]		write_request_bank			  	  ;
+wire	[`REG_RANGE]		rd_data_bank		[`BANKS_RANGE];
 
 wire core_is_curr [`CORES_RANGE];
 

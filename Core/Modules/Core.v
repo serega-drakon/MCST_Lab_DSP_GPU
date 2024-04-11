@@ -9,66 +9,66 @@ module Core #(
     input wire clk,
     input wire reset,
 
-    input wire init_R0_flag,
-    input wire [`REG_RANGE] init_R0_data,
-    input wire [`INSN_BUS_RANGE] insn_data,
+    input wire                      init_R0_flag,
+    input wire [`REG_RANGE]         init_R0_data,
+    input wire [`INSN_BUS_RANGE]    insn_data,
     input wire [`INSN_LOAD_COUNTER_RANGE] insn_load_counter,
-    input wire Start,
-    output wire Ready,
+    input wire                      Start,
+    output wire                     Ready,
 
-    input wire [`REG_RANGE] rd_data_M,
-    input wire ready_M, // != Ready
-    output wire [`REG_RANGE] wr_data_M,
-    output wire [`ADDR_RANGE] addr_M,
-    output wire [`ENABLE_RANGE] enable_M
+    input wire  [`REG_RANGE]        rd_data_M,
+    input wire                      ready_M, // != Ready
+    output wire [`REG_RANGE]        wr_data_M,
+    output wire [`ADDR_RANGE]       addr_M,
+    output wire [`ENABLE_RANGE]     enable_M
     );
 
-    reg [`INSN_RANGE] insn_FD_r;
-    reg [`INSN_RANGE] insn_DX_r;
-    reg [`INSN_RANGE] insn_XM_r;
-    reg [`INSN_RANGE] insn_MW_r;
+    reg [`INSN_RANGE]       insn_FD_r;
+    reg [`INSN_RANGE]       insn_DX_r;
+    reg [`INSN_RANGE]       insn_XM_r;
+    reg [`INSN_RANGE]       insn_MW_r;
 
-    wire [`INSN_OPC_RANGE] insn_curr_opc = insn_curr[`INSN_OPC_OFFSET_RANGE];
-    wire [`INSN_OPC_RANGE] insn_FD_opc = insn_FD_r[`INSN_OPC_OFFSET_RANGE];  //for a convenience
-    wire [`INSN_OPC_RANGE] insn_DX_opc = insn_DX_r[`INSN_OPC_OFFSET_RANGE];
-    wire [`INSN_OPC_RANGE] insn_XM_opc = insn_XM_r[`INSN_OPC_OFFSET_RANGE];
-    wire [`INSN_OPC_RANGE] insn_MW_opc = insn_MW_r[`INSN_OPC_OFFSET_RANGE];
+    wire [`INSN_OPC_RANGE]      insn_curr_opc = insn_curr[`INSN_OPC_OFFSET_RANGE];
+    wire [`INSN_OPC_RANGE]      insn_FD_opc =   insn_FD_r[`INSN_OPC_OFFSET_RANGE];  //for a convenience
+    wire [`INSN_OPC_RANGE]      insn_DX_opc =   insn_DX_r[`INSN_OPC_OFFSET_RANGE];
+    wire [`INSN_OPC_RANGE]      insn_XM_opc =   insn_XM_r[`INSN_OPC_OFFSET_RANGE];
+    wire [`INSN_OPC_RANGE]      insn_MW_opc =   insn_MW_r[`INSN_OPC_OFFSET_RANGE];
 
-    wire [`INSN_SRC_0_RANGE] insn_curr_src_0 = insn_curr[`INSN_SRC_0_OFFSET_RANGE];
-    wire [`INSN_SRC_0_RANGE] insn_FD_src_0 = insn_FD_r[`INSN_SRC_0_OFFSET_RANGE];
-    wire [`INSN_SRC_0_RANGE] insn_DX_src_0 = insn_DX_r[`INSN_SRC_0_OFFSET_RANGE];
-    wire [`INSN_SRC_0_RANGE] insn_XM_src_0 = insn_XM_r[`INSN_SRC_0_OFFSET_RANGE];
-    wire [`INSN_SRC_0_RANGE] insn_MW_src_0 = insn_MW_r[`INSN_SRC_0_OFFSET_RANGE];
+    wire [`INSN_SRC_0_RANGE]    insn_curr_src_0 = insn_curr[`INSN_SRC_0_OFFSET_RANGE];
+    wire [`INSN_SRC_0_RANGE]    insn_FD_src_0 = insn_FD_r[`INSN_SRC_0_OFFSET_RANGE];
+    wire [`INSN_SRC_0_RANGE]    insn_DX_src_0 = insn_DX_r[`INSN_SRC_0_OFFSET_RANGE];
+    wire [`INSN_SRC_0_RANGE]    insn_XM_src_0 = insn_XM_r[`INSN_SRC_0_OFFSET_RANGE];
+    wire [`INSN_SRC_0_RANGE]    insn_MW_src_0 = insn_MW_r[`INSN_SRC_0_OFFSET_RANGE];
 
-    wire [`INSN_SRC_1_RANGE] insn_curr_src_1 = insn_curr[`INSN_SRC_1_OFFSET_RANGE];
-    wire [`INSN_SRC_1_RANGE] insn_FD_src_1 = insn_FD_r[`INSN_SRC_1_OFFSET_RANGE];
-    wire [`INSN_SRC_1_RANGE] insn_DX_src_1 = insn_DX_r[`INSN_SRC_1_OFFSET_RANGE];
-    wire [`INSN_SRC_1_RANGE] insn_XM_src_1 = insn_XM_r[`INSN_SRC_1_OFFSET_RANGE];
-    wire [`INSN_SRC_1_RANGE] insn_MW_src_1 = insn_MW_r[`INSN_SRC_1_OFFSET_RANGE];
+    wire [`INSN_SRC_1_RANGE]    insn_curr_src_1 = insn_curr[`INSN_SRC_1_OFFSET_RANGE];
+    wire [`INSN_SRC_1_RANGE]    insn_FD_src_1 = insn_FD_r[`INSN_SRC_1_OFFSET_RANGE];
+    wire [`INSN_SRC_1_RANGE]    insn_DX_src_1 = insn_DX_r[`INSN_SRC_1_OFFSET_RANGE];
+    wire [`INSN_SRC_1_RANGE]    insn_XM_src_1 = insn_XM_r[`INSN_SRC_1_OFFSET_RANGE];
+    wire [`INSN_SRC_1_RANGE]    insn_MW_src_1 = insn_MW_r[`INSN_SRC_1_OFFSET_RANGE];
 
-    wire [`INSN_SRC_2_RANGE] insn_curr_src_2 = insn_curr[`INSN_SRC_2_OFFSET_RANGE];
-    wire [`INSN_SRC_2_RANGE] insn_FD_src_2 = insn_FD_r[`INSN_SRC_2_OFFSET_RANGE];
-    wire [`INSN_SRC_2_RANGE] insn_DX_src_2 = insn_DX_r[`INSN_SRC_2_OFFSET_RANGE];
-    wire [`INSN_SRC_2_RANGE] insn_XM_src_2 = insn_XM_r[`INSN_SRC_2_OFFSET_RANGE];
-    wire [`INSN_SRC_2_RANGE] insn_MW_src_2 = insn_MW_r[`INSN_SRC_2_OFFSET_RANGE];
+    wire [`INSN_SRC_2_RANGE]    insn_curr_src_2 = insn_curr[`INSN_SRC_2_OFFSET_RANGE];
+    wire [`INSN_SRC_2_RANGE]    insn_FD_src_2 = insn_FD_r[`INSN_SRC_2_OFFSET_RANGE];
+    wire [`INSN_SRC_2_RANGE]    insn_DX_src_2 = insn_DX_r[`INSN_SRC_2_OFFSET_RANGE];
+    wire [`INSN_SRC_2_RANGE]    insn_XM_src_2 = insn_XM_r[`INSN_SRC_2_OFFSET_RANGE];
+    wire [`INSN_SRC_2_RANGE]    insn_MW_src_2 = insn_MW_r[`INSN_SRC_2_OFFSET_RANGE];
 
-    wire [`INSN_DST_RANGE] insn_curr_dst = insn_curr[`INSN_DST_OFFSET_RANGE];
-    wire [`INSN_DST_RANGE] insn_FD_dst = insn_FD_r[`INSN_DST_OFFSET_RANGE];
-    wire [`INSN_DST_RANGE] insn_DX_dst = insn_DX_r[`INSN_DST_OFFSET_RANGE];
-    wire [`INSN_DST_RANGE] insn_XM_dst = insn_XM_r[`INSN_DST_OFFSET_RANGE];
-    wire [`INSN_DST_RANGE] insn_MW_dst = insn_MW_r[`INSN_DST_OFFSET_RANGE];
+    wire [`INSN_DST_RANGE]      insn_curr_dst = insn_curr[`INSN_DST_OFFSET_RANGE];
+    wire [`INSN_DST_RANGE]      insn_FD_dst = insn_FD_r[`INSN_DST_OFFSET_RANGE];
+    wire [`INSN_DST_RANGE]      insn_DX_dst = insn_DX_r[`INSN_DST_OFFSET_RANGE];
+    wire [`INSN_DST_RANGE]      insn_XM_dst = insn_XM_r[`INSN_DST_OFFSET_RANGE];
+    wire [`INSN_DST_RANGE]      insn_MW_dst = insn_MW_r[`INSN_DST_OFFSET_RANGE];
 
-    wire [`INSN_CONST_RANGE] insn_curr_const = insn_curr[`INSN_CONST_OFFSET_RANGE];
-    wire [`INSN_CONST_RANGE] insn_FD_const = insn_FD_r[`INSN_CONST_OFFSET_RANGE];
-    wire [`INSN_CONST_RANGE] insn_DX_const = insn_DX_r[`INSN_CONST_OFFSET_RANGE];
-    wire [`INSN_CONST_RANGE] insn_XM_const = insn_XM_r[`INSN_CONST_OFFSET_RANGE];
-    wire [`INSN_CONST_RANGE] insn_MW_const = insn_MW_r[`INSN_CONST_OFFSET_RANGE];
+    wire [`INSN_CONST_RANGE]    insn_curr_const = insn_curr[`INSN_CONST_OFFSET_RANGE];
+    wire [`INSN_CONST_RANGE]    insn_FD_const = insn_FD_r[`INSN_CONST_OFFSET_RANGE];
+    wire [`INSN_CONST_RANGE]    insn_DX_const = insn_DX_r[`INSN_CONST_OFFSET_RANGE];
+    wire [`INSN_CONST_RANGE]    insn_XM_const = insn_XM_r[`INSN_CONST_OFFSET_RANGE];
+    wire [`INSN_CONST_RANGE]    insn_MW_const = insn_MW_r[`INSN_CONST_OFFSET_RANGE];
 
-    wire [`INSN_TARGET_RANGE] insn_curr_target = insn_curr[`INSN_TARGET_OFFSET_RANGE];
-    wire [`INSN_TARGET_RANGE] insn_FD_target = insn_FD_r[`INSN_TARGET_OFFSET_RANGE];
-    wire [`INSN_TARGET_RANGE] insn_DX_target = insn_DX_r[`INSN_TARGET_OFFSET_RANGE];
-    wire [`INSN_TARGET_RANGE] insn_XM_target = insn_XM_r[`INSN_TARGET_OFFSET_RANGE];
-    wire [`INSN_TARGET_RANGE] insn_MW_target = insn_MW_r[`INSN_TARGET_OFFSET_RANGE];
+    wire [`INSN_TARGET_RANGE]   insn_curr_target = insn_curr[`INSN_TARGET_OFFSET_RANGE];
+    wire [`INSN_TARGET_RANGE]   insn_FD_target = insn_FD_r[`INSN_TARGET_OFFSET_RANGE];
+    wire [`INSN_TARGET_RANGE]   insn_DX_target = insn_DX_r[`INSN_TARGET_OFFSET_RANGE];
+    wire [`INSN_TARGET_RANGE]   insn_XM_target = insn_XM_r[`INSN_TARGET_OFFSET_RANGE];
+    wire [`INSN_TARGET_RANGE]   insn_MW_target = insn_MW_r[`INSN_TARGET_OFFSET_RANGE];
 
     function insn_is_F0; // insn-s without arguments
         input [`INSN_OPC_RANGE] insn_opc;
