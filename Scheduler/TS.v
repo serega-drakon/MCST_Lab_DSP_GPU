@@ -80,11 +80,11 @@ module Task_Scheduler
 
 	assign FLAG_TIME = INSN_LOAD_CNT == `INSN_LOAD_TIME - 1;
 
+	reg vga_wait;
 
-    assign vga_wait_do = Insn_Frame_Num == 0 & EXEC_MASK == 0 & stop_r & ~vga_wait;
+	assign vga_wait_do = Insn_Frame_Num == 0 & EXEC_MASK == 0 & stop_r & ~vga_wait;
 	wire vga_stop = vga_wait; //todo (wait VGA impl) 
 
-	reg vga_wait;
 
 	always @(posedge clk)
 		vga_wait <= (reset)             ? 0 :
