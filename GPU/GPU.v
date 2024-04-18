@@ -1,9 +1,9 @@
-`include "Core.v"
-`include "TS.v"
-`include "sh_mem.v"
+`include "../Core/Modules/Core.v"
+`include "../Scheduler/TS.v"
+`include "../Memory/sh_mem.v"
 `include "EnvMem.v"
-`include "IncAllTest.def.v"
-`include "vga_machine.v"
+//`include "IncAllTest.def.v"
+`include "../VGA/vga_machine.v"
 
 module GPU( //todo
     input wire clk,
@@ -19,7 +19,11 @@ module GPU( //todo
     output wire sync_n
 );
 
-    wire [`TM_RANGE]                env_task_memory;
+    wire [`TM_RANGE]            env_task_memory;
+    EnvMem EM(
+        .env_task_memory    (env_task_memory)
+    );
+
     wire [`CORES_RANGE]             init_R0_flag;
     wire [`REG_BUS_RANGE]           init_R0_data;
     wire [`INSN_BUS_RANGE]          insn_data;
@@ -52,6 +56,7 @@ module GPU( //todo
         .vga_en             (vga_en)
     );
 
+    genvar i;
     generate
         for (i = 0; i < `NUM_OF_CORES; i = i + 1) begin : array_cores
             Core #(

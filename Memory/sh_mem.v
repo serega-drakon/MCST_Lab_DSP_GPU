@@ -234,11 +234,6 @@ generate for(id_core = 0; id_core < `NUM_OF_CORES; id_core = id_core + 1)
 					((~skip[bank_addr[id_core]])
 						&& (write_request_bank[bank_addr[id_core]] != 1'b0)
 						&& core_is_curr[id_core] && (~last_request_wr[id_core]));
-
-
-				//last_request_wr[id_core] <=
-				//	((~skip[bank_addr[id_core]]) & (write_request_bank[bank_addr[id_core]] != 1'b0)
-				//		& (last_request_wr[id_core] == 1'b0)); //fixme
 		end
 	end
 endgenerate
