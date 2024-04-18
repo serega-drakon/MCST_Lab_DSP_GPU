@@ -10,9 +10,9 @@ module GPU( //todo
     input wire reset,
 
     output wire vga_clk,
-    output wire red_vga [`REG_RANGE],
-    output wire green_vga [`REG_RANGE],
-    output wire blue_vga [`REG_RANGE],
+    output wire [`REG_RANGE]    red_vga,
+    output wire [`REG_RANGE]    green_vga,
+    output wire [`REG_RANGE]    blue_vga ,
     output wire h_sync,
     output wire v_sync,
     output wire blank_n,
@@ -37,8 +37,8 @@ module GPU( //todo
     wire [`ADDR_RANGE]      addr_M      [`CORES_RANGE];
     wire [`ENABLE_RANGE]    enable_M    [`CORES_RANGE];
 
-    wire vga;
     wire vga_en;
+    wire vga_end;
     wire [`REG_RANGE] vga_data;
     wire [`ADDR_RANGE] vga_addr;
 
@@ -52,8 +52,8 @@ module GPU( //todo
         .Insn_Data          (insn_data),
         .Init_R0_Vect       (init_R0_flag),
         .Init_R0            (init_R0_data),
-        .vga                (vga),
-        .vga_en             (vga_en)
+        .vga_en             (vga_en),
+        .vga_end            (vga_end)
     );
 
     genvar i;
@@ -95,10 +95,10 @@ module GPU( //todo
             .rd_data    (rd_data_arb),
             .ready      (ready_arb),
             
-            .vga_en(vga),
+            .vga_en(vga_en),
             .vga_addr(vga_addr),
             .vga_data(vga_data),
-            .vga_end(vga_en)
+            .vga_end(vga_end)
         );
         
     vga_machine
