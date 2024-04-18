@@ -13,8 +13,8 @@ module Task_Scheduler
 		output      reg     [`CORES_RANGE]             Init_R0_Vect,         //TS -> Cores
 		output      reg     [`REG_BUS_RANGE]           Init_R0,              //TS -> Cores
 
-		output      reg                                vga_en,               //TS -> VGA 
-		input       wire                               vga_end               //TS <- VGA
+		input       wire                               vga_end,              //TS <- VGA
+		output      reg                                vga_en                //TS -> VGA 
 	);
 
  	wire    [`TM_WIDTH_RANGE]      Task_Memory [`TM_DEPTH_RANGE];
@@ -35,7 +35,8 @@ module Task_Scheduler
 
 	reg                            stop_r;
 	reg     [`IF_NUM_RANGE]        stop_addr_r;
-
+	
+	reg     [`VGA_DIV_RANGE]       vga_div_50MHz_60Hz;
 
 	assign Task_Memory_Frame     = Task_Memory[Task_Pointer];
 
@@ -66,12 +67,13 @@ module Task_Scheduler
 	wire insn_finish        = (EXEC_MASK & Core_Active_Vect) == 0;
 	wire insn_freeee        = (EXEC_MASK & CORE_ACTIVE_VECT_NEXT) == 0;
 
-    wire insn_free_no_fence = insn_freeee & fence == `NO;
+	wire insn_free_no_fence = insn_freeee & fence == `NO;
 
 
 	assign Insn_Data = Task_Memory_Frame_Part[INSN_LOAD_CNT];
 
-    wire start_cond  = Insn_Frame_Num != 0 & insn_finish;
+	wire start_cond  = Insn_Frame_Num != 0 & insn_finish; 
+
 	assign Start     =
 		(start_cond) ? Core_Active_Vect : 0;
 
@@ -82,18 +84,28 @@ module Task_Scheduler
 
 	reg vga_wait;
 
-	assign vga_wait_do = Insn_Frame_Num == 0 & EXEC_MASK == 0 & stop_r & ~vga_wait;
-	wire vga_stop = vga_wait; //todo (wait VGA impl) 
+	wire vga_wait_do = Insn_Frame_Num == 0 & EXEC_MASK == 0 & stop_r & ~vga_wait;
+	//wire vga_wait_do =  Insn_Frame_Num == 0 & (vga_div_50MHz_60Hz == `BIG_TACT_LENGTH - 1) & stop_r & insn_finish & ~vga_en;
+	wire vga_stop = vga_wait;
 
 
 	always @(posedge clk)
 		vga_wait <= (reset)             ? 0 :
 			        (vga_wait_do)       ? 1 :
-			        (vga_end & ~vga_en) ? 0 : vga_wait; //todo: не добавил функционал зацикливания на себе
+			        (vga_end & ~vga_en & (vga_div_50MHz_60Hz != `BIG_TACT_LENGTH - 1)) ? 0 : vga_wait;//fixme
 
 	always @(posedge clk)
 		vga_en <= (reset) ? 0 :
-			(vga_wait_do) ? 1 : 0;
+			((vga_div_50MHz_60Hz == `BIG_TACT_LENGTH - 1) & (insn_finish)) ? 1 : 0;
+
+	
+	always @(posedge clk)
+		begin
+			vga_div_50MHz_60Hz <= (reset)                                     ? 0                      : 
+			                      (~vga_end)                                  ? 0                      :
+			                      (vga_div_50MHz_60Hz < `BIG_TACT_LENGTH - 1) ? vga_div_50MHz_60Hz + 1 : 0;
+		end
+					  	
 
 	always @(posedge clk)
 		stop_r <= (reset) ? 0 :
@@ -117,18 +129,18 @@ module Task_Scheduler
 
       
 	always @(posedge clk)
-		Insn_Frame_Num <= (reset) ? 0                   :
+		Insn_Frame_Num <= (reset)           ? 0                   :
 			           (vga_stop) ? Insn_Frame_Num      :
 
 			(FLAG_TIME & (Insn_Frame_Num > 1 & insn_finish
 		        | Insn_Frame_Num == 1)) 
-				                  ? Insn_Frame_Num - 1  :
+				                            ? Insn_Frame_Num - 1  :
 
 				( Insn_Frame_Num == 0 & 
 				((EXEC_MASK == 0 & exec_block_cond) |
 				 insn_free_no_fence ) ) 
-				                  ? INSN_FRAME_NUM_NEXT :
-							        Insn_Frame_Num;
+				                            ? INSN_FRAME_NUM_NEXT :
+							                  Insn_Frame_Num;
 
 
     wire core_active_vect_upd = Insn_Frame_Num == 0 &
@@ -163,7 +175,7 @@ module Task_Scheduler
 			if (reset)
 				Task_Pointer <= 0;					       //initially TM is empty or old
 			else if(vga_stop)
-				Task_Pointer <= 0;                         //maybe Task_Pointer;
+				Task_Pointer <= Task_Pointer;                                 //maybe 0;
 			else if(Insn_Frame_Num > 1 & FLAG_TIME & insn_finish)
 				Task_Pointer <= Task_Pointer + 1;
 			else if(Insn_Frame_Num == 1 & FLAG_TIME)
@@ -181,7 +193,7 @@ module Task_Scheduler
 
 
     wire fence_upd = Insn_Frame_Num == 0 & ( (EXEC_MASK != 0 & exec_block_cond) |
-	                                         insn_free_no_fence);
+	                                         insn_free_no_fence );
     wire fence_end = Insn_Frame_Num == 1 & stop_r;
 
 	always @(posedge clk)									//fence
