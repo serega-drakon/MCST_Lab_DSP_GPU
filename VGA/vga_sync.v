@@ -31,13 +31,13 @@ reg [9:0] v_counter;
 reg [9:0] h_counter_div5;
 reg [9:0] v_counter_div15;
 
-always @(posedge clk)
+always @(posedge (clk & ~rst))
 begin
 	if(rst)
 	begin
 		{h_counter_div5, v_counter_div15} <= 20'b0;
-        //h_counter_div5 <= 0;//
-        //v_counter_div15 <= 0;//d
+        //h_counter_div5 <= 0;
+        //v_counter_div15 <= 0;
 	end
     else
     begin
@@ -51,11 +51,15 @@ assign pos_y = v_counter_div15 - v_blank_t_div15;
 
 assign blank_n = ~((h_counter < h_blank_t) || (v_counter < v_blank_t));
 
-always @(posedge clk)
+always @(posedge (clk & ~rst))
 begin
     if (rst)
     begin
         {h_sync, v_sync, h_counter, v_counter} <= 22'd0;
+        //h_sync <= 0;
+        //v_sync <= 0;
+        //h_counter <= 0;
+        //v_counter <= 0;
     end
     else
     begin
