@@ -23,6 +23,7 @@ module Core #(
     output wire [`ENABLE_RANGE]     enable_M
     );
 
+    wire [`INSN_RANGE]      insn_curr;
     reg [`INSN_RANGE]       insn_FD_r;
     reg [`INSN_RANGE]       insn_DX_r;
     reg [`INSN_RANGE]       insn_XM_r;
@@ -163,11 +164,25 @@ module Core #(
 
     wire reset_RF = reset;
 
-    RegisterFile RegisterFile(.reset_RF(reset_RF), .clk(clk), .init_R0(init_R0),
-        .init_R0_data(init_R0_data), .W_result(W_result), .FD_insn_src_0(insn_FD_src_0),
-        .FD_insn_src_1(insn_FD_src_1), .FD_insn_src_2(insn_FD_src_2), .MW_insn_dst(insn_MW_dst),
-        .MW_insn_is_F1(insn_MW_is_F1), .MW_insn_is_F2(insn_MW_is_F2), .D_src_0_data_RF(D_src_0_data_RF),
-        .D_src_1_data_RF(D_src_1_data_RF), .D_src_2_data_RF(D_src_2_data_RF));
+    RegisterFile RegisterFile(
+        .reset_RF           (reset_RF),
+        .clk                (clk),
+        .init_R0            (init_R0),
+        .init_R0_data       (init_R0_data),
+        .W_result           (W_result),
+        .FD_insn_src_0      (insn_FD_src_0),
+        .FD_insn_src_1      (insn_FD_src_1),
+        .FD_insn_src_2      (insn_FD_src_2),
+        .MW_insn_dst        (insn_MW_dst),
+        .MW_insn_is_F1      (insn_MW_is_F1),
+        .MW_insn_is_F2      (insn_MW_is_F2),
+        .D_src_0_data_RF    (D_src_0_data_RF),
+        .D_src_1_data_RF    (D_src_1_data_RF),
+        .D_src_2_data_RF    (D_src_2_data_RF)
+    );
+
+    wire [`REG_RANGE] X_O_data;//TODO: рефакторинг
+    wire [`REG_RANGE] M_O_data;
 
     // Register File bypasses
     wire [`REG_RANGE] D_src_0_data =
@@ -195,7 +210,6 @@ module Core #(
     wire D_fast_branch_cond = D_src_0_data != 0 & insn_FD_is_F4;
 
     wire init_insn_mem = Start & Ready_r;
-    wire [`INSN_RANGE] insn_curr;
 
     InsnMemory InsnMemory(.clk(clk), .reset(reset), .init_insn_mem(init_insn_mem),
         .insn_data(insn_data), .insn_ptr(insn_ptr_r), .insn_load_counter(insn_load_counter),
@@ -216,23 +230,28 @@ module Core #(
     wire [`REG_RANGE] src_1_data_ALU = X_src_1_data;
     wire [`REG_RANGE] X_result_ALU;
 
-    ALU ALU(.src_0_data_ALU(src_0_data_ALU), .src_1_data_ALU(src_1_data_ALU),
-        .insn_F2_const_ALU(insn_DX_const), .core_id(CORE_ID[`CORE_ID_RANGE]),
-        .insn_set_const_mode(insn_DX_set_const_mode), .DX_insn_opc(insn_DX_opc),
-        .X_result_ALU(X_result_ALU));
+    ALU ALU(
+        .src_0_data_ALU(src_0_data_ALU),
+        .src_1_data_ALU(src_1_data_ALU),
+        .insn_F2_const_ALU(insn_DX_const),
+        .core_id(CORE_ID[`CORE_ID_RANGE]),
+        .insn_set_const_mode(insn_DX_set_const_mode),
+        .DX_insn_opc(insn_DX_opc),
+        .X_result_ALU(X_result_ALU)
+    );
 
     reg [`REG_RANGE] XM_O_data_r;
     reg [`REG_RANGE] XM_B_data_r;
     reg [`REG_RANGE] XM_C_data_r;
 
-    wire [`REG_RANGE] X_O_data = X_result_ALU;
+    assign            X_O_data = X_result_ALU; //FIXME
     wire [`REG_RANGE] X_B_data = X_src_1_data;
     wire [`REG_RANGE] X_C_data = X_src_2_data;
     //addr = {XM_src_ld_st_data, XM_src_O_data}
 
     reg [`REG_RANGE] MW_O_data_r;
     reg [`REG_RANGE] MW_D_data_r;
-    wire [`REG_RANGE] M_O_data;
+    //wire [`REG_RANGE] M_O_data; //FIXME
     wire [`REG_RANGE] M_D_data;
 
     wire [`REG_RANGE] M_B_data;
