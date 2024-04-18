@@ -49,7 +49,8 @@ end
 wire	[`BANKS_RANGE]	vga_addr_bank;
 wire	[`REG_RANGE]	vga_addr_reg;
 
-assign	vga_end = (vga_count == `ADDR_SIZE'd255);
+//assign	vga_end = (vga_count == `ADDR_SIZE'd255);
+assign 	vga_end = ~(vga_en | vga_stop);
 assign	{vga_addr_bank, vga_addr_reg} = vga_addr;
 assign	vga_data = vga_rd_data_bank[vga_addr_bank];
 
@@ -233,11 +234,6 @@ generate for(id_core = 0; id_core < `NUM_OF_CORES; id_core = id_core + 1)
 					((~skip[bank_addr[id_core]])
 						&& (write_request_bank[bank_addr[id_core]] != 1'b0)
 						&& core_is_curr[id_core] && (~last_request_wr[id_core]));
-
-
-				//last_request_wr[id_core] <=
-				//	((~skip[bank_addr[id_core]]) & (write_request_bank[bank_addr[id_core]] != 1'b0)
-				//		& (last_request_wr[id_core] == 1'b0)); //fixme
 		end
 	end
 endgenerate
