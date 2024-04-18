@@ -35,15 +35,10 @@ always @(posedge clk)
 begin
 	if(rst)
 	begin
-		{h_counter_div5, v_counter_div15} <= 20'b0;
-        //h_counter_div5 <= 0;//
-        //v_counter_div15 <= 0;//d
+		{h_counter_div5, v_counter_div15} <= 19'b0;
 	end
-    else
-    begin
-	    h_counter_div5 <= h_counter_div5 + ((h_counter_div5 + 1) * 5 == h_counter);
-	    v_counter_div15 <= v_counter_div15 + ((v_counter_div15 + 1) * 15 == v_counter);
-    end
+	h_counter_div5 <= h_counter_div5 + ((h_counter_div5 + 1) * 5 == h_counter);
+	v_counter_div15 <= v_counter_div15 + ((v_counter_div15 + 1) * 15 == v_counter);
 end
 
 assign pos_x = h_counter_div5 - h_blank_t_div5;

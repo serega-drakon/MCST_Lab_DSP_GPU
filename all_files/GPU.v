@@ -1,29 +1,25 @@
-`include "../Core/Modules/Core.v"
-`include "../Scheduler/TS.v"
-`include "../Memory/sh_mem.v"
+`include "Core.v"
+`include "TS.v"
+`include "sh_mem.v"
 `include "EnvMem.v"
-//`include "IncAllTest.def.v"
-`include "../VGA/vga_machine.v"
+`include "IncAllTest.def.v"
+`include "vga_machine.v"
 
 module GPU( //todo
     input wire clk,
     input wire reset,
 
     output wire vga_clk,
-    output wire [`REG_RANGE]    red_vga,
-    output wire [`REG_RANGE]    green_vga,
-    output wire [`REG_RANGE]    blue_vga ,
+    output wire [`REG_RANGE]	red_vga,
+    output wire [`REG_RANGE]	green_vga,
+    output wire [`REG_RANGE]	blue_vga,
     output wire h_sync,
     output wire v_sync,
     output wire blank_n,
     output wire sync_n
 );
 
-    wire [`TM_RANGE]            env_task_memory;
-    EnvMem EM(
-        .env_task_memory    (env_task_memory)
-    );
-
+    wire [`TM_RANGE]                env_task_memory;
     wire [`CORES_RANGE]             init_R0_flag;
     wire [`REG_BUS_RANGE]           init_R0_data;
     wire [`INSN_BUS_RANGE]          insn_data;
@@ -37,8 +33,8 @@ module GPU( //todo
     wire [`ADDR_RANGE]      addr_M      [`CORES_RANGE];
     wire [`ENABLE_RANGE]    enable_M    [`CORES_RANGE];
 
+    wire vga;
     wire vga_en;
-    wire vga_end;
     wire [`REG_RANGE] vga_data;
     wire [`ADDR_RANGE] vga_addr;
 
@@ -52,11 +48,11 @@ module GPU( //todo
         .Insn_Data          (insn_data),
         .Init_R0_Vect       (init_R0_flag),
         .Init_R0            (init_R0_data),
-        .vga_en             (vga_en),
-        .vga_end            (vga_end)
+        .vga_en             (vga),
+        .vga_end            (vga_en)
     );
 
-    genvar i;
+	genvar i;
     generate
         for (i = 0; i < `NUM_OF_CORES; i = i + 1) begin : array_cores
             Core #(
@@ -95,10 +91,10 @@ module GPU( //todo
             .rd_data    (rd_data_arb),
             .ready      (ready_arb),
             
-            .vga_en(vga_en),
+            .vga_en(vga),
             .vga_addr(vga_addr),
             .vga_data(vga_data),
-            .vga_end(vga_end)
+            .vga_end(vga_en)
         );
         
     vga_machine

@@ -1064,7 +1064,7 @@ void printProgramFromStackToVerilog(Stack* input, FILE* output){
     unsigned size = getsize_dStack(input);
     unsigned char *ptrValue;
     unsigned i = 0;
-    const char str[] = "assign env_task_memory";
+    const char str[] = "assign env_task_mem_array";
     for(i = 0; i < size; i++) {
         ptrValue = dStack_r(input, i);
         fprintf(output, "%s[%d][%d] = 16'h%.2x%.2x;\n",

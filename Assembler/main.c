@@ -11,7 +11,7 @@ int main(){
 
     CompilerStates state;
     //state = compileTextToText(input, output);
-    state = compileTextTo(input, output, printProgramFromStackToFile);
+    state = compileTextTo(input, output, printProgramFromStackToVerilog);
 
     fclose(input);
     fclose(output);
