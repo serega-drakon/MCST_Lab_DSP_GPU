@@ -42,7 +42,7 @@ always @(posedge clk0) begin
 end
 
 
-//always @(posedge clk)
+//always @(posedge clk)//
 //begin
 //	if(rst)
 //	begin
