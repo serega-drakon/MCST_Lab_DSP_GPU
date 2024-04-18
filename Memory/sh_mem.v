@@ -49,7 +49,8 @@ end
 wire	[`BANKS_RANGE]	vga_addr_bank;
 wire	[`REG_RANGE]	vga_addr_reg;
 
-assign	vga_end = (vga_count == `ADDR_SIZE'd255);
+//assign	vga_end = (vga_count == `ADDR_SIZE'd255);
+assign 	vga_end = ~(vga_en | vga_stop);
 assign	{vga_addr_bank, vga_addr_reg} = vga_addr;
 assign	vga_data = vga_rd_data_bank[vga_addr_bank];
 
