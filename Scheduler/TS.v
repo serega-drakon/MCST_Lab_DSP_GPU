@@ -91,8 +91,8 @@ module Task_Scheduler
 
 	always @(posedge clk)
 		vga_wait <= (reset)             ? 0 :
-			        (vga_wait_do)       ? 1 :
-			        (vga_end & ~vga_en & (vga_div_50MHz_60Hz != `BIG_TACT_LENGTH - 1)) ? 0 : vga_wait;//fixme
+                            (vga_wait_do)       ? 1 :
+                            (vga_end & ~vga_en & (vga_div_50MHz_60Hz == 0)) ? 0 : vga_wait;   //fixme
 
 	always @(posedge clk)
 		vga_en <= (reset) ? 0 :
@@ -102,7 +102,6 @@ module Task_Scheduler
 	always @(posedge clk)
 		begin
 			vga_div_50MHz_60Hz <= (reset)                                     ? 0                      : 
-			                      (~vga_end)                                  ? 0                      :
 			                      (vga_div_50MHz_60Hz < `BIG_TACT_LENGTH - 1) ? vga_div_50MHz_60Hz + 1 : 0;
 		end
 					  	
@@ -147,14 +146,14 @@ module Task_Scheduler
 			    ((EXEC_MASK == 0 & exec_block_cond) |
 			   insn_free_no_fence);
 
-	always @(posedge clk)
-		Core_Active_Vect <= (reset) ? 0                     : 
-		                 (vga_stop) ? Core_Active_Vect      :
-			 (core_active_vect_upd) ? CORE_ACTIVE_VECT_NEXT :
+    always @(posedge clk)
+        Core_Active_Vect <= (reset) ? 0                     : 
+                         (vga_stop) ? Core_Active_Vect      :
+             (core_active_vect_upd) ? CORE_ACTIVE_VECT_NEXT :
 			                          Core_Active_Vect ;
 
 
-	wire insn_load_cnt_upd = start_cond;                    // >0 equiv !=0
+    wire insn_load_cnt_upd = start_cond;                    // >0 equiv !=0
     wire insn_load_cnt_end = (insn_load_cnt_upd & FLAG_TIME) |
 				(Insn_Frame_Num == 0 & ( (EXEC_MASK == 0 & exec_block_cond) |
 					                    insn_free_no_fence));
@@ -196,12 +195,12 @@ module Task_Scheduler
 	                                         insn_free_no_fence );
     wire fence_end = Insn_Frame_Num == 1 & stop_r;
 
-	always @(posedge clk)									//fence
-		begin
-			fence <= (reset) ? `NO                                :
-			     (fence_upd) ? Task_Memory_Frame[`TS_FENCE_RANGE] :
+    always @(posedge clk)									//fence
+        begin
+            fence <= (reset) ? `NO                                :
+                 (fence_upd) ? Task_Memory_Frame[`TS_FENCE_RANGE] :
                  (fence_end) ? `ACQ                               :  //waiting for the end of the end))))
-				               fence;
+                               fence;
 		end
 
 endmodule
