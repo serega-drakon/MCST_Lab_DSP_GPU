@@ -87,12 +87,23 @@ module Task_Scheduler
 	wire vga_wait_do = Insn_Frame_Num == 0 & EXEC_MASK == 0 & stop_r & ~vga_wait;
 	//wire vga_wait_do =  Insn_Frame_Num == 0 & (vga_div_50MHz_60Hz == `BIG_TACT_LENGTH - 1) & stop_r & insn_finish & ~vga_en;
 	wire vga_stop = vga_wait;
-
+	
+	reg vga_wait_2;
 
 	always @(posedge clk)
+		vga_wait2 <= (reset)             ? 0 :
+                     (vga_wait_do)       ? 1 :
+                     (vga_end & ~vga_en & (vga_div_50MHz_60Hz == 0)) ? 0 : vga_wait2;   //fixme
+
+	assign do_vga_wait2 = vga_wait & ~vga_wait2;
+	
+	always @(posedge clk)
 		vga_wait <= (reset)             ? 0 :
-                            (vga_wait_do)       ? 1 :
-                            (vga_end & ~vga_en & (vga_div_50MHz_60Hz == 0)) ? 0 : vga_wait;   //fixme
+                    (vga_wait_do)       ? 1 :
+                    (vga_end & ~vga_en & (vga_div_50MHz_60Hz == 0) & do_vga_wait2) ? 0 : vga_wait;   //fixme
+
+
+
 
 	always @(posedge clk)
 		vga_en <= (reset) ? 0 :
@@ -174,7 +185,7 @@ module Task_Scheduler
 			if (reset)
 				Task_Pointer <= 0;					       //initially TM is empty or old
 			else if(vga_stop)
-				Task_Pointer <= Task_Pointer;//FIXME                                 //maybe 0;
+				Task_Pointer <= Task_Pointer;                                 //maybe 0;
 			else if(Insn_Frame_Num > 1 & FLAG_TIME & insn_finish)
 				Task_Pointer <= Task_Pointer + 1;
 			else if(Insn_Frame_Num == 1 & FLAG_TIME)
