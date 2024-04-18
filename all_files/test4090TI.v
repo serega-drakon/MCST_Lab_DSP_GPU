@@ -5,7 +5,7 @@ module test4090TI;
     reg reset;
     initial begin
         reset <= 1;
-        #10 reset <= 0;
+        #15 reset <= 0;
     end
 
     GPU GPU(

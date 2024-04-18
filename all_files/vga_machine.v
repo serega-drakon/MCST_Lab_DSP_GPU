@@ -1,6 +1,7 @@
 `include "vga.v"
 `include "IncAll.def.v"
 
+
 module vga_machine(
 	input           clk,
 	input           rst,
