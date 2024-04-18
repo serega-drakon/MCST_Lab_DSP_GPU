@@ -30,7 +30,7 @@ clk_div2 clk_div2
 vga_sync vga_sync
 (
     .clk0       (clk),
-    .clk        (vga_clk),
+    .clk_div2   (vga_clk),
     .rst        (rst_buff),
     .h_sync     (h_sync),
     .v_sync     (v_sync),

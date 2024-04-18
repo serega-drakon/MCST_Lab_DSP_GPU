@@ -39,8 +39,10 @@ begin
 	end
 	else
 	begin
-		h_counter_div5 <= (h_counter != 0) ? (h_counter_div5 + (((h_counter_div5 + 1) * 5 == h_counter) ? 1 : 0)) : (0);
-		v_counter_div15 <= (v_counter != 0) ? (v_counter_div15 + (((v_counter_div15 + 1) * 15 == v_counter) ? 1 : 0)) : (0); 
+		h_counter_div5 <=
+            (h_counter != 0) ? (h_counter_div5 + (((h_counter_div5 + 1) * 5 == h_counter) ? 1 : 0)) : (0);
+		v_counter_div15 <=
+            (v_counter != 0) ? (v_counter_div15 + (((v_counter_div15 + 1) * 15 == v_counter) ? 1 : 0)) : (0);
 	end
 end
 

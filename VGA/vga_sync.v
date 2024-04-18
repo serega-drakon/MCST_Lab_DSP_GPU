@@ -1,6 +1,6 @@
 module vga_sync (
     input   clk0,
-    input clk_div2,
+    input   clk_div2,
     input   rst,
 
     output  reg     h_sync,
@@ -34,10 +34,10 @@ reg [9:0] v_counter_div15;
 
 always @(posedge clk0) begin
     h_counter_div5 <= (rst) ? 0 : (clk_div2) ?
-        ((h_counter == 0) ? (h_counter_div5 + ((h_counter_div5 + 1) * 5 == h_counter)) : 0) :
+        ((h_counter != 0) ? (h_counter_div5 + (((h_counter_div5 + 1) * 5 == h_counter) ? 1 : 0)) : (0)) :
         h_counter_div5;
     v_counter_div15 <= (rst) ? 0 : (clk_div2) ?
-        ((v_counter == 0) ? (v_counter_div15 + ((v_counter_div15 + 1) * 15 == v_counter)) : 0) :
+        ((v_counter != 0) ? (v_counter_div15 + (((v_counter_div15 + 1) * 15 == v_counter) ? 1 : 0)) : (0)) :
         v_counter_div15;
 end
 
