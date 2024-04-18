@@ -1,4 +1,4 @@
-module clk_div2 (//
+module clk_div2 (// //
 	input		clk,
 	input		rst,
 	output reg	clk_div2
