@@ -174,7 +174,7 @@ module Task_Scheduler
 			if (reset)
 				Task_Pointer <= 0;					       //initially TM is empty or old
 			else if(vga_stop)
-				Task_Pointer <= Task_Pointer;                                 //maybe 0;
+				Task_Pointer <= Task_Pointer;//FIXME                                 //maybe 0;
 			else if(Insn_Frame_Num > 1 & FLAG_TIME & insn_finish)
 				Task_Pointer <= Task_Pointer + 1;
 			else if(Insn_Frame_Num == 1 & FLAG_TIME)

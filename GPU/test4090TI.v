@@ -1,10 +1,12 @@
 `include "GPU.v"
 module test4090TI;
     reg clk = 1;
-    always #5 clk = ~clk;
+    always #5 clk <= ~clk;
     reg reset;
     initial begin
         reset <= 1;
+        #20 reset <= 0;
+        #20 reset <= 1;
         #20 reset <= 0;
     end
 

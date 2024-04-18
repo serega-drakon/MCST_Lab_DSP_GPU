@@ -95,10 +95,10 @@ module GPU( //todo
             .rd_data    (rd_data_arb),
             .ready      (ready_arb),
             
-            .vga_en(vga_en),
-            .vga_addr(vga_addr),
-            .vga_data(vga_data),
-            .vga_end(vga_end)
+            .vga_en     (vga_en),
+            .vga_addr   (vga_addr),
+            .vga_data   (vga_data),
+            .vga_end    (vga_end)
         );
         
     vga_machine

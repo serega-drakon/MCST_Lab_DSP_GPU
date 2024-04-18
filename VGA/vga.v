@@ -16,6 +16,10 @@ module vga (
 
 assign sync_n = 1'd0;
 
+reg rst_buff;
+always @(posedge clk)
+    rst_buff <= rst;
+
 clk_div2 clk_div2
 (
     .clk        (clk),
@@ -25,8 +29,9 @@ clk_div2 clk_div2
 
 vga_sync vga_sync
 (
+    .clk0       (clk),
     .clk        (vga_clk),
-    .rst        (rst),
+    .rst        (rst_buff),
     .h_sync     (h_sync),
     .v_sync     (v_sync),
     .pos_x      (point_pos_x),
