@@ -1,4 +1,4 @@
-`include"../SharedInc/IncAll.def.v"
+`include"IncAll.def.v"
 `include"bank.v"
 `include"find_id_core.v"
 
@@ -20,21 +20,36 @@ module sh_mem
 
 reg				vga_stop;
 reg	[`REG_RANGE]		vga_count;
+wire	[`REG_RANGE]		vga_rd_data_bank		[`BANKS_RANGE];
 
 always @(posedge clk)
 begin
-	vga_stop <= (vga_en | (vga_count == `REG_SIZE'b1)) ? ~vga_stop : vga_stop;
+	if(reset)
+	begin
+		vga_stop <= 1'b0;
+	end
+	else
+	begin
+		vga_stop <= (vga_en | (vga_count == `REG_SIZE'd255)) ? ~vga_stop : vga_stop;
+	end
 end
 
 always @(posedge clk)
 begin
-	vga_count <= (vga_stop) ? vga_count + 1 : `REG_SIZE'b0;
+	if(reset)
+	begin
+		vga_count <= 1'b0;
+	end
+	else
+	begin
+		vga_count <= (vga_stop | vga_en) ? vga_count + 1 : `REG_SIZE'b0;
+	end
 end
 
 wire	[`BANKS_RANGE]	vga_addr_bank;
 wire	[`REG_RANGE]	vga_addr_reg;
 
-assign	vga_end = (vga_count == 'ADDR_SIZEb1);
+assign	vga_end = (vga_count == `ADDR_SIZE'd255);
 assign	{vga_addr_bank, vga_addr_reg} = vga_addr;
 assign	vga_data = vga_rd_data_bank[vga_addr_bank];
 
@@ -59,8 +74,6 @@ wire	[`REG_RANGE]		wr_data_bank		[`BANKS_RANGE];
 wire	[`BANKS_RANGE]		read_request_bank;
 wire	[`BANKS_RANGE]		write_request_bank;
 wire	[`REG_RANGE]		rd_data_bank		[`BANKS_RANGE];
-
-wire	[`REG_RANGE]		vga_rd_data_bank		[`BANKS_RANGE];
 
 wire core_is_curr [`CORES_RANGE];
 
@@ -91,7 +104,7 @@ endgenerate
 
 generate for (id_core = 0; id_core < `NUM_OF_CORES; id_core = id_core + 1)
 begin: form_ready
-	assign	ready[id_core] = ((last_request_rd[id_core]) || ((request_core[id_core] == 2'b10) && (core_is_curr[id_core])));//?
+	assign	ready[id_core] = ((last_request_rd[id_core]) | ((request_core[id_core] == 2'b10) & (core_is_curr[id_core])));//?
 end
 endgenerate
 
@@ -107,7 +120,7 @@ genvar id_bank;
 generate for (id_bank = 0; id_bank < `NUM_OF_BANKS; id_bank = id_bank + 1)
 begin: form_request_mask
 	for (id_core = 0; id_core < `NUM_OF_CORES; id_core = id_core + 1)
-	begin
+	begin: form_request_0
 		assign	request_core_mask[id_bank][id_core] = ((bank_addr[id_core] == id_bank) && (request_core[id_core] != 0));
 	end
 end
