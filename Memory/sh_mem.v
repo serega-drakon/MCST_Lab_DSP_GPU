@@ -167,10 +167,10 @@ generate for(id_bank = 0; id_bank < `NUM_OF_BANKS; id_bank = id_bank + 1)
 	(
 		.clk(clk),
 		.reset(reset),
-		.addr((en_stop) ? vga_count : vga_addr_reg),
+		.addr((vga_stop) ? vga_count : vga_addr_reg),
 		.data_in(rd_data_bank[id_bank]),
-		.read_enable((en_stop) ? 1'b0 : 1'b1),
-		.write_enable((en_stop) ? 1'b1 : 1'b0),
+		.read_enable((vga_stop) ? 1'b0 : 1'b1),
+		.write_enable((vga_stop) ? 1'b1 : 1'b0),
 		.data_out(vga_rd_data_bank[id_bank])
 	);
 	end
