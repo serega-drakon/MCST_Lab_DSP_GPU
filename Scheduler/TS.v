@@ -84,14 +84,22 @@ module Task_Scheduler
 
 	reg vga_wait;
 
-	wire vga_wait_do = Insn_Frame_Num == 0 & EXEC_MASK == 0 & stop_r & ~vga_wait;
+	//wire vga_wait_do = Insn_Frame_Num == 0 & EXEC_MASK == 0 & stop_r & ~vga_wait;   //походу тут лажа
+	wire vga_wait_do = Insn_Frame_Num == 0 & EXEC_MASK == 0 & stop_r;
 	//wire vga_wait_do =  Insn_Frame_Num == 0 & (vga_div_50MHz_60Hz == `BIG_TACT_LENGTH - 1) & stop_r & insn_finish & ~vga_en;
 	wire vga_stop = vga_wait;
 		
+		
+		
+	reg vga_end_prev;
+		
+	always @(posedge clk)
+		vga_end_prev <= vga_end;
+	
 	always @(posedge clk)
 		vga_wait <= (reset)             ? 0 :
                     (vga_wait_do)       ? 1 :
-                    (vga_end & ~vga_en & (vga_div_50MHz_60Hz == 0) & ~vga_wait) ? 0 : ~vga_wait;   //fixme
+                    (vga_end & ~vga_en & ~vga_end_prev & vga_wait) ? 0 : vga_wait;
 
 
 	always @(posedge clk)
