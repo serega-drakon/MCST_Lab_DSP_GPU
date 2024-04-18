@@ -88,7 +88,7 @@ module Task_Scheduler
 	//wire vga_wait_do =  Insn_Frame_Num == 0 & (vga_div_50MHz_60Hz == `BIG_TACT_LENGTH - 1) & stop_r & insn_finish & ~vga_en;
 	wire vga_stop = vga_wait;
 	
-	reg vga_wait_2;
+	reg vga_wait2;
 
 	always @(posedge clk)
 		vga_wait2 <= (reset)             ? 0 :
