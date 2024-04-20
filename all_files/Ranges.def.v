@@ -95,7 +95,7 @@
 `define STOP_BIT_RANGE (14) : (14)
 `define STOP_ADDR_RANGE (13) : (8)
 
-`define BIG_TACT_LENGTH 833334                      //[50000000Hz/60Hz]+1 
+`define BIG_TACT_LENGTH 15000 //833334                      //[50000000Hz/60Hz]+1 
 `define BIG_TACT_SIZE $clog2(`BIG_TACT_LENGTH)
 `define VGA_DIV_RANGE (`BIG_TACT_SIZE - 1) : (0)
 

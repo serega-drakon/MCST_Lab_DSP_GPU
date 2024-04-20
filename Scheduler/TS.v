@@ -72,7 +72,7 @@ module Task_Scheduler
 
 	assign Insn_Data = Task_Memory_Frame_Part[INSN_LOAD_CNT];
 
-	wire start_cond  = Insn_Frame_Num != 0 & insn_finish; 
+	wire start_cond  = Insn_Frame_Num != 0 & insn_finish;                              //maybe & ~stop_r; 
 
 	assign Start     =
 		(start_cond) ? Core_Active_Vect : 0;
@@ -136,8 +136,8 @@ module Task_Scheduler
 
       
 	always @(posedge clk)
-		Insn_Frame_Num <= (reset)           ? 0                   :
-			           (vga_stop) ? Insn_Frame_Num      :
+		Insn_Frame_Num <= (reset)    ? 0                   :
+		                  (vga_stop) ? Insn_Frame_Num      :
 
 			(FLAG_TIME & (Insn_Frame_Num > 1 & insn_finish
 		        | Insn_Frame_Num == 1)) 
@@ -167,12 +167,12 @@ module Task_Scheduler
 					                    insn_free_no_fence));
 
 
-	always @(posedge clk)									//Instruction load counter
-		begin
-			INSN_LOAD_CNT <= (reset) ? 0                 :
+    always @(posedge clk)									//Instruction load counter
+        begin
+            INSN_LOAD_CNT <= (reset) ? 0                 :
                  (insn_load_cnt_end) ? 0                 : 
-				 (insn_load_cnt_upd) ? INSN_LOAD_CNT + 1 :
-				                       INSN_LOAD_CNT;
+                 (insn_load_cnt_upd) ? INSN_LOAD_CNT + 1 :
+                                       INSN_LOAD_CNT;
 		end
 
 
@@ -182,7 +182,7 @@ module Task_Scheduler
 			if (reset)
 				Task_Pointer <= 0;					       //initially TM is empty or old
 			else if(vga_stop)
-				Task_Pointer <= Task_Pointer;                                 //maybe 0;
+				Task_Pointer <= 0;                                 //maybe Task_Pointer;
 			else if(Insn_Frame_Num > 1 & FLAG_TIME & insn_finish)
 				Task_Pointer <= Task_Pointer + 1;
 			else if(Insn_Frame_Num == 1 & FLAG_TIME)
@@ -206,6 +206,7 @@ module Task_Scheduler
     always @(posedge clk)									//fence
         begin
             fence <= (reset) ? `NO                                :
+			     (vga_stop)  ? fence                              :
                  (fence_upd) ? Task_Memory_Frame[`TS_FENCE_RANGE] :
                  (fence_end) ? `ACQ                               :  //waiting for the end of the end))))
                                fence;
