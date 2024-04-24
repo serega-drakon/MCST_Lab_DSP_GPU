@@ -198,9 +198,9 @@ module Task_Scheduler
 		end
 
 
-    wire fence_upd = Insn_Frame_Num == 0 & ( (EXEC_MASK != 0 & exec_block_cond) |
-	                                         insn_free_no_fence );
-    wire fence_end = Insn_Frame_Num == 1 & stop_r;
+    wire fence_upd = (Insn_Frame_Num == 0) &
+		( (EXEC_MASK != 0 & exec_block_cond) | insn_free_no_fence );
+    wire fence_end = (Insn_Frame_Num == 1) & stop_r;
 
     always @(posedge clk)									//fence
         begin
