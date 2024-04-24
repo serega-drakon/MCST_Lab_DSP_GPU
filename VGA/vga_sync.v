@@ -32,15 +32,46 @@ reg [9:0] v_counter;
 reg [9:0] h_counter_div5;
 reg [9:0] v_counter_div15;
 
+wire h_counter_div5_cldiv_2
+    = (h_counter != 0) ? (h_counter_div5 + (((h_counter_div5 + 1) * 5 == h_counter) ? 1 : 0)) : 0;
+wire v_counter_div15_cldiv_2
+    = ((v_counter != 0) ? (v_counter_div15 + (((v_counter_div15 + 1) * 15 == v_counter) ? 1 : 0)) : (0));
+
 always @(posedge clk0) begin
-    h_counter_div5 <= (rst) ? 0 : (clk_div2) ?
-        ((h_counter != 0) ? (h_counter_div5 + (((h_counter_div5 + 1) * 5 == h_counter) ? 1 : 0)) : (0)) :
-        h_counter_div5;
-    v_counter_div15 <= (rst) ? 0 : (clk_div2) ?
-        ((v_counter != 0) ? (v_counter_div15 + (((v_counter_div15 + 1) * 15 == v_counter) ? 1 : 0)) : (0)) :
-        v_counter_div15;
+    h_counter_div5  <= (rst) ? 0 : (clk_div2) ? h_counter_div5_cldiv_2  : h_counter_div5;
+    v_counter_div15 <= (rst) ? 0 : (clk_div2) ? v_counter_div15_cldiv_2 : v_counter_div15;
 end
 
+
+assign pos_x
+    = h_counter_div5 - h_blank_t_div5;
+assign pos_y
+    = v_counter_div15 - v_blank_t_div15;
+
+assign blank_n
+    = ~((h_counter < h_blank_t) || (v_counter < v_blank_t));
+
+wire v_sync_cldiv_2
+     = (h_counter == h_front_t + h_sync_t - 1) ?
+      ((v_counter < v_front_t - 1) | (v_counter > v_front_t + v_sync_t - 1)) :
+        v_sync;
+wire h_sync_cldiv_2
+     = (h_counter < h_front_t - 1) | (h_counter > h_front_t + h_sync_t - 1);
+wire h_counter_cldiv_2
+     = (h_counter == h_total_t - 1) ? 10'd0 : h_counter + 1'd1;
+wire v_counter_cldiv_2
+     = (h_counter == h_front_t + h_sync_t - 1) ?
+      ((v_counter == v_total_t - 1) ? 10'd0 : v_counter + 1'd1) :
+        v_counter;
+
+always @(posedge clk0) begin
+    h_sync      <=  (rst) ? 0 : (clk_div2) ? h_sync_cldiv_2     : h_sync;
+    v_sync      <=  (rst) ? 0 : (clk_div2) ? v_sync_cldiv_2     : v_sync;
+    h_counter   <=  (rst) ? 0 : (clk_div2) ? h_counter_cldiv_2  : h_counter;
+    v_counter   <=  (rst) ? 0 : (clk_div2) ? v_counter_cldiv_2  : v_counter;
+end
+
+//Это было до моих "доработок", по сути я взял и пределал все под always от clk сигнала, а не его делителя на 2
 
 //always @(posedge clk)//
 //begin
@@ -56,30 +87,6 @@ end
 //	    v_counter_div15 <= v_counter_div15 + ((v_counter_div15 + 1) * 15 == v_counter);
 //    end
 //end
-
-assign pos_x = h_counter_div5 - h_blank_t_div5;
-assign pos_y = v_counter_div15 - v_blank_t_div15;
-
-assign blank_n = ~((h_counter < h_blank_t) || (v_counter < v_blank_t));
-
-always @(posedge clk0) begin
-    h_sync <= (rst) ? 0 : (clk_div2) ?
-    ((h_counter < h_front_t - 1) | (h_counter > h_front_t + h_sync_t - 1)) :
-    h_sync;
-
-    v_sync <= (rst) ? 0 : (clk_div2) ?
-        ((h_counter == h_front_t + h_sync_t - 1) ?
-        ((v_counter < v_front_t - 1) | (v_counter > v_front_t + v_sync_t - 1)) :
-        v_sync ) :
-        v_sync;
-    h_counter <= (rst) ? 0 : (clk_div2) ? ((h_counter == h_total_t - 1) ? 10'd0 :
-        h_counter + 1'd1) : h_counter;
-    v_counter <= (rst) ? 0 : (clk_div2) ?
-        ((h_counter == h_front_t + h_sync_t - 1) ?
-        ((v_counter == v_total_t - 1) ? 10'd0 : v_counter + 1'd1) :
-        v_counter) :
-        v_counter;
-end
 
 //always @(posedge clk)
 //begin

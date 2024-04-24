@@ -101,7 +101,6 @@ module Task_Scheduler
                     (vga_wait_do)       ? 1 :
                     (vga_end & ~vga_en & ~vga_end_prev & vga_wait) ? 0 : vga_wait;
 
-
 	always @(posedge clk)
 		vga_en <= (reset) ? 0 :
 			((vga_div_50MHz_60Hz == `BIG_TACT_LENGTH - 1) & (insn_finish)) ? 1 : 0;
