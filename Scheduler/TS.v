@@ -122,7 +122,7 @@ module Task_Scheduler
 
 	always @(posedge clk)
 		Init_R0_Vect <= (reset) ? 0 :
-			(Insn_Frame_Num == 0) ? Task_Memory_Frame[`TM_INSN_RANGE(2)] : Init_R0_Vect; //fixme: const
+			(Insn_Frame_Num == 0) ? Task_Memory_Frame[`TM_INSN_RANGE(2)] : Init_R0_Vect; //fix: const
 
 	generate for (ii = `NUM_OF_CORES - 1; ii >= 0; ii = ii - 1) begin: init_R0_loop		 //Init_R0
 		always @(posedge clk)
@@ -179,9 +179,9 @@ module Task_Scheduler
 	always @(posedge clk)									//Task Pointer
 		begin
 			if (reset)
-				Task_Pointer <= 0;					       //initially TM is empty or old
+				Task_Pointer <= 0;					        //initially TM is empty or old
 			else if(vga_stop)
-				Task_Pointer <= 0;                                 //maybe Task_Pointer;
+				Task_Pointer <= STOP_ADDR_NEXT;             //maybe Task_Pointer;
 			else if(Insn_Frame_Num > 1 & FLAG_TIME & insn_finish)
 				Task_Pointer <= Task_Pointer + 1;
 			else if(Insn_Frame_Num == 1 & FLAG_TIME)
