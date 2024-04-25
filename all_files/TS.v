@@ -1,5 +1,5 @@
-`include "../SharedInc/Ranges.def.v"
-`include "../SharedInc/Fence.def.v"
+`include "Ranges.def.v"
+`include "Fence.def.v"
 
 module Task_Scheduler
 	(
