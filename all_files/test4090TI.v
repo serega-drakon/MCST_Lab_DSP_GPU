@@ -27,7 +27,7 @@ module test4090TI;
     end
 
     initial begin
-        #250000;
+        #500000;
         $finish();
     end
 endmodule

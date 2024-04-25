@@ -16,7 +16,8 @@ module sh_mem
 	output	wire	[`REG_RANGE]		vga_data,
 	output	wire	[`ADDR_RANGE]		vga_addr_copy,
 	output	wire				vga_copy,
-	output	wire				vga_end
+	output	wire				vga_end,
+	input wire					vga_copy_moment
 );
 
 reg				vga_stop;
@@ -65,7 +66,7 @@ begin
 	end
 	else
 	begin
-		vga_count <= (vga_stop | vga_en) ? vga_count + 1 : `REG_SIZE'b0;
+		vga_count <= ((vga_stop | vga_en) && (vga_copy_moment)) ? vga_count + 1 : `REG_SIZE'b0;
 	end
 end
 
@@ -144,12 +145,12 @@ endgenerate
 generate for(id_bank = 0; id_bank < `NUM_OF_BANKS; id_bank = id_bank + 1)
 	begin:connection_wires
 		assign	data_addr_bank[id_bank] =
-			(vga_stop && (vga_addr_bank == id_bank)) ? (vga_addr_reg) :
+			(vga_stop && vga_copy_moment && (vga_addr_bank == id_bank)) ? (vga_addr_reg) :
 			(~skip[id_bank]) ? (data_addr_core[id_current_core[id_bank]]) : (`REG_SIZE'h0);
 		assign	wr_data_bank[id_bank] =
 			(~skip[id_bank]) ? (wr_data_core[id_current_core[id_bank]]) : (`REG_SIZE'h0);
 		assign	{write_request_bank[id_bank], read_request_bank[id_bank]} =
-			(vga_stop && (vga_addr_bank == id_bank)) ? (2'b01) :
+			(vga_stop && vga_copy_moment && (vga_addr_bank == id_bank)) ? (2'b01) :
 			(~skip[id_bank]) ? (request_core[id_current_core[id_bank]]) : (2'b00);
 	end
 endgenerate

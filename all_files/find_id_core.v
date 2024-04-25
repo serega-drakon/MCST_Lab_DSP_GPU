@@ -1,4 +1,4 @@
-`include"../SharedInc/IncAll.def.v"
+`include"IncAll.def.v"
 
 module find_id_core
 (

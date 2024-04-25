@@ -35,9 +35,9 @@ vga vga_0(
 	.point_pos_y(y)
 );
 
-assign red_vga = vga_data;
-assign green_vga = vga_data;
-assign blue_vga = vga_data;
+assign red_vga = ((x < 64) && (y < 64)) ? vga_data : 0;
+assign green_vga = ((x < 64) && (y < 64)) ? vga_data : 0;
+assign blue_vga = ((x < 64) && (y < 64)) ? vga_data : 0;
 
 assign vga_addr = {y[5:0], x[5:0]};
 
