@@ -4,20 +4,20 @@ module sram_conn(
 	input	wire			clk,
 	input 	wire			rst,
 
-	input 	wire			write,
-	input 	wire			read,
-	input	wire	[1:0]		byte_en,
-	input 	wire	[`ADDR_RANGE]		addr,
-	input 	wire	[`REG_RANGE]		data_in,
-	output 	reg	[`REG_RANGE]		data_out,
+	input 	wire					write,
+	input 	wire					read,
+	input	wire	[1:0]			byte_en,
+	input 	wire	[`ADDR_RANGE]	addr,
+	input 	wire	[`REG_RANGE]	data_in,
+	output 	reg		[`REG_RANGE]	data_out,
 
-	inout 	wire	[15:0]		sram_data,
-	output 		[19:0]		sram_addr,
-	output 				sram_ce_n,
-	output 				sram_oe_n,
-	output 				sram_we_n,
-	output 				sram_ub_n,
-	output 				sram_lb_n
+	inout  	wire	[15:0]		sram_data,
+	output 			[19:0]		sram_addr,
+	output 						sram_ce_n,
+	output 						sram_oe_n,
+	output 						sram_we_n,
+	output 						sram_ub_n,
+	output 						sram_lb_n
 );
 
 parameter [15:0] h_imp = 16'bzzzzzzzzzzzzzzzz;

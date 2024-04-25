@@ -100,57 +100,57 @@ module GPU( //todo
 
     sh_mem
         sh_mem (
-            .clk        (clk),
-            .reset      (reset),
-            .enable     (enable_arb),
-            .addr       (addr_arb),
-            .wr_data    (wr_data_arb),
-            .rd_data    (rd_data_arb),
-            .ready      (ready_arb),
+            .clk                (clk),
+            .reset              (reset),
+            .enable             (enable_arb),
+            .addr               (addr_arb),
+            .wr_data            (wr_data_arb),
+            .rd_data            (rd_data_arb),
+            .ready              (ready_arb),
             
-            .vga_en		(vga_en),
-            .vga_data	(vga_data),
-				.vga_addr_copy(vga_copy_addr),
-				.vga_copy	(vga_copy_en),
-            .vga_end		(vga_end),
-				.vga_copy_moment(~(h_sync & v_sync))
+            .vga_en		        (vga_en),
+            .vga_data	        (vga_data),
+            .vga_addr_copy      (vga_copy_addr),
+            .vga_copy	        (vga_copy_en),
+            .vga_end		    (vga_end),
+            .vga_copy_moment    (~(h_sync & v_sync))
         );
     
     sram_conn
 	sram_conn(
-	    .clk(clk),
-	    .rst(reset),
+	    .clk        (clk),
+	    .rst        (reset),
 	    
-	    .write((vga_copy_en && ~(h_sync & v_sync))),
-	    .read(~(vga_copy_en && ~(h_sync & v_sync))),
-	    .byte_en(2'b01),
-	    .addr((vga_copy_en && ~(h_sync & v_sync)) ? vga_copy_addr : (vga_addr + 1)),
-	    .data_in(vga_data),
-	    .data_out(vga_data_out),
+	    .write      ((vga_copy_en && ~(h_sync & v_sync))),
+	    .read       (~(vga_copy_en && ~(h_sync & v_sync))),
+	    .byte_en    (2'b01),
+	    .addr       ((vga_copy_en && ~(h_sync & v_sync)) ? vga_copy_addr : (vga_addr + 1)),
+	    .data_in    (vga_data),
+	    .data_out   (vga_data_out),
 
-	    .sram_data(sram_dq),
-	    .sram_addr(sram_addr),
-	    .sram_ce_n(sram_ce_n),
-	    .sram_oe_n(sram_oe_n),
-	    .sram_we_n(sram_we_n),
-	    .sram_ub_n(sram_ub_n),
-	    .sram_lb_n(sram_lb_n)
+	    .sram_data  (sram_dq),
+	    .sram_addr  (sram_addr),
+	    .sram_ce_n  (sram_ce_n),
+	    .sram_oe_n  (sram_oe_n),
+	    .sram_we_n  (sram_we_n),
+	    .sram_ub_n  (sram_ub_n),
+	    .sram_lb_n  (sram_lb_n)
 	);
     
     vga_machine
 	vga_machine (
-		.clk(clk),
-		.rst(reset),
-		.vga_clk(vga_clk),
-		.h_sync(h_sync),
-		.v_sync(v_sync),
-		.blank_n(blank_n),
-		.sync_n(sync_n),
-		.red_vga(red_vga),
-		.green_vga(green_vga),
-		.blue_vga(blue_vga),
-		.vga_addr(vga_addr),
-		.vga_data(vga_data_out)
+		.clk        (clk),
+		.rst        (reset),
+		.vga_clk    (vga_clk),
+		.h_sync     (h_sync),
+		.v_sync     (v_sync),
+		.blank_n    (blank_n),
+		.sync_n     (sync_n),
+		.red_vga    (red_vga),
+		.green_vga  (green_vga),
+		.blue_vga   (blue_vga),
+		.vga_addr   (vga_addr),
+		.vga_data   (vga_data_out)
 	);
 
     generate

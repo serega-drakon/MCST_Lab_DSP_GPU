@@ -1,22 +1,31 @@
-`include "../Core/Modules/Core.v"
-`include "../Scheduler/TS.v"
-`include "../Memory/sh_mem.v"
+`include "Core.v"
+`include "TS.v"
+`include "sh_mem.v"
 `include "EnvMem.v"
+`include "sram_conn.v"
 //`include "IncAllTest.def.v"
-`include "../VGA/vga_machine.v"
+`include "vga_machine.v"
 
 module GPU( //todo
     input wire clk,
     input wire reset,
-
+    //VGA
     output wire vga_clk,
     output wire [`REG_RANGE]    red_vga,
     output wire [`REG_RANGE]    green_vga,
     output wire [`REG_RANGE]    blue_vga ,
-    output wire h_sync,
-    output wire v_sync,
-    output wire blank_n,
-    output wire sync_n
+    output wire                 h_sync,
+    output wire                 v_sync,
+    output wire                 blank_n,
+    output wire                 sync_n,
+    //SRAM
+    output wire [19:0]  sram_addr,
+    output wire [15:0]  sram_dq,
+    output wire         sram_ce_n,
+    output wire         sram_oe_n,
+    output wire         sram_we_n,
+    output wire         sram_ub_n,
+    output wire         sram_lb_n
 );
 
     wire [`TM_RANGE]            env_task_memory;
@@ -37,14 +46,14 @@ module GPU( //todo
     wire [`ADDR_RANGE]      addr_M      [`CORES_RANGE];
     wire [`ENABLE_RANGE]    enable_M    [`CORES_RANGE];
 
-    wire vga_en;
-    wire vga_end;
-    wire [`REG_RANGE] vga_data;
-    wire [`ADDR_RANGE] vga_addr;
+    wire                vga_en;
+    wire                vga_end;
+    wire [`REG_RANGE]   vga_data;
+    wire [`ADDR_RANGE]  vga_addr;
 
     Task_Scheduler TS(
-        .clk(clk),
-        .reset(reset),
+        .clk                (clk),
+        .reset              (reset),
         .env_task_memory    (env_task_memory),
         .Ready              (Ready),
         .Start              (Start),
@@ -85,36 +94,63 @@ module GPU( //todo
     wire [`REG_BUS_RANGE]       rd_data_arb;
     wire [`CORES_RANGE]	        ready_arb;
 
+    wire                        vga_copy_en;
+    wire [`ADDR_RANGE]	        vga_copy_addr;
+    wire [`REG_RANGE]	        vga_data_out;
+
     sh_mem
         sh_mem (
-            .clk        (clk),
-            .reset      (reset),
-            .enable     (enable_arb),
-            .addr       (addr_arb),
-            .wr_data    (wr_data_arb),
-            .rd_data    (rd_data_arb),
-            .ready      (ready_arb),
+            .clk                (clk),
+            .reset              (reset),
+            .enable             (enable_arb),
+            .addr               (addr_arb),
+            .wr_data            (wr_data_arb),
+            .rd_data            (rd_data_arb),
+            .ready              (ready_arb),
             
-            .vga_en     (vga_en),
-            .vga_addr   (vga_addr),
-            .vga_data   (vga_data),
-            .vga_end    (vga_end)
+            .vga_en		        (vga_en),
+            .vga_data	        (vga_data),
+            .vga_addr_copy      (vga_copy_addr),
+            .vga_copy	        (vga_copy_en),
+            .vga_end		    (vga_end),
+            .vga_copy_moment    (~(h_sync & v_sync))
         );
-        
+    
+    sram_conn
+	sram_conn(
+	    .clk        (clk),
+	    .rst        (reset),
+	    
+	    .write      ((vga_copy_en && ~(h_sync & v_sync))),
+	    .read       (~(vga_copy_en && ~(h_sync & v_sync))),
+	    .byte_en    (2'b01),
+	    .addr       ((vga_copy_en && ~(h_sync & v_sync)) ? vga_copy_addr : (vga_addr + 1)),
+	    .data_in    (vga_data),
+	    .data_out   (vga_data_out),
+
+	    .sram_data  (sram_dq),
+	    .sram_addr  (sram_addr),
+	    .sram_ce_n  (sram_ce_n),
+	    .sram_oe_n  (sram_oe_n),
+	    .sram_we_n  (sram_we_n),
+	    .sram_ub_n  (sram_ub_n),
+	    .sram_lb_n  (sram_lb_n)
+	);
+    
     vga_machine
 	vga_machine (
-		.clk(clk),
-		.rst(reset),
-		.vga_clk(vga_clk),
-		.h_sync(h_sync),
-		.v_sync(v_sync),
-		.blank_n(blank_n),
-		.sync_n(sync_n),
-		.red_vga(red_vga),
-		.green_vga(green_vga),
-		.blue_vga(blue_vga),
-		.vga_addr(vga_addr),
-		.vga_data(vga_data)
+		.clk        (clk),
+		.rst        (reset),
+		.vga_clk    (vga_clk),
+		.h_sync     (h_sync),
+		.v_sync     (v_sync),
+		.blank_n    (blank_n),
+		.sync_n     (sync_n),
+		.red_vga    (red_vga),
+		.green_vga  (green_vga),
+		.blue_vga   (blue_vga),
+		.vga_addr   (vga_addr),
+		.vga_data   (vga_data_out)
 	);
 
     generate
