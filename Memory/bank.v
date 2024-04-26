@@ -25,11 +25,6 @@ begin
 end
 
 always @(posedge clk)
-begin
-	if(~reset)
-		memory[addr] <= (write_enable) ? data_in : memory[addr];
-	else
-		memory[addr] <= `REG_SIZE'h0;
-end
+	memory[addr] <= (write_enable) ? data_in : memory[addr];
 
 endmodule

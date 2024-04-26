@@ -6,26 +6,26 @@
 //`include "IncAllTest.def.v"
 `include "vga_machine.v"
 
-module GPU( //todo
-    input wire clk,
-    input wire reset,
+module GPU( //todo ПЕРЕПИСАТЬ ВСЕ НАХУЙ !!!!!!
+    input wire                  clk,
+    input wire                  reset,
     //VGA
-    output wire vga_clk,
+    output wire                 vga_clk,
     output wire [`REG_RANGE]    red_vga,
     output wire [`REG_RANGE]    green_vga,
     output wire [`REG_RANGE]    blue_vga ,
-    output wire h_sync,
-    output wire v_sync,
-    output wire blank_n,
-    output wire sync_n,
+    output wire                 h_sync,
+    output wire                 v_sync,
+    output wire                 blank_n,
+    output wire                 sync_n,
     //SRAM
-    output wire [19:0]		sram_addr,
-    output wire [15:0]		sram_dq,
-    output wire sram_ce_n,
-    output wire sram_oe_n,
-    output wire sram_we_n,
-    output wire sram_ub_n,
-    output wire sram_lb_n
+    output wire [19:0]	sram_addr,
+    output wire [15:0]	sram_dq,
+    output wire         sram_ce_n,
+    output wire         sram_oe_n,
+    output wire         sram_we_n,
+    output wire         sram_ub_n,
+    output wire         sram_lb_n
 );
 
     wire [`TM_RANGE]            env_task_memory;
@@ -52,8 +52,8 @@ module GPU( //todo
     wire [`ADDR_RANGE] vga_addr;
 
     Task_Scheduler TS(
-        .clk(clk),
-        .reset(reset),
+        .clk                (clk),
+        .reset              (reset),
         .env_task_memory    (env_task_memory),
         .Ready              (Ready),
         .Start              (Start),
@@ -121,10 +121,10 @@ module GPU( //todo
 	    .clk        (clk),
 	    .rst        (reset),
 	    
-	    .write      ((vga_copy_en && ~(h_sync & v_sync))),
-	    .read       (~(vga_copy_en && ~(h_sync & v_sync))),
+	    .write      ((vga_copy_en && ~(h_sync & v_sync))), //FIXME: opt
+	    .read       (~(vga_copy_en && ~(h_sync & v_sync))),//FIXME
 	    .byte_en    (2'b01),
-	    .addr       ((vga_copy_en && ~(h_sync & v_sync)) ? vga_copy_addr : (vga_addr + 1)),
+	    .addr       ((vga_copy_en && ~(h_sync & v_sync)) ? vga_copy_addr : (vga_addr + 1)), //FIXME wr_addr != 0 ???
 	    .data_in    (vga_data),
 	    .data_out   (vga_data_out),
 

@@ -29,11 +29,20 @@ localparam v_blank_t = v_front_t + v_sync_t + v_back_t;
 localparam v_total_t = v_active_t + v_blank_t;
 localparam v_blank_t_div = v_blank_t / v_div;
 
+//localparam h_counter_size //todo
+
 reg [9:0] h_counter;
 reg [9:0] v_counter;
 
 reg [9:0] h_counter_div;
 reg [9:0] v_counter_div;
+
+reg [9:0] h_counter;
+reg [9:0] v_counter;
+
+reg [9:0] h_counter_div;
+reg [9:0] v_counter_div;
+
 
 always @(posedge clk0) begin
     h_counter_div <= (rst) ? 0 : (clk_div2) ?
@@ -45,20 +54,6 @@ always @(posedge clk0) begin
 end
 
 
-//always @(posedge clk)//
-//begin
-//	if(rst)
-//	begin
-//		//{h_counter_div10, v_counter_div10} <= 20'b0;
-//        h_counter_div10 <= 0;
-//        v_counter_div10 <= 0;
-//	end
-//    else
-//    begin
-//	    h_counter_div10 <= h_counter_div10 + ((h_counter_div10 + 1) * 10 == h_counter);
-//	    v_counter_div10 <= v_counter_div10 + ((v_counter_div10 + 1) * 10 == v_counter);
-//    end
-//end
 
 assign pos_x = h_counter_div - h_blank_t_div;
 assign pos_y = v_counter_div - v_blank_t_div;
@@ -83,6 +78,22 @@ always @(posedge clk0) begin
         v_counter) :
         v_counter;
 end
+
+
+//always @(posedge clk)//
+//begin
+//	if(rst)
+//	begin
+//		//{h_counter_div10, v_counter_div10} <= 20'b0;
+//        h_counter_div10 <= 0;
+//        v_counter_div10 <= 0;
+//	end
+//    else
+//    begin
+//	    h_counter_div10 <= h_counter_div10 + ((h_counter_div10 + 1) * 10 == h_counter);
+//	    v_counter_div10 <= v_counter_div10 + ((v_counter_div10 + 1) * 10 == v_counter);
+//    end
+//end
 
 //always @(posedge clk)
 //begin

@@ -107,10 +107,8 @@ module Task_Scheduler
 
 	
 	always @(posedge clk)
-		begin
 			vga_div_50MHz_60Hz <= (reset)                                     ? 0                      : 
 			                      (vga_div_50MHz_60Hz < `BIG_TACT_LENGTH - 1) ? vga_div_50MHz_60Hz + 1 : 0;
-		end
 					  	
 
     always @(posedge clk)

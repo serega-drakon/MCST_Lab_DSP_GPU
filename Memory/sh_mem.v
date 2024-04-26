@@ -46,83 +46,82 @@ wire	[`BANKS_RANGE]		read_request_bank				  ;
 wire	[`BANKS_RANGE]		write_request_bank				  ;
 wire	[`REG_RANGE]		rd_data_bank		[`BANKS_RANGE];
 
+
+reg 	[`ADDR_RANGE]	vga_count_prev;
+
 always @(posedge clk)
 begin
 	if(reset)
-	begin
 		vga_stop <= 1'b0;
-	end
 	else
-	begin
-		vga_stop <= (vga_en | (vga_count == `ADDR_SIZE'd4095)) ? ~vga_stop : vga_stop;
-	end
+		//vga_stop <= (vga_en | (vga_count == `ADDR_SIZE'hFFF)) ? ~vga_stop : vga_stop;
+		vga_stop <= vga_en ? 1 :
+					vga_count_prev == `ADDR_SIZE'hFFF ? 0 :
+					vga_stop;
 end
+
+wire vga_count_inc_cond
+	= (vga_stop | vga_en) & (vga_copy_moment);
+
+reg vga_count_inc_cond_prev;
+always @(posedge clk)
+	vga_count_inc_cond_prev <= reset ? 0 : vga_count_inc_cond;
 
 always @(posedge clk)
 begin
-	if(reset)
-	begin
+	if(reset | vga_en)
 		vga_count <= 1'b0;
-	end
 	else
-	begin
-		vga_count <= ((vga_stop | vga_en) && (vga_copy_moment)) ?
+		vga_count <= (vga_count_inc_cond & vga_count_inc_cond_prev) ? //нужно для задержки на 1 такт в начале интервала копирования
 			vga_count + 1 : `REG_SIZE'b0;
-	end
 end
+always @(posedge clk)
+	vga_count_prev 	<= reset ? 0 : vga_count;
 
-wire	[`BANKS_RANGE]	vga_addr_bank;
-wire	[`REG_RANGE]	vga_addr_reg;
+//wire	[`BANKS_RANGE]	vga_addr_bank;
+wire	[`BANK_ID_RANGE]	vga_addr_bank;
+wire	[`REG_RANGE]		vga_addr_reg;
 
 //assign	vga_end = (vga_count == `ADDR_SIZE'd255);
-assign 	vga_end 		= ~(vga_en | vga_stop);
+assign 	vga_end
+	= ~(vga_en | vga_stop);
 assign	{vga_addr_bank, vga_addr_reg}
-						= vga_count;
-assign	vga_data 		= rd_data_bank[vga_addr_bank];
-assign	vga_addr_copy 	= vga_count;
-assign  vga_copy 		= (vga_count != 0) | vga_en;
+	= vga_count;
+wire 	[`BANK_ID_RANGE]	vga_addr_bank_prev
+	= vga_count_prev[`BANK_ID_SIZE + `REG_SIZE - 1 : `REG_SIZE];
+assign	vga_data
+	= rd_data_bank[vga_addr_bank_prev];
+
+assign	vga_addr_copy 	= vga_count_prev;
+
+
+reg 	vga_copy_r;
+always @(posedge clk)
+	vga_copy_r <= vga_count_inc_cond;
+
+assign  vga_copy = vga_copy_r; //(vga_count != 0) | vga_count_prev;
 
 wire core_is_curr [`CORES_RANGE];
 
 genvar id_core;
 generate for (id_core = 0; id_core < `NUM_OF_CORES; id_core = id_core + 1)
-begin: form_request
+begin: form_cycle_core
 	assign	request_core[id_core]
 		= enable[(id_core + 1) * 2 - 1: id_core * 2];
-end
-endgenerate
 
-generate for (id_core = 0; id_core < `NUM_OF_CORES; id_core = id_core + 1)
-begin: form_wr_data
 	assign	wr_data_core[id_core]
 		= wr_data[(id_core + 1) * `REG_SIZE - 1: id_core * `REG_SIZE];
-end
-endgenerate
 
-generate for (id_core = 0; id_core < `NUM_OF_CORES; id_core = id_core + 1)
-begin: form_rd_data
 	assign	rd_data[(id_core + 1) * `REG_SIZE - 1: id_core * `REG_SIZE]
 		= rd_data_core[id_core];
-end
-endgenerate
 
-generate for (id_core = 0; id_core < `NUM_OF_CORES; id_core = id_core + 1)
-begin: form_addr
 	assign	{bank_addr[id_core], data_addr_core[id_core]}
 		= addr[(id_core + 1) * `ADDR_SIZE - 1: id_core * `ADDR_SIZE];
-end
-endgenerate
 
-generate for (id_core = 0; id_core < `NUM_OF_CORES; id_core = id_core + 1)
-begin: form_ready
 	assign	ready[id_core]
 		= ((last_request_rd[id_core]) | ((request_core[id_core] == 2'b10) &
-		   (core_is_curr[id_core])));//?
-end
-endgenerate
+		(core_is_curr[id_core])));//?
 
-generate for (id_core = 0; id_core < `NUM_OF_CORES; id_core = id_core + 1)
-begin: form_rd_data_core
 	assign	rd_data_core[id_core]
 		= (last_request_rd[id_core]) ? rd_data_bank[id_last_bank[id_core]] : `REG_SIZE'h0;
 end
@@ -152,6 +151,9 @@ begin: form_core_queue
 end
 endgenerate
 
+//debug;
+wire [`REG_RANGE] data_addr_bank_0 = data_addr_bank[0];
+
 generate for(id_bank = 0; id_bank < `NUM_OF_BANKS; id_bank = id_bank + 1)
 	begin:connection_wires
 		assign	data_addr_bank[id_bank] =
@@ -166,7 +168,7 @@ generate for(id_bank = 0; id_bank < `NUM_OF_BANKS; id_bank = id_bank + 1)
 endgenerate
 
 generate for(id_bank = 0; id_bank < `NUM_OF_BANKS; id_bank = id_bank + 1)
-	begin:connection_banks
+	begin : connection_banks
 		bank bank_0
 	(
 		.clk			(clk),
@@ -182,7 +184,7 @@ endgenerate
 
 
 generate for(id_bank = 0; id_bank < `NUM_OF_BANKS; id_bank = id_bank + 1)
-	begin:last_core
+	begin : last_core
 		always @(posedge clk)
 		begin
 			id_last_core[id_bank]
@@ -192,7 +194,7 @@ generate for(id_bank = 0; id_bank < `NUM_OF_BANKS; id_bank = id_bank + 1)
 endgenerate
 
 generate for(id_core = 0; id_core < `NUM_OF_CORES; id_core = id_core + 1)
-	begin:last_bank
+	begin : last_bank
 		always @(posedge clk)
 		begin
 			id_last_bank[id_core]
@@ -207,11 +209,13 @@ generate
 	for(id_core = 0; id_core < `NUM_OF_CORES; id_core = id_core + 1) begin : curr_core_loop
 		assign mid_core_is_curr[id_core][0]
 			= ((id_current_core[0] == id_core) && (~skip[0]));
+
 		for(id_bank = 1; id_bank < `NUM_OF_BANKS; id_bank = id_bank + 1) begin : curr_core_loop_
 			assign mid_core_is_curr[id_core][id_bank]
 				= ((id_current_core[id_bank] == id_core) && (~skip[id_bank])) ||
 					mid_core_is_curr[id_core][id_bank - 1];
 		end
+
 		assign core_is_curr[id_core] =
 			mid_core_is_curr[id_core][`NUM_OF_BANKS - 1];
 	end
