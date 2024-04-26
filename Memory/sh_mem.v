@@ -61,9 +61,10 @@ begin
 end
 
 wire vga_count_inc_cond
-	= (vga_stop | vga_en) & (vga_copy_moment);
+	= (vga_stop | vga_en) & vga_copy_moment & vga_count_prev != `ADDR_SIZE'hFFF;
 
 reg vga_count_inc_cond_prev;
+
 always @(posedge clk)
 	vga_count_inc_cond_prev <= reset ? 0 : vga_count_inc_cond;
 
