@@ -1,9 +1,9 @@
-{
+{ //открываем CF
 CoreActive = !0,!1,!2,!3,!4,!5,!6,!7,!8,!9,!10,!11,
-!12,!13,!14,!15;
-IFNum = !2;
-}
-: name
+!12,!13,!14,!15;    //Указываем работающие ядра
+IFNum = !2;         //Указываем число Instruction Frame'ов следущих за этим Control Frame
+} //закрываем CF
+: initLoop1  //имя IF (начало IF)
 set_const $00 %r8 // core_id
 set_const $04 %r1 // 4 for mul
 mul %r1 %r8 %r2 // y_curr
@@ -13,7 +13,7 @@ set_const $40 %r7 // x_end
 set_const $00 %r6 // addr_curr
 ready
 
-: loop
+: loop  //имя IF (нужно только на этапе компиляции, чтобы ошибку вывести красиво)
 .for_cycle_next_str
 set_const $00 %r5 // x_curr_start
 .for_cycle_next_char
@@ -29,6 +29,34 @@ bnz %r15 .for_cycle_next_str
 ready
 
 {
-CFLabel = EndlessLoop;
-NextCF = EndlessLoop;
+CFLabel = IncLoop;
+CoreActive = !0,!1,!2,!3,!4,!5,!6,!7,!8,!9,!10,!11,
+!12,!13,!14,!15;
+IFNum = !1;
 }
+: inc1
+
+mul %r1 %r8 %r2 // y_curr
+set_const $00 %r6 // addr_curr
+.for_cycle_next_str
+set_const $00 %r5 // x_curr_start
+.for_cycle_next_char
+
+//тело цикла
+ld %r6 %r8 %r0
+add %r0 %r4 %r0
+st %r6 %r8 %r0
+
+add %r6 %r4 %r6 // inc(r6)
+add %r5 %r4 %r5 // inc(r5)
+sub %r7 %r5 %r14
+bnz %r14 .for_cycle_next_char
+add %r2 %r4 %r2 //inc(r2)
+sub %r3 %r2 %r15
+bnz %r15 .for_cycle_next_str
+ready
+
+{
+CFLabel = EndlessLoop;      // Это для "вставки" метки в Control Frame
+NextCF = IncLoop;   //EndlessLoop;       // Это переход на метку, но каждый переход сопровождается
+}                           // обновлением изображения на VGA (более умного не успели придумать)

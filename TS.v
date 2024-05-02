@@ -114,9 +114,9 @@ module Task_Scheduler
     always @(posedge clk)
         stop_r <= (reset)                         ? 0         :
 				  (vga_stop)                      ? stop_r    :
-				  (Insn_Frame_Num == 0 & INSN_FRAME_NUM_NEXT == 0
-					  & STOP_NEXT & EXEC_MASK == 0 )? 0       :
                   (Insn_Frame_Num == 0)           ? STOP_NEXT :
+				  (Insn_Frame_Num == 0 & INSN_FRAME_NUM_NEXT == 0 
+				    & STOP_NEXT & EXEC_MASK == 0 )? 0         :
 				                                    stop_r;
 
 	always @(posedge clk)
@@ -181,18 +181,18 @@ module Task_Scheduler
 		begin
 			if (reset)
 				Task_Pointer <= 0;					        //initially TM is empty or old
-			else if(vga_stop)
-				Task_Pointer <= Task_Pointer;
-			else if(Insn_Frame_Num == 0 & INSN_FRAME_NUM_NEXT == 0
-					 & STOP_NEXT & EXEC_MASK == 0 )
-				Task_Pointer <= STOP_ADDR_NEXT;             //FIXME: maybe Task_Pointer;
+				
+			else if( (vga_stop) | 
+					 (Insn_Frame_Num == 0 & INSN_FRAME_NUM_NEXT == 0 
+					 & STOP_NEXT & EXEC_MASK == 0 ) )
+				Task_Pointer <= STOP_ADDR_NEXT;             //maybe Task_Pointer;
 				
 			else if(Insn_Frame_Num == 0 &
 				   (EXEC_MASK == 0 & (exec_block_cond |
 					insn_free_no_fence) ))
 				Task_Pointer <= Task_Pointer + 1;
 				
-			else if(Insn_Frame_Num == 1 & FLAG_TIME) //TODO: TEST!!!!!!!!!
+			else if(Insn_Frame_Num == 1 & FLAG_TIME)
 				Task_Pointer <= (stop_r) ? stop_addr_r : Task_Pointer + 1;
 				
 			else if(Insn_Frame_Num > 1 & FLAG_TIME & insn_finish)
@@ -217,4 +217,4 @@ module Task_Scheduler
                                fence;
 		end
 
-endmodule//
+endmodule

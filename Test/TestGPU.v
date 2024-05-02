@@ -116,19 +116,10 @@ module TestCoresMemory;
             .vga_data	        (vga_data),
             .vga_addr_copy      (vga_copy_addr),
             .vga_copy	        (vga_copy_en),
-            .vga_end		    (vga_end),
-            .vga_copy_moment    (vga_copy_moment)
+            .vga_end		    (vga_end)
         );
 
     reg                 dump;
-    wire                sram_write
-                        = vga_copy_en && ~(h_sync & v_sync);
-    wire                sram_read
-                        = ~sram_write;
-    wire [`ADDR_RANGE]  sram_vga_addr
-                        = sram_write ? vga_copy_addr : next_vga_addr;
-    wire [`ADDR_RANGE]  next_vga_addr
-                        = vga_addr; //fixme
 
     sram_conn_debug
         sram_conn(
@@ -136,10 +127,10 @@ module TestCoresMemory;
             .rst        (reset),
             .dump       (dump),
 
-            .write      (sram_write),
-            .read       (sram_read),
+            .write      (vga_copy_en),
+            .read       (~vga_copy_en),
             .byte_en    (2'b01),
-            .addr       (sram_vga_addr),
+            .addr       ((vga_copy_en) ? vga_copy_addr : (vga_addr)),
             .data_in    (vga_data),
             .data_out   (vga_data_out),
 
@@ -195,7 +186,7 @@ module TestCoresMemory;
         //#10 dump <= 0;
     end
 
-    always @(negedge vga_copy_en & ~reset) begin
+    always @(posedge vga_en) begin
         #10 dump <= 1;
         #10 dump <= 0;
         //$finish();
@@ -212,7 +203,7 @@ module TestCoresMemory;
     end
 
     initial begin
-        #300000;
+        #3000000;
         $finish();
     end
 endmodule
