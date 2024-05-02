@@ -108,12 +108,11 @@ module GPU( //todo
             .rd_data            (rd_data_arb),
             .ready              (ready_arb),
             
-            .vga_en		        (vga_en),
+            .vga_en		(vga_en),
             .vga_data	        (vga_data),
             .vga_addr_copy      (vga_copy_addr),
             .vga_copy	        (vga_copy_en),
-            .vga_end		    (vga_end),
-            .vga_copy_moment    (~(h_sync & v_sync))
+            .vga_end		(vga_end)
         );
     
     sram_conn
@@ -121,10 +120,10 @@ module GPU( //todo
 	    .clk        (clk),
 	    .rst        (reset),
 	    
-	    .write      ((vga_copy_en && ~(h_sync & v_sync))),
-	    .read       (~(vga_copy_en && ~(h_sync & v_sync))),
+	    .write      ((vga_copy_en)),
+	    .read       (~(vga_copy_en)),
 	    .byte_en    (2'b01),
-	    .addr       ((vga_copy_en && ~(h_sync & v_sync)) ? vga_copy_addr : (vga_addr + 1)),
+	    .addr       ((vga_copy_en) ? vga_copy_addr : (vga_addr)),
 	    .data_in    (vga_data),
 	    .data_out   (vga_data_out),
 
