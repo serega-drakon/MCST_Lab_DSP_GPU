@@ -1,5 +1,5 @@
-`include "../SharedInc/Ranges.def.v"
-`include "../SharedInc/Fence.def.v"
+`include "Ranges.def.v"
+`include "Fence.def.v"
 
 module Task_Scheduler
 	(
@@ -107,10 +107,8 @@ module Task_Scheduler
 
 	
 	always @(posedge clk)
-		begin
 			vga_div_50MHz_60Hz <= (reset)                                     ? 0                      : 
 			                      (vga_div_50MHz_60Hz < `BIG_TACT_LENGTH - 1) ? vga_div_50MHz_60Hz + 1 : 0;
-		end
 					  	
 
     always @(posedge clk)
@@ -182,7 +180,8 @@ module Task_Scheduler
 				Task_Pointer <= 0;					        //initially TM is empty or old
 				
 			else if( (vga_stop) | 
-					 (Insn_Frame_Num == 0 & INSN_FRAME_NUM_NEXT == 0 & STOP_NEXT) )
+					 (Insn_Frame_Num == 0 & INSN_FRAME_NUM_NEXT == 0 
+					 & STOP_NEXT & EXEC_MASK == 0 ) )
 				Task_Pointer <= STOP_ADDR_NEXT;             //maybe Task_Pointer;
 				
 			else if(Insn_Frame_Num == 0 &
