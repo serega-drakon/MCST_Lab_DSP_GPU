@@ -113,7 +113,8 @@ module Task_Scheduler
 
     always @(posedge clk)
         stop_r <= (reset)                         ? 0         :
-                  (Insn_Frame_Num == 0)           ? STOP_NEXT : 
+				  (vga_stop)                      ? stop_r    :
+                  (Insn_Frame_Num == 0)           ? STOP_NEXT :
 				  (Insn_Frame_Num == 0 & INSN_FRAME_NUM_NEXT == 0 
 				    & STOP_NEXT & EXEC_MASK == 0 )? 0         :
 				                                    stop_r;
