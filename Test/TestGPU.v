@@ -212,7 +212,7 @@ module TestCoresMemory;
     end
 
     initial begin
-        #300000;
+        #200000;
         $finish();
     end
 endmodule
