@@ -1,5 +1,5 @@
-`include "Ranges.def.v"
-`include "Fence.def.v"
+`include "../SharedInc/Ranges.def.v"
+`include "../SharedInc/Fence.def.v"
 
 module Task_Scheduler
 	(
@@ -196,7 +196,7 @@ module Task_Scheduler
 				Task_Pointer <= Task_Pointer + 1;
 				
 			else 
-			    Task_Pointer <= Task_Pointer;	
+				Task_Pointer <= Task_Pointer;	
 				
 		end
 
