@@ -10,8 +10,10 @@ module vga_sync (
     output          blank_n
 );
 
-    localparam h_div = 7;
-    localparam v_div = 7;
+    localparam h_div = 4;
+    localparam v_div = 4;
+	localparam h_shift = $clog2(h_div);
+	localparam v_shift = $clog2(v_div);
 
     localparam h_front_t = 16;
     localparam h_sync_t = 96;
@@ -35,16 +37,16 @@ module vga_sync (
     reg [9:0] h_counter_div;
     reg [9:0] v_counter_div;
 
-    wire [9:0] h_counter_correct = h_counter - 5;
-    wire [9:0] v_counter_correct = v_counter - 2;
+    wire [9:0] h_counter_correct = h_counter;
+    wire [9:0] v_counter_correct = v_counter - 1;
 
     wire [9:0] h_counter_div_cldiv2
                = (h_counter_correct != 0) ?
-                   (h_counter_div + (((h_counter_div + 1) * h_div == h_counter_correct) ? 1 : 0)) :
+                   (h_counter_div + (( (h_counter_div + 1) << h_shift == h_counter_correct) ? 1 : 0)) :
                    0;
     wire [9:0] v_counter_div_cldiv2
                = (v_counter_correct != 0) ?
-                   (v_counter_div + (((v_counter_div + 1) * v_div == v_counter_correct) ? 1 : 0)) :
+                   (v_counter_div + (( (v_counter_div + 1) << v_shift == v_counter_correct) ? 1 : 0)) :
                    0;
 	
     
