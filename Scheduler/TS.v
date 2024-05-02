@@ -185,8 +185,8 @@ module Task_Scheduler
 				Task_Pointer <= STOP_ADDR_NEXT;             //maybe Task_Pointer;
 				
 			else if(Insn_Frame_Num == 0 &
-				   (EXEC_MASK == 0 & exec_block_cond |
-					insn_free_no_fence))
+				   (EXEC_MASK == 0 & (exec_block_cond |
+					insn_free_no_fence) ))
 				Task_Pointer <= Task_Pointer + 1;
 				
 			else if(Insn_Frame_Num == 1 & FLAG_TIME)
