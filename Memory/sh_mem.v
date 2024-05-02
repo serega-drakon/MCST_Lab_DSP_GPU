@@ -73,7 +73,7 @@ begin
 		vga_count <= 1'b0;
 	else
 		vga_count <= (vga_count_inc_cond & vga_count_inc_cond_prev) ? //нужно для задержки на 1 такт в начале интервала копирования
-			vga_count + 1 : `REG_SIZE'b0;
+			vga_count + 1 : vga_count;//`REG_SIZE'b0; //FIXME
 end
 always @(posedge clk)
 	vga_count_prev 	<= reset ? 0 : vga_count;
