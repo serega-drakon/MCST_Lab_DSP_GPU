@@ -35,14 +35,19 @@ module vga_sync (
     reg [9:0] h_counter_div;
     reg [9:0] v_counter_div;
 
+    wire [9:0] h_counter_correct = h_counter - 5;
+    wire [9:0] v_counter_correct = v_counter - 2;
+
     wire [9:0] h_counter_div_cldiv2
-               = (h_counter != 0) ?
-                   (h_counter_div + (((h_counter_div + 1) * h_div == h_counter) ? 1 : 0)) :
+               = (h_counter_correct != 0) ?
+                   (h_counter_div + (((h_counter_div + 1) * h_div == h_counter_correct) ? 1 : 0)) :
                    0;
     wire [9:0] v_counter_div_cldiv2
-               = (v_counter != 0) ?
-                   (v_counter_div + (((v_counter_div + 1) * v_div == v_counter) ? 1 : 0)) :
+               = (v_counter_correct != 0) ?
+                   (v_counter_div + (((v_counter_div + 1) * v_div == v_counter_correct) ? 1 : 0)) :
                    0;
+	
+    
 
     always @(posedge clk0) begin
         h_counter_div <= (rst) ? 0 : (clk_div2) ? h_counter_div_cldiv2 : h_counter_div;
@@ -75,8 +80,8 @@ module vga_sync (
     always @(posedge clk0) begin
         h_sync <= (rst) ? 0 : (clk_div2) ? h_sync_cldiv2 : h_sync;
         v_sync <= (rst) ? 0 : (clk_div2) ? v_sync_cldiv2 : v_sync;
-        h_counter <= (rst) ? 0 : (clk_div2) ? h_counter_cldiv2 : h_counter;
-        v_counter <= (rst) ? 0 : (clk_div2) ? v_counter_cldiv2 : v_counter;
+        h_counter <= ((rst) ? 0 : (clk_div2) ? h_counter_cldiv2 : h_counter);
+        v_counter <= ((rst) ? 0 : (clk_div2) ? v_counter_cldiv2 : v_counter);
     end
 
     //always @(posedge clk)//
