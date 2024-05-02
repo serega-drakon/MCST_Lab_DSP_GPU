@@ -25,6 +25,6 @@ begin
 end
 
 always @(posedge clk)
-		memory[addr] <= (write_enable) ? data_in : memory[addr];
+	memory[addr] <= (write_enable) ? data_in : memory[addr];
 
 endmodule

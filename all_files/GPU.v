@@ -2,15 +2,15 @@
 `include "TS.v"
 `include "sh_mem.v"
 `include "EnvMem.v"
-`include "sram_conn.v"
+`include "sram_conn_debug.v"
 //`include "IncAllTest.def.v"
 `include "vga_machine.v"
 
-module GPU( //todo ПЕРЕПИСАТЬ ВСЕ НАХУЙ !!!!!!
-    input wire                  clk,
-    input wire                  reset,
+module GPU( //todo
+    input wire clk,
+    input wire reset,
     //VGA
-    output wire                 vga_clk,
+    output wire vga_clk,
     output wire [`REG_RANGE]    red_vga,
     output wire [`REG_RANGE]    green_vga,
     output wire [`REG_RANGE]    blue_vga ,
@@ -19,8 +19,8 @@ module GPU( //todo ПЕРЕПИСАТЬ ВСЕ НАХУЙ !!!!!!
     output wire                 blank_n,
     output wire                 sync_n,
     //SRAM
-    output wire [19:0]	sram_addr,
-    output wire [15:0]	sram_dq,
+    output wire [19:0]  sram_addr,
+    output wire [15:0]  sram_dq,
     output wire         sram_ce_n,
     output wire         sram_oe_n,
     output wire         sram_we_n,
@@ -46,10 +46,10 @@ module GPU( //todo ПЕРЕПИСАТЬ ВСЕ НАХУЙ !!!!!!
     wire [`ADDR_RANGE]      addr_M      [`CORES_RANGE];
     wire [`ENABLE_RANGE]    enable_M    [`CORES_RANGE];
 
-    wire vga_en;
-    wire vga_end;
-    wire [`REG_RANGE] vga_data;
-    wire [`ADDR_RANGE] vga_addr;
+    wire                vga_en;
+    wire                vga_end;
+    wire [`REG_RANGE]   vga_data;
+    wire [`ADDR_RANGE]  vga_addr;
 
     Task_Scheduler TS(
         .clk                (clk),
@@ -94,9 +94,9 @@ module GPU( //todo ПЕРЕПИСАТЬ ВСЕ НАХУЙ !!!!!!
     wire [`REG_BUS_RANGE]       rd_data_arb;
     wire [`CORES_RANGE]	        ready_arb;
 
-    wire vga_copy_en;
-    wire [`ADDR_RANGE]	vga_copy_addr;
-    wire [`REG_RANGE]	vga_data_out;
+    wire                        vga_copy_en;
+    wire [`ADDR_RANGE]	        vga_copy_addr;
+    wire [`REG_RANGE]	        vga_data_out;
 
     sh_mem
         sh_mem (
@@ -116,15 +116,16 @@ module GPU( //todo ПЕРЕПИСАТЬ ВСЕ НАХУЙ !!!!!!
             .vga_copy_moment    (~(h_sync & v_sync))
         );
     
-    sram_conn
+    sram_conn_debug
 	sram_conn(
 	    .clk        (clk),
 	    .rst        (reset),
+	    .dump	(vga_end),
 	    
-	    .write      ((vga_copy_en && ~(h_sync & v_sync))), //FIXME: opt
-	    .read       (~(vga_copy_en && ~(h_sync & v_sync))),//FIXME
+	    .write      ((vga_copy_en && ~(h_sync & v_sync))),
+	    .read       (~(vga_copy_en && ~(h_sync & v_sync))),
 	    .byte_en    (2'b01),
-	    .addr       ((vga_copy_en && ~(h_sync & v_sync)) ? vga_copy_addr : (vga_addr + 1)), //FIXME wr_addr != 0 ???
+	    .addr       ((vga_copy_en && ~(h_sync & v_sync)) ? vga_copy_addr : (vga_addr + 1)),
 	    .data_in    (vga_data),
 	    .data_out   (vga_data_out),
 
