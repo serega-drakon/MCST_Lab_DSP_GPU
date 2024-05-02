@@ -112,11 +112,11 @@ module Task_Scheduler
 					  	
 
     always @(posedge clk)
-        stop_r <= (reset)                            ? 0         :
-                  ( (vga_stop) | 
-					(Insn_Frame_Num == 0 & INSN_FRAME_NUM_NEXT == 0 
-					& STOP_NEXT & EXEC_MASK == 0 ) ) ? STOP_NEXT : 
-				                                       stop_r;
+        stop_r <= (reset)                         ? 0         :
+                  (Insn_Frame_Num == 0)           ? STOP_NEXT : 
+				  (Insn_Frame_Num == 0 & INSN_FRAME_NUM_NEXT == 0 
+				    & STOP_NEXT & EXEC_MASK == 0 )? 0         :
+				                                    stop_r;
 
 	always @(posedge clk)
 		stop_addr_r <= (Insn_Frame_Num == 0) ? STOP_ADDR_NEXT : stop_addr_r;
