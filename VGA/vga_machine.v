@@ -16,7 +16,8 @@ module vga_machine(
 	output wire 	[`REG_RANGE]	blue_vga,
 	
 	output wire	[`ADDR_RANGE]	vga_addr,
-	input		[`REG_RANGE]	vga_data
+	input		[`REG_RANGE]	vga_data,
+	output wire 				vga_black
 );
 
 wire	[9:0]	x;
@@ -38,6 +39,8 @@ vga vga_0(
 assign red_vga = ((x < 64) && (y < 64)) ? vga_data : 0;
 assign green_vga = ((x < 64) && (y < 64)) ? vga_data : 0;
 assign blue_vga = ((x < 64) && (y < 64)) ? vga_data : 0;
+
+assign vga_black = ((x > 64) && ( y > 64));
 
 assign vga_addr = {y[5:0], x[5:0]};
 

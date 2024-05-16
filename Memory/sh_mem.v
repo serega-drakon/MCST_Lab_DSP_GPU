@@ -13,6 +13,7 @@ module sh_mem
 	output	wire	[`CORES_RANGE]		ready,
 
 	input	wire						vga_en,  //signal from scheduler for vga print
+	input wire						vga_black,
 	output	wire	[`REG_RANGE]		vga_data,
 	output	wire	[`ADDR_RANGE]		vga_addr_copy,
 	output	wire				vga_copy,
@@ -60,7 +61,7 @@ begin
 end
 
 wire vga_count_inc_cond
-	= (vga_stop | vga_en) & vga_count_prev != `ADDR_SIZE'hFFF;
+	= ((vga_stop | vga_en) & vga_count_prev != `ADDR_SIZE'hFFF) & vga_black;
 
 reg vga_count_inc_cond_prev;
 

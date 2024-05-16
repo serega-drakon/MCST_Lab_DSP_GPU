@@ -97,6 +97,7 @@ module GPU( //todo
     wire                        vga_copy_en;
     wire [`ADDR_RANGE]	        vga_copy_addr;
     wire [`REG_RANGE]	        vga_data_out;
+	 wire 							  vga_black;
 
     sh_mem
         sh_mem (
@@ -109,10 +110,11 @@ module GPU( //todo
             .ready              (ready_arb),
             
             .vga_en		        (vga_en),
+				.vga_black			  (vga_black),
             .vga_data	        (vga_data),
             .vga_addr_copy      (vga_copy_addr),
             .vga_copy	        (vga_copy_en),
-            .vga_end		    (vga_end)
+            .vga_end		    	  (vga_end)
         );
     
     sram_conn
@@ -149,7 +151,8 @@ module GPU( //todo
 		.green_vga  (green_vga),
 		.blue_vga   (blue_vga),
 		.vga_addr   (vga_addr),
-		.vga_data   (vga_data_out)
+		.vga_data   (vga_data_out),
+		.vga_black  (vga_black)
 	);
 
     generate
