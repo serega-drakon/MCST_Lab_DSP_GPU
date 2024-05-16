@@ -2,11 +2,8 @@
 CFLabel = abcd123;
 InitR0[!0] = $12;
 InitR0[!2] = $F1;
-
 CoreActive = !0,!2,!4; //sakdlaksl;dkl;asd
-
 Fence = acq;
-
 IFNum = !2;
 }
 : name1
@@ -16,7 +13,6 @@ bnz %r0 .label1
 bnz %r0 .label2
 
 : name2
-
 .label2
 bnz %r0 .label2
 add %r0 %r1 %r2

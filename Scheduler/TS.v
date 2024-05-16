@@ -107,16 +107,17 @@ module Task_Scheduler
 
 	
 	always @(posedge clk)
-		begin
 			vga_div_50MHz_60Hz <= (reset)                                     ? 0                      : 
 			                      (vga_div_50MHz_60Hz < `BIG_TACT_LENGTH - 1) ? vga_div_50MHz_60Hz + 1 : 0;
-		end
 					  	
 
     always @(posedge clk)
-        stop_r <= (reset)               ? 0         :
-                  (Insn_Frame_Num == 0) ? STOP_NEXT : 
-				                          stop_r;
+        stop_r <= (reset)                         ? 0         :
+				  (vga_stop)                      ? stop_r    :
+				  (Insn_Frame_Num == 0 & INSN_FRAME_NUM_NEXT == 0
+					  & STOP_NEXT & EXEC_MASK == 0 )? 0       :
+                  (Insn_Frame_Num == 0)           ? STOP_NEXT :
+				                                    stop_r;
 
 	always @(posedge clk)
 		stop_addr_r <= (Insn_Frame_Num == 0) ? STOP_ADDR_NEXT : stop_addr_r;
@@ -180,24 +181,25 @@ module Task_Scheduler
 		begin
 			if (reset)
 				Task_Pointer <= 0;					        //initially TM is empty or old
-				
-			else if( (vga_stop) | 
-					 (Insn_Frame_Num == 0 & INSN_FRAME_NUM_NEXT == 0 & STOP_NEXT) )
-				Task_Pointer <= STOP_ADDR_NEXT;             //maybe Task_Pointer;
+			else if(vga_stop)
+				Task_Pointer <= Task_Pointer;
+			else if(Insn_Frame_Num == 0 & INSN_FRAME_NUM_NEXT == 0
+					 & STOP_NEXT & EXEC_MASK == 0 )
+				Task_Pointer <= STOP_ADDR_NEXT;             //FIXME: maybe Task_Pointer;
 				
 			else if(Insn_Frame_Num == 0 &
-				   (EXEC_MASK == 0 & exec_block_cond |
-					insn_free_no_fence))
+				   (EXEC_MASK == 0 & (exec_block_cond |
+					insn_free_no_fence) ))
 				Task_Pointer <= Task_Pointer + 1;
 				
-			else if(Insn_Frame_Num == 1 & FLAG_TIME)
+			else if(Insn_Frame_Num == 1 & FLAG_TIME) //TODO: TEST!!!!!!!!!
 				Task_Pointer <= (stop_r) ? stop_addr_r : Task_Pointer + 1;
 				
 			else if(Insn_Frame_Num > 1 & FLAG_TIME & insn_finish)
 				Task_Pointer <= Task_Pointer + 1;
 				
 			else 
-			    Task_Pointer <= Task_Pointer;	
+				Task_Pointer <= Task_Pointer;	
 				
 		end
 
