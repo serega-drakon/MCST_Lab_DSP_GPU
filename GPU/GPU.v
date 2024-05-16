@@ -25,7 +25,9 @@ module GPU( //todo
     output wire         sram_oe_n,
     output wire         sram_we_n,
     output wire         sram_ub_n,
-    output wire         sram_lb_n
+    output wire         sram_lb_n,
+	 
+	 input wire [2:0]		color
 );
 
     wire [`TM_RANGE]            env_task_memory;
@@ -152,7 +154,8 @@ module GPU( //todo
 		.blue_vga   (blue_vga),
 		.vga_addr   (vga_addr),
 		.vga_data   (vga_data_out),
-		.vga_black  (vga_black)
+		.vga_black  (vga_black),
+		.color		(color)
 	);
 
     generate
